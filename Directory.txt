@@ -1,0 +1,24 @@
+.
+├── app
+│   ├── core
+│   │   ├── config.py
+│   │   ├── dependencies.py
+│   │   ├── exceptions.py
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       ├── config.cpython-314.pyc
+│   │       ├── dependencies.cpython-314.pyc
+│   │       ├── exceptions.cpython-314.pyc
+│   │       └── __init__.cpython-314.pyc
+│   ├── __init__.py
+│   ├── main.py
+│   └── __pycache__
+│       ├── __init__.cpython-314.pyc
+│       └── main.cpython-314.pyc
+├── Directory.txt
+├── main.py
+├── pyproject.toml
+├── README.md
+└── uv.lock
+
+5 directories, 17 files
