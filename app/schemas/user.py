@@ -10,10 +10,15 @@ class UserCreate(BaseModel):
     role: str = Field(default="checker", description="User role")
 
 
+class UserLogin(BaseModel):
+    username: str = Field(description="Username")
+    password: str = Field(description="Password")
+
+
 class UserResponse(BaseModel):
     id: int
     username: str
-    email: str | None
+    email: str | None = None
     role: str
     is_active: bool
     created_at: datetime
@@ -24,8 +29,18 @@ class UserResponse(BaseModel):
 
 class Token(BaseModel):
     access_token: str
-    refresh_token: str | None = None
     token_type: str = "bearer"
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
 
 
 class RefreshRequest(BaseModel):

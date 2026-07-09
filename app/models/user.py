@@ -1,11 +1,15 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database.base import Base
-from app.models.refresh_token import RefreshToken
+
+if TYPE_CHECKING:
+    from app.models.refresh_token import RefreshToken
+
 
 
 class User(Base):
@@ -21,5 +25,9 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False, onupdate=func.now())
 
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
+
+
+# Late import to register model in SQLAlchemy registry without circular dependency
+from app.models.refresh_token import RefreshToken  # noqa: F401

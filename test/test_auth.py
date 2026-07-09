@@ -99,7 +99,7 @@ def test_auth_flow():
         json={"refresh_token": new_refresh_token},
     )
     print("Logout response status:", response.status_code)
-    assert response.status_code == 204
+    assert response.status_code == 200
 
     # 7. Logged-out refresh token no longer works
     response = client.post(

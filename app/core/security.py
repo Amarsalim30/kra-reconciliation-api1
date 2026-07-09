@@ -48,5 +48,12 @@ def decode_access_token(token: str) -> dict[str, str | datetime] | None:
         return None
 
 
-def generate_refresh_token() -> str:
-    return secrets.token_urlsafe(64)
+def generate_opaque_token() -> str:
+    import secrets
+    return secrets.token_urlsafe(32)
+
+
+def hash_token(token: str) -> str:
+    import hashlib
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
