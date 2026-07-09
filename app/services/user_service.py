@@ -8,6 +8,7 @@ from app.schemas.user import UserCreate
 def create_user(db: Session, user_in: UserCreate) -> User:
     user = User(
         username=user_in.username,
+        email=user_in.email,
         password_hash=hash_password(user_in.password),
         role=user_in.role,
     )
