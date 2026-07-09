@@ -5,8 +5,8 @@ from app.core.config import get_settings
 settings = get_settings()
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=settings.app_name,
+    version=settings.app_version,
 )
 
 
@@ -14,5 +14,5 @@ app = FastAPI(
 async def root() -> dict[str, str]:
     return {
         "status": "running",
-        "service": settings.APP_NAME,
+        "service": settings.app_name,
     }

@@ -1,27 +1,36 @@
 from functools import lru_cache
+from pathlib import Path
 
+from pydantic import AnyHttpUrl, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=Path(".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
 
-    APP_NAME: str = "KRA Reconciliation API"
-    APP_VERSION: str = "1.0.0"
-    DATABASE_URL: str = ""
-    SECRET_KEY: str = ""
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    app_name: str = Field(default="KRA Reconciliation API", alias="APP_NAME")
+    app_version: str = Field(default="1.0.0", alias="APP_VERSION")
+    database_url: str = Field(default=..., alias="DATABASE_URL")
+    secret_key: SecretStr = Field(default=..., alias="SECRET_KEY")
+    algorithm: str = Field(default="HS256", alias="ALGORITHM")
+    access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
 
-    SAP_BASE_URL: str = ""
-    SAP_USERNAME: str = ""
-    SAP_PASSWORD: str = ""
-    SAP_COMPANY_DB: str = ""
+    sap_base_url: AnyHttpUrl | None = Field(default=None, alias="SAP_BASE_URL")
+    sap_username: str = Field(default="", alias="SAP_USERNAME")
+    sap_password: SecretStr = Field(default=SecretStr(""), alias="SAP_PASSWORD")
+    sap_company_db: str = Field(default="", alias="SAP_COMPANY_DB")
+
+    @field_validator("sap_base_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v: object) -> object:
+        if v == "":
+            return None
+        return v
 
 
 @lru_cache
