@@ -362,11 +362,11 @@ def test_compare_flow_expired_session(client, auth_headers, db_session):
     session_id = load_res.json()["session_id"]
     
     # 2. Manually alter the session last_accessed_at in the database to expire it
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     from app.models.reconciliation_session import ReconciliationSession
     
     session = db_session.query(ReconciliationSession).filter(ReconciliationSession.id == session_id).first()
-    session.last_accessed_at = datetime.utcnow() - timedelta(minutes=31)
+    session.last_accessed_at = datetime.now(timezone.utc) - timedelta(minutes=31)
     db_session.commit()
     
     # 3. Call compare (should fail with session expired)

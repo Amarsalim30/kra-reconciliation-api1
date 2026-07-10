@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Query, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -26,7 +26,7 @@ def get_sales(
     Stores the loaded invoices in a database-backed session with ReconciliationType.SALES.
     """
     # 1. Global Cleanup: Clear user's expired sessions (> 30 min idle)
-    expiry_time = datetime.utcnow() - timedelta(minutes=30)
+    expiry_time = datetime.now(timezone.utc) - timedelta(minutes=30)
     db.query(ReconciliationSession).filter(
         ReconciliationSession.user_id == current_user.id,
         ReconciliationSession.last_accessed_at < expiry_time

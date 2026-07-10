@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Date, Enum, Numeric, Index, UniqueConstraint, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -23,8 +23,8 @@ class ReconciliationSession(Base):
         default=ReconciliationType.SALES,
         nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    last_accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    last_accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     invoices: Mapped[list["SessionInvoice"]] = relationship(
         "SessionInvoice", back_populates="session", cascade="all, delete-orphan"

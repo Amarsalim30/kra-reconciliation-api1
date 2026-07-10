@@ -95,9 +95,15 @@ def get_active_session(
         )
         
     # Check if expired (> 30 min idle)
-    # Using naive datetime to match model default
-    expiry_time = datetime.utcnow() - timedelta(minutes=30)
-    if session.last_accessed_at.replace(tzinfo=None) < expiry_time:
+    # Using timezone-aware UTC comparison
+    from datetime import datetime, timedelta, timezone
+    expiry_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+    
+    last_accessed = session.last_accessed_at
+    if last_accessed.tzinfo is None:
+        last_accessed = last_accessed.replace(tzinfo=timezone.utc)
+        
+    if last_accessed < expiry_time:
         db.delete(session)
         db.commit()
         raise HTTPException(
@@ -106,6 +112,6 @@ def get_active_session(
         )
         
     # Update last accessed time
-    session.last_accessed_at = datetime.utcnow()
+    session.last_accessed_at = datetime.now(timezone.utc)
     db.commit()
     return session
