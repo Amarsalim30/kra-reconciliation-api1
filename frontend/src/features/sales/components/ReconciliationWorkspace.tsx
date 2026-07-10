@@ -40,7 +40,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
   const kraTitle = type === "sales" ? "KRA Sales Preview" : "KRA Purchases Preview";
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-[1400px] mx-auto py-8 px-4">
+    <div className="flex flex-col gap-6 w-full">
       {/* Title Header */}
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight capitalize">
