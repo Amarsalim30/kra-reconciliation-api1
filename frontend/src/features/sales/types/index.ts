@@ -4,7 +4,7 @@ export interface SalesInvoice {
   invoice_number: string;
   invoice_date: string;
   cu_number: string;
-  vat_group: number;
+  vat_group: string;
   base_amount: number;
   source: string;
 }

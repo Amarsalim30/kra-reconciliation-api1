@@ -2,12 +2,13 @@ from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, Query, UploadFile
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_user, get_active_session
+from app.core.dependencies import get_current_user, get_active_session, get_sap_client
 from app.database.database import get_db
 from app.models.user import User
 from app.models.reconciliation_session import ReconciliationSession, SessionInvoice
 from app.schemas.sales import SalesFetchResponse, SalesUploadResponse, InvoiceSource
 from app.services import sap_service, kra_service
+from app.core.sap_client import SAPClient
 
 router = APIRouter(prefix="/sales", tags=["sales"])
 
@@ -17,7 +18,8 @@ def get_sales(
     from_date: date = Query(..., alias="from", description="Start date (YYYY-MM-DD)"),
     to_date: date = Query(..., alias="to", description="End date (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    sap_client: SAPClient = Depends(get_sap_client)
 ):
     """
     Fetch sales invoices within a given date range. Currently returns normalized mock SAP data.
@@ -31,10 +33,7 @@ def get_sales(
     ).delete()
     db.commit()
 
-    # 2. Fetch mock SAP data
-    invoices = sap_service.get_sales_invoices(from_date, to_date)
-
-    # 3. Create a new ReconciliationSession
+    # 2. Create a new ReconciliationSession first (gets id for log correlation)
     session = ReconciliationSession(
         user_id=current_user.id,
         from_date=from_date,
@@ -43,6 +42,11 @@ def get_sales(
     )
     db.add(session)
     db.commit()
+
+    # 3. Fetch live SAP data
+    invoices = sap_service.get_sales_invoices(
+        from_date, to_date, sap_client=sap_client, reconciliation_session_id=session.id
+    )
 
     # 4. Save loaded SAP invoices relationally
     db_invoices = [
@@ -71,6 +75,7 @@ def get_sales(
         to_date=to_date,
         invoices=invoices[:100]
     )
+
 
 
 

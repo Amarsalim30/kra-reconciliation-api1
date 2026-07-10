@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -6,8 +6,23 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.database.database import get_db
 from app.models.user import User
+from app.core.sap_client import SAPClient
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+
+def get_sap_client(request: Request = None) -> SAPClient:
+    """
+    Dependency to retrieve the SAPClient instance.
+    Uses app.state if running in the FastAPI app context, otherwise falls back to request-scoped instance.
+    """
+    if request and hasattr(request.app.state, "sap_client"):
+        return request.app.state.sap_client
+    # Fallback for testing or scripts
+    if not hasattr(get_sap_client, "_fallback_client"):
+        get_sap_client._fallback_client = SAPClient()
+    return get_sap_client._fallback_client
+
 
 
 def get_current_user(

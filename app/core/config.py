@@ -1,8 +1,17 @@
+from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AnyHttpUrl, Field, SecretStr, field_validator
+from pydantic import AnyHttpUrl, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.core.exceptions import SAPConfigurationError
+
+
+class BaseAmountPolicy(str, Enum):
+    SKIP = "skip"
+    REJECT = "reject"
+    ALLOW = "allow"
 
 
 class Settings(BaseSettings):
@@ -24,6 +33,8 @@ class Settings(BaseSettings):
     sap_username: str = Field(default="", alias="SAP_USERNAME")
     sap_password: SecretStr = Field(default=SecretStr(""), alias="SAP_PASSWORD")
     sap_company_db: str = Field(default="", alias="SAP_COMPANY_DB")
+    sap_verify_ssl: bool = Field(default=True, alias="SAP_VERIFY_SSL")
+    sap_base_amount_policy: BaseAmountPolicy = Field(default=BaseAmountPolicy.SKIP, alias="SAP_BASE_AMOUNT_POLICY")
 
     max_upload_size_mb: int = Field(default=5, alias="MAX_UPLOAD_SIZE_MB")
     kra_header_mapping: dict[str, str] = Field(
@@ -47,7 +58,24 @@ class Settings(BaseSettings):
             return None
         return v
 
+    @model_validator(mode="after")
+    def validate_sap_config(self) -> "Settings":
+        if self.sap_base_url:
+            missing = []
+            if not self.sap_username:
+                missing.append("SAP_USERNAME")
+            if not self.sap_password.get_secret_value():
+                missing.append("SAP_PASSWORD")
+            if not self.sap_company_db:
+                missing.append("SAP_COMPANY_DB")
+            if missing:
+                raise SAPConfigurationError(
+                    f"Invalid SAP Service Layer configuration. Missing required fields: {', '.join(missing)}"
+                )
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+

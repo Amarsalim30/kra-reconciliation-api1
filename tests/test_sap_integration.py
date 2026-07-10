@@ -1,0 +1,218 @@
+import datetime
+import pytest
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
+import httpx
+
+from app.core.config import get_settings, BaseAmountPolicy
+from app.core.exceptions import SAPConfigurationError, SAPConnectionError, SAPQueryError
+from app.core.sap_client import SAPClient
+from app.services import sap_service
+from app.services.sap_mapper import map_sap_invoice_to_normalized_records, parse_sap_date
+
+
+def test_parse_sap_date():
+    assert parse_sap_date("2026-03-02T00:00:00Z") == datetime.date(2026, 3, 2)
+    assert parse_sap_date("2026-03-02 12:00:00") == datetime.date(2026, 3, 2)
+    assert parse_sap_date("2026-03-02") == datetime.date(2026, 3, 2)
+    assert parse_sap_date(datetime.date(2026, 3, 2)) == datetime.date(2026, 3, 2)
+    
+    with pytest.raises(ValueError):
+        parse_sap_date("invalid-date-format")
+
+
+def test_sap_client_login_success():
+    client = SAPClient()
+    # Mock settings
+    client.base_url = "https://sap-test:50000/b1s/v1"
+    client.username = "test-user"
+    client.password = "test-pass"
+    client.company_db = "test-db"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "SessionId": "test-session-12345",
+        "SessionTimeout": 30
+    }
+    mock_response.cookies = {"B1SESSION": "test-session-12345", "ROUTEID": "node1"}
+
+    with patch.object(client.client, "post", return_value=mock_response) as mock_post:
+        client.login()
+        mock_post.assert_called_once_with(
+            "https://sap-test:50000/b1s/v1/Login",
+            json={"CompanyDB": "test-db", "UserName": "test-user", "Password": "test-pass"}
+        )
+        assert client.session_id == "test-session-12345"
+        assert client.cookies["B1SESSION"] == "test-session-12345"
+        assert client.cookies["ROUTEID"] == "node1"
+        assert client.session_expiry > datetime.datetime.now()
+
+
+def test_sap_client_login_failure():
+    client = SAPClient()
+    client.base_url = "https://sap-test:50000/b1s/v1"
+
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.text = "Unauthorized"
+
+    with patch.object(client.client, "post", return_value=mock_response):
+        with pytest.raises(SAPConnectionError, match="SAP Login failed"):
+            client.login()
+
+
+def test_sap_client_get_invoices_pagination():
+    client = SAPClient()
+    client.base_url = "https://sap-test:50000/b1s/v1"
+    client.session_id = "active-session"
+    client.cookies = {"B1SESSION": "active-session"}
+    client.session_expiry = datetime.datetime.now() + datetime.timedelta(minutes=10)
+
+    # Page 1 response (with nextLink)
+    page1_response = MagicMock()
+    page1_response.status_code = 200
+    page1_response.json.return_value = {
+        "value": [{"DocNum": 100, "DocDate": "2026-03-01"}],
+        "odata.nextLink": "Invoices?$skip=1"
+    }
+
+    # Page 2 response (no nextLink)
+    page2_response = MagicMock()
+    page2_response.status_code = 200
+    page2_response.json.return_value = {
+        "value": [{"DocNum": 101, "DocDate": "2026-03-02"}]
+    }
+
+    def mock_request(method, url, params=None, cookies=None):
+        if url == "https://sap-test:50000/b1s/v1/Invoices":
+            return page1_response
+        elif url == "https://sap-test:50000/b1s/v1/Invoices?$skip=1":
+            return page2_response
+        raise ValueError(f"Unexpected URL: {url}")
+
+    with patch.object(client, "_execute_request_with_retry", side_effect=mock_request) as mock_exec:
+        pages = list(client.get_invoices_pages("2026-03-01", "2026-03-02"))
+        
+        assert len(pages) == 2
+        assert pages[0][0]["DocNum"] == 100
+        assert pages[1][0]["DocNum"] == 101
+        assert mock_exec.call_count == 2
+
+
+def test_sap_mapper_line_flattening():
+    # Test that 1 SAP invoice with 3 lines maps/flattens to exactly 3 canonical records
+    raw_invoice = {
+        "DocNum": 764,
+        "CardName": "Welding Alloys Ltd",
+        "FederalTaxID": "P000609554G",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "0190439340000000134",
+        "DocumentLines": [
+            {"VatGroup": "O1", "LineTotal": 172005.12},
+            {"VatGroup": "O1", "LineTotal": 267563.52},
+            {"VatGroup": "O1", "LineTotal": 442400.00}
+        ]
+    }
+
+    records = map_sap_invoice_to_normalized_records(raw_invoice)
+    assert len(records) == 3
+    assert records[0]["invoice_number"] == "764"
+    assert records[0]["base_amount"] == Decimal("172005.12")
+    assert records[1]["base_amount"] == Decimal("267563.52")
+    assert records[2]["base_amount"] == Decimal("442400.00")
+    for r in records:
+        assert r["pin"] == "P000609554G"
+        assert r["cu_number"] == "0190439340000000134"
+
+
+def test_sap_mapper_vat_group_preservation():
+    # Test that 1 invoice with 2 lines with different VAT groups preserves those VAT groups
+    raw_invoice = {
+        "DocNum": 765,
+        "CardName": "Welding Alloys Ltd",
+        "FederalTaxID": "P000609554G",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "0190439340000000134",
+        "DocumentLines": [
+            {"VatGroup": "O1", "LineTotal": 100.00},
+            {"VatGroup": "A16", "LineTotal": 200.00}
+        ]
+    }
+
+    records = map_sap_invoice_to_normalized_records(raw_invoice)
+    assert len(records) == 2
+    assert records[0]["vat_group"] == "O1"
+    assert records[1]["vat_group"] == "A16"
+
+
+def test_sap_mapper_fallback_warnings():
+    # Test fallback warning logic for missing FederalTaxID and U_CUINV
+    raw_invoice = {
+        "DocNum": 766,
+        "CardName": "Welding Alloys Ltd",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "DocumentLines": [
+            {"VatGroup": "O1", "LineTotal": 100.00}
+        ]
+    }
+
+    with patch("app.services.sap_mapper.logger.warning") as mock_warn:
+        records = map_sap_invoice_to_normalized_records(raw_invoice)
+        assert len(records) == 1
+        assert records[0]["pin"] == ""
+        assert records[0]["cu_number"] == ""
+        # 2 warnings expected (one for FederalTaxID, one for U_CUINV)
+        assert mock_warn.call_count == 2
+
+
+def test_sap_mapper_base_amount_policies():
+    raw_invoice = {
+        "DocNum": 767,
+        "CardName": "Welding Alloys Ltd",
+        "FederalTaxID": "P000609554G",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "DocumentLines": [
+            {"VatGroup": "O1", "LineTotal": 100.00},
+            {"VatGroup": "O1", "LineTotal": 0.00},     # <= 0
+            {"VatGroup": "O1", "LineTotal": -50.00}    # <= 0
+        ]
+    }
+
+    settings = get_settings()
+    original_policy = settings.sap_base_amount_policy
+
+    try:
+        # 1. SKIP Policy (default)
+        settings.sap_base_amount_policy = BaseAmountPolicy.SKIP
+        records = map_sap_invoice_to_normalized_records(raw_invoice)
+        assert len(records) == 1
+        assert records[0]["base_amount"] == Decimal("100.00")
+
+        # 2. REJECT Policy
+        settings.sap_base_amount_policy = BaseAmountPolicy.REJECT
+        with pytest.raises(SAPQueryError, match="Base Amount.*<= 0"):
+            map_sap_invoice_to_normalized_records(raw_invoice)
+
+        # 3. ALLOW Policy
+        settings.sap_base_amount_policy = BaseAmountPolicy.ALLOW
+        records = map_sap_invoice_to_normalized_records(raw_invoice)
+        assert len(records) == 3
+        assert records[0]["base_amount"] == Decimal("100.00")
+        assert records[1]["base_amount"] == Decimal("0.00")
+        assert records[2]["base_amount"] == Decimal("-50.00")
+    finally:
+        settings.sap_base_amount_policy = original_policy
+
+
+def test_sap_configuration_startup_validation():
+    # Test that invalid configurations fail fast at startup
+    from app.core.config import Settings
+    
+    with pytest.raises(SAPConfigurationError):
+        Settings(
+            DATABASE_URL="sqlite:///test.db",
+            SECRET_KEY="some-secret-key",
+            SAP_BASE_URL="https://sap-test:50000/b1s/v1",
+            SAP_USERNAME=""  # Missing username
+        )

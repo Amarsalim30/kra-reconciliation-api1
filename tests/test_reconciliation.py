@@ -69,74 +69,74 @@ def test_reconcile_sales_various_cases():
     # Matches
     sap_match = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1",
-        invoice_date=date(2026, 3, 1), cu_number="CU_MATCH", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
     kra_match = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1",
-        invoice_date=date(2026, 3, 1), cu_number="CU_MATCH", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.KRA
     )
 
     # Amount Mismatch
     sap_amt_mis = SalesInvoice(
         pin="P2", customer_name="Cust2", invoice_number="INV2",
-        invoice_date=date(2026, 3, 2), cu_number="CU_AMT", vat_group=16,
+        invoice_date=date(2026, 3, 2), cu_number="CU_AMT", vat_group="16",
         base_amount=Decimal("200.00"), source=InvoiceSource.SAP
     )
     kra_amt_mis = SalesInvoice(
         pin="P2", customer_name="Cust2", invoice_number="INV2",
-        invoice_date=date(2026, 3, 2), cu_number="CU_AMT", vat_group=16,
+        invoice_date=date(2026, 3, 2), cu_number="CU_AMT", vat_group="16",
         base_amount=Decimal("250.00"), source=InvoiceSource.KRA
     )
 
     # VAT Mismatch
     sap_vat_mis = SalesInvoice(
         pin="P3", customer_name="Cust3", invoice_number="INV3",
-        invoice_date=date(2026, 3, 3), cu_number="CU_VAT", vat_group=16,
+        invoice_date=date(2026, 3, 3), cu_number="CU_VAT", vat_group="16",
         base_amount=Decimal("300.00"), source=InvoiceSource.SAP
     )
     kra_vat_mis = SalesInvoice(
         pin="P3", customer_name="Cust3", invoice_number="INV3",
-        invoice_date=date(2026, 3, 3), cu_number="CU_VAT", vat_group=0,
+        invoice_date=date(2026, 3, 3), cu_number="CU_VAT", vat_group="0",
         base_amount=Decimal("300.00"), source=InvoiceSource.KRA
     )
 
     # Date Mismatch
     sap_date_mis = SalesInvoice(
         pin="P4", customer_name="Cust4", invoice_number="INV4",
-        invoice_date=date(2026, 3, 4), cu_number="CU_DATE", vat_group=16,
+        invoice_date=date(2026, 3, 4), cu_number="CU_DATE", vat_group="16",
         base_amount=Decimal("400.00"), source=InvoiceSource.SAP
     )
     kra_date_mis = SalesInvoice(
         pin="P4", customer_name="Cust4", invoice_number="INV4",
-        invoice_date=date(2026, 3, 5), cu_number="CU_DATE", vat_group=16,
+        invoice_date=date(2026, 3, 5), cu_number="CU_DATE", vat_group="16",
         base_amount=Decimal("400.00"), source=InvoiceSource.KRA
     )
 
     # Multiple Mismatches (Amount + VAT)
     sap_multi = SalesInvoice(
         pin="P5", customer_name="Cust5", invoice_number="INV5",
-        invoice_date=date(2026, 3, 5), cu_number="CU_MULTI", vat_group=16,
+        invoice_date=date(2026, 3, 5), cu_number="CU_MULTI", vat_group="16",
         base_amount=Decimal("500.00"), source=InvoiceSource.SAP
     )
     kra_multi = SalesInvoice(
         pin="P5", customer_name="Cust5", invoice_number="INV5",
-        invoice_date=date(2026, 3, 5), cu_number="CU_MULTI", vat_group=0,
+        invoice_date=date(2026, 3, 5), cu_number="CU_MULTI", vat_group="0",
         base_amount=Decimal("550.00"), source=InvoiceSource.KRA
     )
 
     # Missing in SAP
     kra_only = SalesInvoice(
         pin="P6", customer_name="Cust6", invoice_number="INV6",
-        invoice_date=date(2026, 3, 6), cu_number="CU_KRA_ONLY", vat_group=16,
+        invoice_date=date(2026, 3, 6), cu_number="CU_KRA_ONLY", vat_group="16",
         base_amount=Decimal("600.00"), source=InvoiceSource.KRA
     )
 
     # Missing in KRA
     sap_only = SalesInvoice(
         pin="P7", customer_name="Cust7", invoice_number="INV7",
-        invoice_date=date(2026, 3, 7), cu_number="CU_SAP_ONLY", vat_group=16,
+        invoice_date=date(2026, 3, 7), cu_number="CU_SAP_ONLY", vat_group="16",
         base_amount=Decimal("700.00"), source=InvoiceSource.SAP
     )
 
@@ -222,28 +222,28 @@ def test_reconcile_sales_resilient_duplicate_cu():
     # Test that duplicate CU only flags duplicates and doesn't block others
     sap_dup1 = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1",
-        invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
     sap_dup2 = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1_ALT",
-        invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
     sap_match = SalesInvoice(
         pin="P2", customer_name="Cust2", invoice_number="INV2",
-        invoice_date=date(2026, 3, 2), cu_number="CU_MATCH", vat_group=16,
+        invoice_date=date(2026, 3, 2), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("200.00"), source=InvoiceSource.SAP
     )
     
     kra_dup = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1",
-        invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.KRA
     )
     kra_match = SalesInvoice(
         pin="P2", customer_name="Cust2", invoice_number="INV2",
-        invoice_date=date(2026, 3, 2), cu_number="CU_MATCH", vat_group=16,
+        invoice_date=date(2026, 3, 2), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("200.00"), source=InvoiceSource.KRA
     )
 
@@ -267,7 +267,7 @@ def test_reconcile_sales_empty_sources():
     # Empty SAP, non-empty KRA
     kra_inv = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1",
-        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.KRA
     )
     summary, results = reconciliation_service.reconcile_sales([], [kra_inv])
@@ -280,7 +280,7 @@ def test_reconcile_sales_empty_sources():
     # Non-empty SAP, empty KRA
     sap_inv = SalesInvoice(
         pin="P1", customer_name="Cust1", invoice_number="INV1",
-        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group=16,
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
     summary, results = reconciliation_service.reconcile_sales([sap_inv], [])
@@ -300,7 +300,7 @@ def test_compare_flow_unauthenticated(client):
 
 def test_compare_flow_success(client, auth_headers):
     # 1. Load SAP invoices
-    load_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    load_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     assert load_res.status_code == 200
     session_id = load_res.json()["session_id"]
     
@@ -343,7 +343,7 @@ def test_compare_flow_success(client, auth_headers):
 
 def test_compare_flow_missing_kra_upload(client, auth_headers):
     # 1. Load SAP invoices
-    load_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    load_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = load_res.json()["session_id"]
     
     # 2. Call compare immediately (should fail because KRA isn't uploaded yet)
@@ -358,7 +358,7 @@ def test_compare_flow_missing_kra_upload(client, auth_headers):
 
 def test_compare_flow_expired_session(client, auth_headers, db_session):
     # 1. Load SAP invoices
-    load_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    load_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = load_res.json()["session_id"]
     
     # 2. Manually alter the session last_accessed_at in the database to expire it

@@ -8,18 +8,15 @@ def normalize_invoice_data(
     invoice_date: str | date | datetime | None,
     cu_number: str | None,
     vat_group: str | int | float | None,
-    base_amount: str | float | Decimal | None
+    base_amount: str | float | Decimal | None,
+    allow_negative: bool = False
 ) -> dict:
     """
     Normalizes raw sales invoice fields and returns a dictionary matching SalesInvoice structure.
     Raises ValueError for fields that cannot be normalized.
     """
-    # 1. PIN
-    if pin is None:
-        raise ValueError("PIN is required")
-    norm_pin = str(pin).strip()
-    if not norm_pin:
-        raise ValueError("PIN cannot be empty")
+    # 1. PIN (Allow empty string as fallback)
+    norm_pin = "" if pin is None else str(pin).strip()
 
     # 2. Customer Name
     if customer_name is None:
@@ -57,20 +54,19 @@ def normalize_invoice_data(
             raise ValueError(f"Invalid date format '{date_str}'. Expected DD/MM/YYYY or YYYY-MM-DD.")
         norm_date = parsed_date
 
-    # 5. CU Number
-    if cu_number is None:
-        raise ValueError("CU Number is required")
-    norm_cu = str(cu_number).strip().lstrip("|").strip()
-    if not norm_cu:
-        raise ValueError("CU Number cannot be empty")
+    # 5. CU Number (Allow empty string as fallback)
+    norm_cu = "" if cu_number is None else str(cu_number).strip().lstrip("|").strip()
 
-    # 6. VAT Group
+    # 6. VAT Group (string representation)
     if vat_group is None or (isinstance(vat_group, str) and not vat_group.strip()):
         raise ValueError("VAT Group is required")
-    try:
-        norm_vat = int(float(str(vat_group).strip()))
-    except (ValueError, TypeError):
-        raise ValueError(f"Invalid VAT Group '{vat_group}'. Must be an integer.")
+    
+    norm_vat = str(vat_group).strip()
+    # Normalize float-like groups (e.g. "16.0" -> "16")
+    if norm_vat.endswith(".0"):
+        norm_vat = norm_vat[:-2]
+    if not norm_vat:
+        raise ValueError("VAT Group cannot be empty")
 
     # 7. Base Amount
     if base_amount is None or (isinstance(base_amount, str) and not base_amount.strip()):
@@ -82,6 +78,10 @@ def normalize_invoice_data(
     
     norm_amount = norm_amount.quantize(Decimal("0.01"))
 
+    # Validate against <= 0 base amounts unless allowed by policy/caller
+    if not allow_negative and norm_amount <= 0:
+        raise ValueError(f"Invalid Base Amount '{base_amount}'. Must be greater than zero.")
+
     return {
         "pin": norm_pin,
         "customer_name": norm_customer_name,
@@ -91,3 +91,4 @@ def normalize_invoice_data(
         "vat_group": norm_vat,
         "base_amount": norm_amount
     }
+

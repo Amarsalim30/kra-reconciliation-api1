@@ -40,7 +40,7 @@ class SessionInvoice(Base):
     invoice_number: Mapped[str] = mapped_column(String(100), nullable=False)
     invoice_date: Mapped[date] = mapped_column(Date, nullable=False)
     cu_number: Mapped[str] = mapped_column(String(100), nullable=False)
-    vat_group: Mapped[int] = mapped_column(Integer, nullable=False)
+    vat_group: Mapped[str] = mapped_column(String(50), nullable=False)
     base_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
 
     session: Mapped["ReconciliationSession"] = relationship("ReconciliationSession", back_populates="invoices")
@@ -69,14 +69,14 @@ class SessionReconciliationResult(Base):
     sap_customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sap_invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sap_base_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
-    sap_vat_group: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sap_vat_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Snapshot values for KRA
     kra_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     kra_customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     kra_invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     kra_base_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
-    kra_vat_group: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    kra_vat_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     session: Mapped["ReconciliationSession"] = relationship("ReconciliationSession", back_populates="results")
 

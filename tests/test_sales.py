@@ -79,7 +79,7 @@ def test_normalization_success():
     assert res["invoice_number"] == "IN1080"
     assert res["invoice_date"] == date(2026, 3, 2)
     assert res["cu_number"] == "0190439340000000455"
-    assert res["vat_group"] == 16
+    assert res["vat_group"] == "16"
     assert res["base_amount"] == Decimal("1118894.84")
 
 
@@ -94,25 +94,36 @@ def test_normalization_iso_date_success():
         base_amount=1118894.84
     )
     assert res["invoice_date"] == date(2026, 3, 2)
+    assert res["vat_group"] == "16"
 
 
 def test_normalization_missing_fields():
-    with pytest.raises(ValueError, match="PIN is required"):
-        normalize_invoice_data(None, "Autoports", "IN1080", "2026-03-02", "CU123", 16, 100)
+    # Customer name is required
+    with pytest.raises(ValueError, match="Customer Name is required"):
+        normalize_invoice_data("PIN123", None, "IN1080", "2026-03-02", "CU123", "16", 100)
 
+    # Invoice Date is required
     with pytest.raises(ValueError, match="Invoice Date is required"):
-        normalize_invoice_data("PIN123", "Autoports", "IN1080", None, "CU123", 16, 100)
+        normalize_invoice_data("PIN123", "Autoports", "IN1080", None, "CU123", "16", 100)
+
+    # PIN and CU number are optional, default to empty string
+    res = normalize_invoice_data(None, "Autoports", "IN1080", "2026-03-02", None, "16", 100)
+    assert res["pin"] == ""
+    assert res["cu_number"] == ""
 
 
 def test_normalization_invalid_types():
     with pytest.raises(ValueError, match="Invalid date format"):
-        normalize_invoice_data("PIN123", "Autoports", "IN1080", "invalid-date", "CU123", 16, 100)
+        normalize_invoice_data("PIN123", "Autoports", "IN1080", "invalid-date", "CU123", "16", 100)
 
-    with pytest.raises(ValueError, match="Invalid VAT Group"):
-        normalize_invoice_data("PIN123", "Autoports", "IN1080", "2026-03-02", "CU123", "sixteen", 100)
+    with pytest.raises(ValueError, match="VAT Group is required"):
+        normalize_invoice_data("PIN123", "Autoports", "IN1080", "2026-03-02", "CU123", "", 100)
 
     with pytest.raises(ValueError, match="Invalid Base Amount"):
-        normalize_invoice_data("PIN123", "Autoports", "IN1080", "2026-03-02", "CU123", 16, "one-thousand")
+        normalize_invoice_data("PIN123", "Autoports", "IN1080", "2026-03-02", "CU123", "16", "one-thousand")
+
+    with pytest.raises(ValueError, match="Must be greater than zero"):
+        normalize_invoice_data("PIN123", "Autoports", "IN1080", "2026-03-02", "CU123", "16", -50)
 
 
 # --- Service Tests ---
@@ -164,7 +175,7 @@ def test_parse_kra_csv_aggregate_errors():
     content = (
         b"Pin Number,Customer Name,Invoice Number,Invoice Date,CU Number,VAT Group,Base Amount\n"
         b"P051393568M,Autoports,IN1080,invalid-date,|0190439340000000455,16,1118894.84\n"
-        b"P051137818X,GRAIN LTD,IN1081,11/03/2026,|0190439340000000456,sixteen,3977701.88\n"
+        b"P051137818X,GRAIN LTD,IN1081,11/03/2026,|0190439340000000456,,3977701.88\n" # Missing VAT Group
         b"P051137818X,GRAIN LTD,IN1080,11/03/2026,|0190439340000000456,16,3977701.88\n" # Duplicate Invoice Number IN1080
     )
     mock_file = MockUploadFile("SEC_B_errors.csv", content)
@@ -180,7 +191,7 @@ def test_parse_kra_csv_aggregate_errors():
     
     assert response.errors[1].row == 3
     assert "VAT Group" in response.errors[1].column
-    assert "Invalid VAT Group" in response.errors[1].message
+    assert "VAT Group is required" in response.errors[1].message
 
     # Row 4 duplicate errors
     # Note: CU number error is processed first
@@ -196,19 +207,20 @@ def test_parse_kra_csv_aggregate_errors():
 # --- Endpoint Integration Tests ---
 
 def test_get_sales_unauthenticated(client):
-    response = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31")
+    response = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30")
     assert response.status_code == 401
 
 
 def test_get_sales_success(client, auth_headers):
-    response = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    response = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["source"] == "SAP"
     assert data["count"] == 5
     assert len(data["invoices"]) == 5
-    assert data["invoices"][0]["invoice_number"] == "IN1080"
+    assert data["invoices"][0]["invoice_number"] == "1080"
     assert data["invoices"][0]["cu_number"] == "0190439340000000455"
+
 
 
 def test_upload_sales_unauthenticated(client):
@@ -219,7 +231,7 @@ def test_upload_sales_unauthenticated(client):
 
 def test_upload_sales_success(client, auth_headers):
     # 1. Fetch sales first to generate active session
-    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
     content = (
@@ -242,7 +254,7 @@ def test_upload_sales_success(client, auth_headers):
 
 
 def test_upload_sales_invalid_file_extension(client, auth_headers):
-    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
     files = {"file": ("SEC_B.txt", b"some-text", "text/plain")}
@@ -252,7 +264,7 @@ def test_upload_sales_invalid_file_extension(client, auth_headers):
 
 
 def test_upload_sales_empty_file(client, auth_headers):
-    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
     files = {"file": ("SEC_B.csv", b"", "text/csv")}
