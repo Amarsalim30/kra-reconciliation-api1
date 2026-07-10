@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
 from app.core.sap_client import SAPClient
+from app.core.exceptions import SAPConnectionError, SAPQueryError, SAPConfigurationError
 
 settings = get_settings()
 
@@ -21,6 +23,31 @@ app = FastAPI(
     version=settings.app_version,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(SAPConnectionError)
+async def sap_connection_exception_handler(request: Request, exc: SAPConnectionError):
+    return JSONResponse(
+        status_code=502,
+        content={"detail": f"SAP Service Layer Connection Error: {str(exc)}"},
+    )
+
+
+@app.exception_handler(SAPQueryError)
+async def sap_query_exception_handler(request: Request, exc: SAPQueryError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": f"SAP Query Error: {str(exc)}"},
+    )
+
+
+@app.exception_handler(SAPConfigurationError)
+async def sap_config_exception_handler(request: Request, exc: SAPConfigurationError):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"SAP Configuration Error: {str(exc)}"},
+    )
+
 
 
 # Enable CORS for frontend requests
