@@ -1,6 +1,6 @@
-export interface SalesInvoice {
+export interface Invoice {
   pin: string;
-  customer_name: string;
+  partner_name: string;
   invoice_number: string;
   invoice_date: string;
   cu_number: string;
@@ -15,8 +15,8 @@ export interface ReconciliationResult {
   amount_match: boolean;
   vat_match: boolean;
   date_match: boolean;
-  sap: SalesInvoice | null;
-  kra: SalesInvoice | null;
+  sap: Invoice | null;
+  kra: Invoice | null;
 }
 
 export interface ReconciliationSummary {

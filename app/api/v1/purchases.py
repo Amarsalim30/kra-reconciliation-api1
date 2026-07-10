@@ -10,11 +10,11 @@ from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType, Invo
 from app.services import invoice_service, kra_service
 from app.core.sap_client import SAPClient
 
-router = APIRouter(prefix="/sales", tags=["sales"])
+router = APIRouter(prefix="/purchases", tags=["purchases"])
 
 
 @router.get("", response_model=InvoiceFetchResponse)
-def get_sales(
+def get_purchases(
     from_date: date = Query(..., alias="from", description="Start date (YYYY-MM-DD)"),
     to_date: date = Query(..., alias="to", description="End date (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_user),
@@ -22,8 +22,8 @@ def get_sales(
     sap_client: SAPClient = Depends(get_sap_client)
 ):
     """
-    Fetch sales invoices within a given date range. Currently returns normalized SAP data.
-    Stores the loaded invoices in a database-backed session with ReconciliationType.SALES.
+    Fetch purchase invoices within a given date range from SAP `/PurchaseInvoices`.
+    Stores the loaded invoices in a database-backed session with ReconciliationType.PURCHASES.
     """
     # 1. Global Cleanup: Clear user's expired sessions (> 30 min idle)
     expiry_time = datetime.utcnow() - timedelta(minutes=30)
@@ -38,7 +38,7 @@ def get_sales(
         user_id=current_user.id,
         from_date=from_date,
         to_date=to_date,
-        session_type=ReconciliationType.SALES,
+        session_type=ReconciliationType.PURCHASES,
         is_compared=False
     )
     db.add(session)
@@ -47,7 +47,7 @@ def get_sales(
     # 3. Fetch live SAP data
     invoices = invoice_service.get_invoices(
         from_date, to_date,
-        reconciliation_type=ReconciliationType.SALES,
+        reconciliation_type=ReconciliationType.PURCHASES,
         sap_client=sap_client,
         reconciliation_session_id=session.id
     )
@@ -82,23 +82,23 @@ def get_sales(
 
 
 @router.post("/upload", response_model=InvoiceUploadResponse)
-def upload_sales_csv(
+def upload_purchases_csv(
     file: UploadFile,
     session_id: str = Query(..., description="Active reconciliation session ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a KRA CSV file containing sales invoices. Normalizes and appends records to the active session.
+    Upload a KRA CSV file containing purchase invoices. Normalizes and appends records to the active session.
     """
     # 1. Validate active session using the dependency logic (checks expiry & user ownership)
     session = get_active_session(session_id=session_id, db=db, current_user=current_user)
 
-    # 2. Enforce session validation - must be SALES type
-    if session.session_type != ReconciliationType.SALES:
+    # 2. Enforce session validation - must be PURCHASES type
+    if session.session_type != ReconciliationType.PURCHASES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Active session type is not for Sales reconciliation."
+            detail="Active session type is not for Purchases reconciliation."
         )
 
     # 3. Parse and normalize KRA CSV

@@ -1,14 +1,14 @@
 import { fetchWithAuth } from "@/lib/api";
-import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "../types";
+import { Invoice, ReconciliationResult, ReconciliationSummary } from "../types";
 import { PaginatedResponse } from "@/types";
 
-export interface SalesFetchResponse {
+export interface InvoiceFetchResponse {
   session_id: string;
   source: string;
   count: number;
   from_date: string;
   to_date: string;
-  invoices: SalesInvoice[];
+  invoices: Invoice[];
 }
 
 export interface CSVValidationErrorDetail {
@@ -17,14 +17,14 @@ export interface CSVValidationErrorDetail {
   message: string;
 }
 
-export interface SalesUploadResponse {
+export interface InvoiceUploadResponse {
   session_id: string;
   filename: string;
   rows: number;
   parsed: number;
   errors_count: number;
   errors: CSVValidationErrorDetail[];
-  invoices: SalesInvoice[];
+  invoices: Invoice[];
 }
 
 export interface ReconciliationResponse {
@@ -32,8 +32,12 @@ export interface ReconciliationResponse {
   summary: ReconciliationSummary;
 }
 
-export async function fetchSalesPreview(fromDate: string, toDate: string): Promise<SalesFetchResponse> {
-  const res = await fetchWithAuth(`/sales?from=${fromDate}&to=${toDate}`);
+export async function fetchInvoicesPreview(
+  type: "sales" | "purchases",
+  fromDate: string,
+  toDate: string
+): Promise<InvoiceFetchResponse> {
+  const res = await fetchWithAuth(`/${type}?from=${fromDate}&to=${toDate}`);
   if (!res.ok) {
     const data = await res.json();
     throw new Error(data.detail || "Failed to load SAP data");
@@ -41,11 +45,15 @@ export async function fetchSalesPreview(fromDate: string, toDate: string): Promi
   return res.json();
 }
 
-export async function uploadSalesCSV(sessionId: string, file: File): Promise<SalesUploadResponse> {
+export async function uploadInvoicesCSV(
+  type: "sales" | "purchases",
+  sessionId: string,
+  file: File
+): Promise<InvoiceUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetchWithAuth(`/sales/upload?session_id=${sessionId}`, {
+  const res = await fetchWithAuth(`/${type}/upload?session_id=${sessionId}`, {
     method: "POST",
     body: formData,
   });
@@ -57,7 +65,7 @@ export async function uploadSalesCSV(sessionId: string, file: File): Promise<Sal
   return res.json();
 }
 
-export async function compareSales(sessionId: string): Promise<ReconciliationResponse> {
+export async function compareInvoices(sessionId: string): Promise<ReconciliationResponse> {
   const res = await fetchWithAuth(`/reconciliation/compare`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -71,12 +79,12 @@ export async function compareSales(sessionId: string): Promise<ReconciliationRes
   return res.json();
 }
 
-export async function fetchSalesInvoicesPage(
+export async function fetchInvoicesPage(
   sessionId: string,
   source: "SAP" | "KRA",
   page: number,
   limit: number
-): Promise<PaginatedResponse<SalesInvoice>> {
+): Promise<PaginatedResponse<Invoice>> {
   const res = await fetchWithAuth(`/sessions/${sessionId}/invoices?source=${source}&page=${page}&limit=${limit}`);
   if (!res.ok) {
     throw new Error("Failed to fetch invoices");

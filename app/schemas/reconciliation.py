@@ -1,6 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel
-from app.schemas.sales import SalesInvoice
+from app.schemas.invoice import Invoice
 
 class ReconciliationStatus(str, Enum):
     MATCH = "Match"
@@ -25,8 +25,8 @@ class Difference(BaseModel):
 
 class ReconciliationResult(BaseModel):
     cu_number: str
-    sap: SalesInvoice | None = None
-    kra: SalesInvoice | None = None
+    sap: Invoice | None = None
+    kra: Invoice | None = None
     status: ReconciliationStatus
     amount_match: bool
     vat_match: bool

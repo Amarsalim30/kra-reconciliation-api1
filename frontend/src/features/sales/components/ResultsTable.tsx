@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
-import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "../types";
+import { Invoice, ReconciliationResult, ReconciliationSummary } from "../types";
 
 interface ResultsTableProps {
   results: ReconciliationResult[];
@@ -113,7 +113,7 @@ export function ResultsTable({
               <tr>
                 <th className="px-4 py-3 font-medium w-10 text-center bg-slate-50"></th>
                 <th className="px-4 py-3 font-medium bg-slate-50">Invoice No</th>
-                <th className="px-4 py-3 font-medium bg-slate-50">Customer No</th>
+                <th className="px-4 py-3 font-medium bg-slate-50">Partner Name</th>
                 <th className="px-4 py-3 font-medium bg-slate-50">Invoice Date</th>
                 <th className="px-4 py-3 font-medium bg-slate-50">CU Number</th>
                 <th className="px-4 py-3 font-medium text-right bg-slate-50">Base Amount</th>
@@ -127,8 +127,8 @@ export function ResultsTable({
                 const isMissingSap = r.status === "Missing in SAP";
                 const isMissingKra = r.status === "Missing in KRA";
                 
-                const sap = r.sap || {} as Partial<SalesInvoice>;
-                const kra = r.kra || {} as Partial<SalesInvoice>;
+                const sap = r.sap || {} as Partial<Invoice>;
+                const kra = r.kra || {} as Partial<Invoice>;
 
                 let remark = r.status;
                 if (r.status === "AMOUNT_MISMATCH") remark = "Amount mismatch";
@@ -162,9 +162,9 @@ export function ResultsTable({
                     
                     <td className="px-4 py-2 truncate max-w-[150px] align-middle">
                       <CompareCell
-                        sapVal={sap.customer_name}
-                        kraVal={kra.customer_name}
-                        isMatch={sap.customer_name === kra.customer_name || isMatch}
+                        sapVal={sap.partner_name}
+                        kraVal={kra.partner_name}
+                        isMatch={sap.partner_name === kra.partner_name || isMatch}
                         isMissingSap={isMissingSap}
                         isMissingKra={isMissingKra}
                       />

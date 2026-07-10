@@ -46,10 +46,10 @@ def map_sap_invoice_to_normalized_records(
         raise SAPQueryError("SAP invoice is missing required field: DocNum")
     invoice_number = str(invoice_number_raw).strip()
 
-    customer_name = raw_invoice.get("CardName")
-    if customer_name is None:
+    partner_name = raw_invoice.get("CardName")
+    if partner_name is None:
         raise SAPQueryError(f"SAP Invoice {invoice_number} is missing required field: CardName")
-    customer_name = str(customer_name).strip()
+    partner_name = str(partner_name).strip()
 
     doc_date_raw = raw_invoice.get("DocDate")
     if doc_date_raw is None:
@@ -135,7 +135,7 @@ def map_sap_invoice_to_normalized_records(
         # Add flat record
         normalized_records.append({
             "pin": pin,
-            "customer_name": customer_name,
+            "partner_name": partner_name,
             "invoice_number": invoice_number,
             "invoice_date": invoice_date,
             "cu_number": cu_number,

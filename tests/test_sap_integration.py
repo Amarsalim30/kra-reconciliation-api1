@@ -7,7 +7,7 @@ import httpx
 from app.core.config import get_settings, BaseAmountPolicy
 from app.core.exceptions import SAPConfigurationError, SAPConnectionError, SAPQueryError
 from app.core.sap_client import SAPClient
-from app.services import sap_service
+from app.services import invoice_service
 from app.services.sap_mapper import map_sap_invoice_to_normalized_records, parse_sap_date
 
 

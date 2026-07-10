@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.database.base import Base
 from app.database.database import get_db
 from app.main import app
-from app.schemas.sales import SalesInvoice, InvoiceSource
+from app.schemas.invoice import Invoice, InvoiceSource
 from app.schemas.reconciliation import ReconciliationStatus, DifferenceField
 from app.services import reconciliation_service
 
@@ -64,78 +64,78 @@ def fixture_auth_headers(client):
 
 # --- Unit Tests for Reconciliation Service ---
 
-def test_reconcile_sales_various_cases():
+def test_reconcile_invoices_various_cases():
     # 1. Setup mock invoices
     # Matches
-    sap_match = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1",
+    sap_match = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
-    kra_match = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1",
+    kra_match = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.KRA
     )
 
     # Amount Mismatch
-    sap_amt_mis = SalesInvoice(
-        pin="P2", customer_name="Cust2", invoice_number="INV2",
+    sap_amt_mis = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
         invoice_date=date(2026, 3, 2), cu_number="CU_AMT", vat_group="16",
         base_amount=Decimal("200.00"), source=InvoiceSource.SAP
     )
-    kra_amt_mis = SalesInvoice(
-        pin="P2", customer_name="Cust2", invoice_number="INV2",
+    kra_amt_mis = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
         invoice_date=date(2026, 3, 2), cu_number="CU_AMT", vat_group="16",
         base_amount=Decimal("250.00"), source=InvoiceSource.KRA
     )
 
     # VAT Mismatch
-    sap_vat_mis = SalesInvoice(
-        pin="P3", customer_name="Cust3", invoice_number="INV3",
+    sap_vat_mis = Invoice(
+        pin="P3", partner_name="Cust3", invoice_number="INV3",
         invoice_date=date(2026, 3, 3), cu_number="CU_VAT", vat_group="16",
         base_amount=Decimal("300.00"), source=InvoiceSource.SAP
     )
-    kra_vat_mis = SalesInvoice(
-        pin="P3", customer_name="Cust3", invoice_number="INV3",
+    kra_vat_mis = Invoice(
+        pin="P3", partner_name="Cust3", invoice_number="INV3",
         invoice_date=date(2026, 3, 3), cu_number="CU_VAT", vat_group="0",
         base_amount=Decimal("300.00"), source=InvoiceSource.KRA
     )
 
     # Date Mismatch
-    sap_date_mis = SalesInvoice(
-        pin="P4", customer_name="Cust4", invoice_number="INV4",
+    sap_date_mis = Invoice(
+        pin="P4", partner_name="Cust4", invoice_number="INV4",
         invoice_date=date(2026, 3, 4), cu_number="CU_DATE", vat_group="16",
         base_amount=Decimal("400.00"), source=InvoiceSource.SAP
     )
-    kra_date_mis = SalesInvoice(
-        pin="P4", customer_name="Cust4", invoice_number="INV4",
+    kra_date_mis = Invoice(
+        pin="P4", partner_name="Cust4", invoice_number="INV4",
         invoice_date=date(2026, 3, 5), cu_number="CU_DATE", vat_group="16",
         base_amount=Decimal("400.00"), source=InvoiceSource.KRA
     )
 
     # Multiple Mismatches (Amount + VAT)
-    sap_multi = SalesInvoice(
-        pin="P5", customer_name="Cust5", invoice_number="INV5",
+    sap_multi = Invoice(
+        pin="P5", partner_name="Cust5", invoice_number="INV5",
         invoice_date=date(2026, 3, 5), cu_number="CU_MULTI", vat_group="16",
         base_amount=Decimal("500.00"), source=InvoiceSource.SAP
     )
-    kra_multi = SalesInvoice(
-        pin="P5", customer_name="Cust5", invoice_number="INV5",
+    kra_multi = Invoice(
+        pin="P5", partner_name="Cust5", invoice_number="INV5",
         invoice_date=date(2026, 3, 5), cu_number="CU_MULTI", vat_group="0",
         base_amount=Decimal("550.00"), source=InvoiceSource.KRA
     )
 
     # Missing in SAP
-    kra_only = SalesInvoice(
-        pin="P6", customer_name="Cust6", invoice_number="INV6",
+    kra_only = Invoice(
+        pin="P6", partner_name="Cust6", invoice_number="INV6",
         invoice_date=date(2026, 3, 6), cu_number="CU_KRA_ONLY", vat_group="16",
         base_amount=Decimal("600.00"), source=InvoiceSource.KRA
     )
 
     # Missing in KRA
-    sap_only = SalesInvoice(
-        pin="P7", customer_name="Cust7", invoice_number="INV7",
+    sap_only = Invoice(
+        pin="P7", partner_name="Cust7", invoice_number="INV7",
         invoice_date=date(2026, 3, 7), cu_number="CU_SAP_ONLY", vat_group="16",
         base_amount=Decimal("700.00"), source=InvoiceSource.SAP
     )
@@ -144,7 +144,7 @@ def test_reconcile_sales_various_cases():
     sap_invoices = [sap_match, sap_amt_mis, sap_vat_mis, sap_date_mis, sap_multi, sap_only]
     kra_invoices = [kra_match, kra_amt_mis, kra_vat_mis, kra_date_mis, kra_multi, kra_only]
 
-    summary, results = reconciliation_service.reconcile_sales(sap_invoices, kra_invoices)
+    summary, results = reconciliation_service.reconcile_invoices(sap_invoices, kra_invoices)
 
     # 3. Assert Summary metrics
     assert summary.total_sap == 6
@@ -218,36 +218,36 @@ def test_reconcile_sales_various_cases():
     assert res_dict["CU_KRA_ONLY"].kra is not None
 
 
-def test_reconcile_sales_resilient_duplicate_cu():
+def test_reconcile_invoices_resilient_duplicate_cu():
     # Test that duplicate CU only flags duplicates and doesn't block others
-    sap_dup1 = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1",
+    sap_dup1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
-    sap_dup2 = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1_ALT",
+    sap_dup2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1_ALT",
         invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
-    sap_match = SalesInvoice(
-        pin="P2", customer_name="Cust2", invoice_number="INV2",
+    sap_match = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
         invoice_date=date(2026, 3, 2), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("200.00"), source=InvoiceSource.SAP
     )
     
-    kra_dup = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1",
+    kra_dup = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.KRA
     )
-    kra_match = SalesInvoice(
-        pin="P2", customer_name="Cust2", invoice_number="INV2",
+    kra_match = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
         invoice_date=date(2026, 3, 2), cu_number="CU_MATCH", vat_group="16",
         base_amount=Decimal("200.00"), source=InvoiceSource.KRA
     )
 
-    summary, results = reconciliation_service.reconcile_sales(
+    summary, results = reconciliation_service.reconcile_invoices(
         [sap_dup1, sap_dup2, sap_match],
         [kra_dup, kra_match]
     )
@@ -263,14 +263,14 @@ def test_reconcile_sales_resilient_duplicate_cu():
     assert res_dict["CU_DUP"].status == ReconciliationStatus.DUPLICATE_CU
 
 
-def test_reconcile_sales_empty_sources():
+def test_reconcile_invoices_empty_sources():
     # Empty SAP, non-empty KRA
-    kra_inv = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1",
+    kra_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.KRA
     )
-    summary, results = reconciliation_service.reconcile_sales([], [kra_inv])
+    summary, results = reconciliation_service.reconcile_invoices([], [kra_inv])
     assert summary.total_sap == 0
     assert summary.total_kra == 1
     assert summary.matches == 0
@@ -278,12 +278,12 @@ def test_reconcile_sales_empty_sources():
     assert summary.completion_percentage == 100.0 # Formula handles total_sap == 0 as 100%
 
     # Non-empty SAP, empty KRA
-    sap_inv = SalesInvoice(
-        pin="P1", customer_name="Cust1", invoice_number="INV1",
+    sap_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
         base_amount=Decimal("100.00"), source=InvoiceSource.SAP
     )
-    summary, results = reconciliation_service.reconcile_sales([sap_inv], [])
+    summary, results = reconciliation_service.reconcile_invoices([sap_inv], [])
     assert summary.total_sap == 1
     assert summary.total_kra == 0
     assert summary.matches == 0

@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 def normalize_invoice_data(
     pin: str | None,
-    customer_name: str | None,
+    partner_name: str | None,
     invoice_number: str | None,
     invoice_date: str | date | datetime | None,
     cu_number: str | None,
@@ -12,17 +12,17 @@ def normalize_invoice_data(
     allow_negative: bool = False
 ) -> dict:
     """
-    Normalizes raw sales invoice fields and returns a dictionary matching SalesInvoice structure.
+    Normalizes raw invoice fields and returns a dictionary matching the Invoice structure.
     Raises ValueError for fields that cannot be normalized.
     """
     # 1. PIN (Allow empty string as fallback)
     norm_pin = "" if pin is None else str(pin).strip()
 
-    # 2. Customer Name
-    if customer_name is None:
-        raise ValueError("Customer Name is required")
-    norm_customer_name = str(customer_name).strip()
-    if not norm_customer_name:
+    # 2. Partner Name
+    if partner_name is None:
+        raise ValueError("Customer Name is required")  # Keep exception message for KRA CSV validation compatibility if needed, but let's change to Partner Name or keep it as is
+    norm_partner_name = str(partner_name).strip()
+    if not norm_partner_name:
         raise ValueError("Customer Name cannot be empty")
 
     # 3. Invoice Number
@@ -84,7 +84,7 @@ def normalize_invoice_data(
 
     return {
         "pin": norm_pin,
-        "customer_name": norm_customer_name,
+        "partner_name": norm_partner_name,
         "invoice_number": norm_invoice_number,
         "invoice_date": norm_date,
         "cu_number": norm_cu,

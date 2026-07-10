@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { SalesInvoice } from "../types";
+import { Invoice } from "../types";
 
 interface InvoiceTableProps {
   title: string;
-  data: SalesInvoice[];
+  data: Invoice[];
   hasMore?: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
@@ -53,7 +53,7 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider border-b border-slate-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
             <tr>
               <th className="px-4 py-3 font-medium bg-slate-50">Invoice No</th>
-              <th className="px-4 py-3 font-medium bg-slate-50">Customer No</th>
+              <th className="px-4 py-3 font-medium bg-slate-50">Partner Name</th>
               <th className="px-4 py-3 font-medium bg-slate-50">Invoice Date</th>
               <th className="px-4 py-3 font-medium bg-slate-50">CU Number</th>
               <th className="px-4 py-3 font-medium text-right bg-slate-50">Base Amount</th>
@@ -72,8 +72,8 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
                 {data.map((inv, idx) => (
                   <tr key={`${inv.invoice_number}-${idx}`} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-2 font-mono text-slate-700">{inv.invoice_number}</td>
-                    <td className="px-4 py-2 text-slate-700 truncate max-w-[200px]" title={inv.customer_name}>
-                      {inv.customer_name}
+                    <td className="px-4 py-2 text-slate-700 truncate max-w-[200px]" title={inv.partner_name}>
+                      {inv.partner_name}
                     </td>
                     <td className="px-4 py-2 text-slate-700">{inv.invoice_date}</td>
                     <td className="px-4 py-2 font-mono text-slate-700">{inv.cu_number}</td>

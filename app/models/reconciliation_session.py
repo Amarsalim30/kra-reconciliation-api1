@@ -5,8 +5,9 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, Date, Enum, Numeri
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
-from app.schemas.sales import InvoiceSource
+from app.schemas.invoice import InvoiceSource, ReconciliationType
 from app.schemas.reconciliation import ReconciliationStatus
+
 
 class ReconciliationSession(Base):
     __tablename__ = "reconciliation_sessions"
@@ -17,6 +18,11 @@ class ReconciliationSession(Base):
     to_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_compared: Mapped[bool] = mapped_column(default=False, nullable=False)
     comparison_results: Mapped[dict | None] = mapped_column(JSON, nullable=True) # kept as JSON to preserve schema
+    session_type: Mapped[ReconciliationType] = mapped_column(
+        Enum(ReconciliationType, native_enum=False),
+        default=ReconciliationType.SALES,
+        nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     last_accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -28,6 +34,7 @@ class ReconciliationSession(Base):
         "SessionReconciliationResult", back_populates="session", cascade="all, delete-orphan"
     )
 
+
 class SessionInvoice(Base):
     __tablename__ = "session_invoices"
 
@@ -36,7 +43,7 @@ class SessionInvoice(Base):
     row_number: Mapped[int] = mapped_column(Integer, nullable=False)
     source: Mapped[InvoiceSource] = mapped_column(Enum(InvoiceSource, native_enum=False), nullable=False)
     pin: Mapped[str] = mapped_column(String(100), nullable=False)
-    customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    partner_name: Mapped[str] = mapped_column(String(255), nullable=False)
     invoice_number: Mapped[str] = mapped_column(String(100), nullable=False)
     invoice_date: Mapped[date] = mapped_column(Date, nullable=False)
     cu_number: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -52,6 +59,7 @@ class SessionInvoice(Base):
         Index("ix_session_invoices_session_cu", "session_id", "cu_number"),
     )
 
+
 class SessionReconciliationResult(Base):
     __tablename__ = "session_reconciliation_results"
 
@@ -66,14 +74,14 @@ class SessionReconciliationResult(Base):
 
     # Snapshot values for SAP
     sap_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    sap_customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sap_partner_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sap_invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sap_base_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     sap_vat_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Snapshot values for KRA
     kra_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    kra_customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    kra_partner_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     kra_invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     kra_base_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     kra_vat_group: Mapped[str | None] = mapped_column(String(50), nullable=True)

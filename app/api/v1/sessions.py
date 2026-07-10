@@ -9,10 +9,8 @@ from app.core.dependencies import get_current_user, get_active_session
 from app.database.database import get_db
 from app.models.user import User
 from app.models.reconciliation_session import SessionInvoice, SessionReconciliationResult
-from app.schemas.sales import InvoiceSource, SalesInvoice
-from app.schemas.reconciliation import ReconciliationResult
-from app.schemas.sales import PaginatedInvoicesResponse
-from app.schemas.reconciliation import PaginatedReconciliationResultsResponse
+from app.schemas.invoice import InvoiceSource, Invoice, PaginatedInvoicesResponse
+from app.schemas.reconciliation import ReconciliationResult, PaginatedReconciliationResultsResponse
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -47,9 +45,9 @@ def get_session_invoices(
     ).order_by(SessionInvoice.row_number).offset(offset).limit(limit).all()
 
     invoices = [
-        SalesInvoice(
+        Invoice(
             pin=i.pin,
-            customer_name=i.customer_name,
+            partner_name=i.partner_name,
             invoice_number=i.invoice_number,
             invoice_date=i.invoice_date,
             cu_number=i.cu_number,
@@ -107,26 +105,26 @@ def get_session_reconciliation_results(
     for r in db_results:
         sap_invoice = None
         if r.sap_invoice_number:
-            sap_invoice = SalesInvoice(
-                pin=session.invoices[0].pin if session.invoices else "", # or r.pin if denormalized, but let's provide safe values
-                customer_name=r.sap_customer_name or "",
+            sap_invoice = Invoice(
+                pin=session.invoices[0].pin if session.invoices else "",
+                partner_name=r.sap_partner_name or "",
                 invoice_number=r.sap_invoice_number,
                 invoice_date=r.sap_invoice_date or date.today(),
                 cu_number=r.cu_number,
-                vat_group=r.sap_vat_group or 0,
+                vat_group=r.sap_vat_group or "0",
                 base_amount=r.sap_base_amount or Decimal("0.00"),
                 source=InvoiceSource.SAP
             )
             
         kra_invoice = None
         if r.kra_invoice_number:
-            kra_invoice = SalesInvoice(
+            kra_invoice = Invoice(
                 pin=session.invoices[0].pin if session.invoices else "",
-                customer_name=r.kra_customer_name or "",
+                partner_name=r.kra_partner_name or "",
                 invoice_number=r.kra_invoice_number,
                 invoice_date=r.kra_invoice_date or date.today(),
                 cu_number=r.cu_number,
-                vat_group=r.kra_vat_group or 0,
+                vat_group=r.kra_vat_group or "0",
                 base_amount=r.kra_base_amount or Decimal("0.00"),
                 source=InvoiceSource.KRA
             )

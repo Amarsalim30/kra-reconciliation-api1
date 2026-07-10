@@ -5,7 +5,7 @@ from app.core.dependencies import get_current_user, get_active_session
 from app.database.database import get_db
 from app.models.user import User
 from app.models.reconciliation_session import SessionReconciliationResult
-from app.schemas.sales import SalesInvoice, InvoiceSource
+from app.schemas.invoice import Invoice, InvoiceSource
 from app.schemas.reconciliation import ReconciliationCompareRequest, ReconciliationResponse
 from app.services import reconciliation_service
 
@@ -32,13 +32,13 @@ def compare_session_invoices(
             summary=session.comparison_results["summary"]
         )
 
-    # 3. Retrieve session invoices and build SalesInvoice domain lists
+    # 3. Retrieve session invoices and build Invoice domain lists
     invoices = session.invoices
     
     sap_invoices = [
-        SalesInvoice(
+        Invoice(
             pin=i.pin,
-            customer_name=i.customer_name,
+            partner_name=i.partner_name,
             invoice_number=i.invoice_number,
             invoice_date=i.invoice_date,
             cu_number=i.cu_number,
@@ -50,9 +50,9 @@ def compare_session_invoices(
     ]
     
     kra_invoices = [
-        SalesInvoice(
+        Invoice(
             pin=i.pin,
-            customer_name=i.customer_name,
+            partner_name=i.partner_name,
             invoice_number=i.invoice_number,
             invoice_date=i.invoice_date,
             cu_number=i.cu_number,
@@ -72,7 +72,7 @@ def compare_session_invoices(
 
     # 4. Run reconciliation match algorithm inside single database transaction context
     try:
-        summary, results = reconciliation_service.reconcile_sales(sap_invoices, kra_invoices)
+        summary, results = reconciliation_service.reconcile_invoices(sap_invoices, kra_invoices)
         
         # Clear any stale results for this session (if run again somehow)
         db.query(SessionReconciliationResult).filter(
@@ -91,13 +91,13 @@ def compare_session_invoices(
                 date_match=r.date_match,
                 
                 sap_invoice_number=r.sap.invoice_number if r.sap else None,
-                sap_customer_name=r.sap.customer_name if r.sap else None,
+                sap_partner_name=r.sap.partner_name if r.sap else None,
                 sap_invoice_date=r.sap.invoice_date if r.sap else None,
                 sap_base_amount=r.sap.base_amount if r.sap else None,
                 sap_vat_group=r.sap.vat_group if r.sap else None,
                 
                 kra_invoice_number=r.kra.invoice_number if r.kra else None,
-                kra_customer_name=r.kra.customer_name if r.kra else None,
+                kra_partner_name=r.kra.partner_name if r.kra else None,
                 kra_invoice_date=r.kra.invoice_date if r.kra else None,
                 kra_base_amount=r.kra.base_amount if r.kra else None,
                 kra_vat_group=r.kra.vat_group if r.kra else None,

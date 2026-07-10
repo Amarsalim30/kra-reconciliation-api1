@@ -6,6 +6,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.exceptions import SAPConnectionError, SAPQueryError
+from app.schemas.invoice import ReconciliationType
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,11 @@ class SAPClient:
     Handles Login authentication, dynamic session cookie caching, proactive session renewal,
     transient failure retries with exponential backoff, and OData pagination.
     """
+
+    ENDPOINT_MAP = {
+        ReconciliationType.SALES: "Invoices",
+        ReconciliationType.PURCHASES: "PurchaseInvoices"
+    }
 
     def __init__(self):
         settings = get_settings()
@@ -129,10 +135,10 @@ class SAPClient:
         raise SAPConnectionError(f"SAP Service Layer returned transient error after {attempts} attempts.")
 
     def get_invoices_pages(
-        self, from_date: str, to_date: str, reconciliation_session_id: str = "N/A"
+        self, from_date: str, to_date: str, reconciliation_type: ReconciliationType = ReconciliationType.SALES, reconciliation_session_id: str = "N/A"
     ) -> Generator[List[Dict[str, Any]], None, None]:
         """
-        Fetches Sales Invoices page-by-page from /Invoices filtered by date range.
+        Fetches Invoices (Sales or Purchases) page-by-page from Service Layer filtered by date range.
         Traverses @odata.nextLink exactly as returned by SAP.
         Yields raw invoice lists (pages) to keep memory footprint low.
         """
@@ -146,12 +152,13 @@ class SAPClient:
         select_str = "FederalTaxID,CardName,DocNum,DocDate,U_CUINV,DocumentLines"
         params_with_select = {**params, "$select": select_str}
 
-        url = f"{self.base_url}/Invoices"
+        endpoint = self.ENDPOINT_MAP.get(reconciliation_type, "Invoices")
+        url = f"{self.base_url}/{endpoint}"
         next_url = url
         use_select = True
 
         logger.info(
-            f"[ReconciliationSession: {reconciliation_session_id}] Fetching invoices from SAP for range {from_date} to {to_date}"
+            f"[ReconciliationSession: {reconciliation_session_id}] Fetching {reconciliation_type.name} from SAP for range {from_date} to {to_date}"
         )
 
         while next_url:

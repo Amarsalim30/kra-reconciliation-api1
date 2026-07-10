@@ -9,8 +9,8 @@ from app.database.base import Base
 from app.database.database import get_db
 from app.main import app
 from app.services.normalization import normalize_invoice_data
-from app.services import sap_service, kra_service
-from app.schemas.sales import SalesInvoice
+from app.services import invoice_service, kra_service
+from app.schemas.invoice import Invoice
 
 # Setup test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_sales_db.db"
@@ -67,7 +67,7 @@ def fixture_auth_headers(client):
 def test_normalization_success():
     res = normalize_invoice_data(
         pin="  P051393568M  ",
-        customer_name="  Autoports Freight Terminals Limited  ",
+        partner_name="  Autoports Freight Terminals Limited  ",
         invoice_number="  IN1080  ",
         invoice_date="02/03/2026",
         cu_number="  |0190439340000000455  ",
@@ -75,7 +75,7 @@ def test_normalization_success():
         base_amount=" 1118894.84 "
     )
     assert res["pin"] == "P051393568M"
-    assert res["customer_name"] == "Autoports Freight Terminals Limited"
+    assert res["partner_name"] == "Autoports Freight Terminals Limited"
     assert res["invoice_number"] == "IN1080"
     assert res["invoice_date"] == date(2026, 3, 2)
     assert res["cu_number"] == "0190439340000000455"
@@ -86,7 +86,7 @@ def test_normalization_success():
 def test_normalization_iso_date_success():
     res = normalize_invoice_data(
         pin="P051393568M",
-        customer_name="Autoports",
+        partner_name="Autoports",
         invoice_number="IN1080",
         invoice_date="2026-03-02",
         cu_number="|0190439340000000455",
@@ -128,13 +128,13 @@ def test_normalization_invalid_types():
 
 # --- Service Tests ---
 
-def test_sap_service_date_range_filtering():
-    # March 1st to March 31st 2026
-    invoices = sap_service.get_sales_invoices(date(2026, 3, 1), date(2026, 3, 31))
+def test_invoice_service_date_range_filtering():
+    # March 1st to March 30th 2026
+    invoices = invoice_service.get_invoices(date(2026, 3, 1), date(2026, 3, 30))
     assert len(invoices) == 5
     # Verify April invoice is not returned
     for inv in invoices:
-        assert date(2026, 3, 1) <= inv.invoice_date <= date(2026, 3, 31)
+        assert date(2026, 3, 1) <= inv.invoice_date <= date(2026, 3, 30)
         assert not inv.cu_number.startswith("|")
         assert type(inv.base_amount) is Decimal
 
