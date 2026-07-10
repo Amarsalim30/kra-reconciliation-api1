@@ -1,64 +1,162 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { getToken, removeToken } from "@/lib/api";
+import { useReconciliation } from "@/hooks/useReconciliation";
+import { InvoiceTable } from "@/components/InvoiceTable";
+import { ResultsTable } from "@/components/ResultsTable";
+import { LogOut } from "lucide-react";
+
+export default function ReconciliationDashboard() {
+  const router = useRouter();
+  
+  const {
+    fromDate,
+    setFromDate,
+    toDate,
+    setToDate,
+    fileName,
+    fileInputRef,
+    sapInvoices,
+    kraInvoices,
+    results,
+    summary,
+    loadingSap,
+    loadingKra,
+    loadingCompare,
+    error,
+    handleLoadSap,
+    handleFileUpload,
+    handleCompare,
+    resetState
+  } = useReconciliation();
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.push("/login");
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    removeToken();
+    resetState();
+    router.push("/login");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+        <h1 className="text-xl font-semibold text-slate-800 tracking-tight">
+          KRA-SAP Reconciliation Bridge
+        </h1>
+        <button 
+          onClick={handleLogout}
+          className="text-slate-500 hover:text-slate-700 flex items-center gap-2 text-sm font-medium transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
+      </header>
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-8 flex flex-col gap-8">
+        
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Filters Section */}
+        <section className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-wrap gap-6 items-end">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">From Date</label>
+            <input 
+              type="date" 
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">To Date</label>
+            <input 
+              type="date" 
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+          </div>
+
+          <button 
+            onClick={handleLoadSap}
+            disabled={loadingSap}
+            className="bg-slate-900 text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-slate-800 transition-colors disabled:opacity-50"
           >
-            Documentation
-          </a>
-        </div>
+            {loadingSap ? "Loading..." : "Load SAP"}
+          </button>
+
+          <div className="flex-1"></div>
+
+          <div className="flex flex-col gap-1.5 relative">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">KRA Data</label>
+            <div className="flex items-center gap-3">
+              <input 
+                type="file" 
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                disabled={!sapInvoices.length || loadingKra}
+                className="hidden"
+                id="csv-upload"
+              />
+              <label 
+                htmlFor="csv-upload"
+                className={`px-5 py-2 rounded-md font-medium text-sm border transition-colors flex items-center justify-center cursor-pointer
+                  ${!sapInvoices.length ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}
+                `}
+              >
+                {loadingKra ? "Uploading..." : "Upload KRA CSV"}
+              </label>
+              {fileName && <span className="text-sm text-slate-500 truncate max-w-[200px]">{fileName}</span>}
+            </div>
+          </div>
+        </section>
+
+        {/* Previews */}
+        {sapInvoices.length > 0 && (
+          <section className="flex flex-col gap-8">
+            <InvoiceTable title="SAP Sales Preview" data={sapInvoices} />
+            
+            {kraInvoices.length > 0 && (
+              <InvoiceTable title="KRA Sales Preview" data={kraInvoices} />
+            )}
+          </section>
+        )}
+
+        {/* Compare Action */}
+        {sapInvoices.length > 0 && kraInvoices.length > 0 && (
+          <div className="flex justify-center">
+            <button
+              onClick={handleCompare}
+              disabled={loadingCompare}
+              className="bg-blue-600 text-white px-8 py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 text-base"
+            >
+              {loadingCompare ? "Comparing..." : "Compare"}
+            </button>
+          </div>
+        )}
+
+        {/* Results */}
+        {results.length > 0 && (
+          <section className="pb-16">
+            <ResultsTable results={results} summary={summary} />
+          </section>
+        )}
+
       </main>
     </div>
   );
