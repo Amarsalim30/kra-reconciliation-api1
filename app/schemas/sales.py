@@ -1,6 +1,11 @@
 from datetime import date
 from decimal import Decimal
+from enum import Enum
 from pydantic import BaseModel, field_serializer
+
+class InvoiceSource(str, Enum):
+    SAP = "SAP"
+    KRA = "KRA"
 
 class SalesInvoice(BaseModel):
     pin: str
@@ -10,12 +15,14 @@ class SalesInvoice(BaseModel):
     cu_number: str
     vat_group: int
     base_amount: Decimal
+    source: InvoiceSource
 
     @field_serializer("base_amount")
     def serialize_base_amount(self, base_amount: Decimal) -> float:
         return float(base_amount)
 
 class SalesFetchResponse(BaseModel):
+    session_id: str
     source: str
     count: int
     from_date: date
@@ -28,6 +35,7 @@ class CSVValidationErrorDetail(BaseModel):
     message: str
 
 class SalesUploadResponse(BaseModel):
+    session_id: str = ""
     filename: str
     rows: int
     parsed: int

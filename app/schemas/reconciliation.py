@@ -1,0 +1,59 @@
+from enum import Enum
+from pydantic import BaseModel
+from app.schemas.sales import SalesInvoice
+
+class ReconciliationStatus(str, Enum):
+    MATCH = "Match"
+    MISSING_IN_SAP = "Missing in SAP"
+    MISSING_IN_KRA = "Missing in KRA"
+    AMOUNT_MISMATCH = "Amount Mismatch"
+    VAT_MISMATCH = "VAT Mismatch"
+    DATE_MISMATCH = "Date Mismatch"
+    MULTIPLE_MISMATCHES = "Multiple Mismatches"
+    DUPLICATE_CU = "Duplicate CU"
+
+class DifferenceField(str, Enum):
+    BASE_AMOUNT = "base_amount"
+    VAT_GROUP = "vat_group"
+    INVOICE_DATE = "invoice_date"
+
+class Difference(BaseModel):
+    field: DifferenceField
+    match: bool
+    sap_value: str
+    kra_value: str
+
+class ReconciliationResult(BaseModel):
+    cu_number: str
+    sap: SalesInvoice | None = None
+    kra: SalesInvoice | None = None
+    status: ReconciliationStatus
+    amount_match: bool
+    vat_match: bool
+    date_match: bool
+    differences: list[Difference]
+
+class MismatchStats(BaseModel):
+    amount: int = 0
+    vat: int = 0
+    date: int = 0
+
+class ReconciliationSummary(BaseModel):
+    total_sap: int
+    total_kra: int
+    matches: int
+    missing_in_sap: int
+    missing_in_kra: int
+    mismatches: int
+    duplicate_cu: int
+    match_percentage: float
+    completion_percentage: float
+    mismatch_stats: MismatchStats
+
+class ReconciliationCompareRequest(BaseModel):
+    session_id: str
+
+class ReconciliationResponse(BaseModel):
+    session_id: str
+    summary: ReconciliationSummary
+    results: list[ReconciliationResult]

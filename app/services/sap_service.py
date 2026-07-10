@@ -30,7 +30,8 @@ def get_sales_invoices(from_date: date, to_date: date) -> list[SalesInvoice]:
                 vat_group=raw_item.get("VAT Group"),
                 base_amount=raw_item.get("Base Amount")
             )
-            invoice = SalesInvoice(**normalized)
+            from app.schemas.sales import InvoiceSource
+            invoice = SalesInvoice(**normalized, source=InvoiceSource.SAP)
             if from_date <= invoice.invoice_date <= to_date:
                 invoices.append(invoice)
         except ValueError:

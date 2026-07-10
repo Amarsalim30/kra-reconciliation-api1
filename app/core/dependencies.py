@@ -58,3 +58,39 @@ def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
             detail="Admin privileges required",
         )
     return current_user
+
+
+def get_active_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> ReconciliationSession:
+    from datetime import datetime, timedelta
+    from app.models.reconciliation_session import ReconciliationSession
+
+    session = db.query(ReconciliationSession).filter(
+        ReconciliationSession.id == session_id,
+        ReconciliationSession.user_id == current_user.id
+    ).first()
+    
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reconciliation session not found."
+        )
+        
+    # Check if expired (> 30 min idle)
+    # Using naive datetime to match model default
+    expiry_time = datetime.utcnow() - timedelta(minutes=30)
+    if session.last_accessed_at.replace(tzinfo=None) < expiry_time:
+        db.delete(session)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session has expired. Please start a new load request."
+        )
+        
+    # Update last accessed time
+    session.last_accessed_at = datetime.utcnow()
+    db.commit()
+    return session

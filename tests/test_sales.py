@@ -172,7 +172,7 @@ def test_parse_kra_csv_aggregate_errors():
     response = kra_service.parse_kra_csv(mock_file)
     assert response.rows == 3
     assert response.parsed == 0
-    assert response.errors_count == 3
+    assert response.errors_count == 4
     
     assert response.errors[0].row == 2
     assert "Invoice Date" in response.errors[0].column
@@ -182,9 +182,15 @@ def test_parse_kra_csv_aggregate_errors():
     assert "VAT Group" in response.errors[1].column
     assert "Invalid VAT Group" in response.errors[1].message
 
+    # Row 4 duplicate errors
+    # Note: CU number error is processed first
     assert response.errors[2].row == 4
-    assert "Invoice Number" in response.errors[2].column
-    assert "Duplicate invoice number" in response.errors[2].message
+    assert "CU Number" in response.errors[2].column
+    assert "Duplicate CU Number" in response.errors[2].message
+
+    assert response.errors[3].row == 4
+    assert "Invoice Number" in response.errors[3].column
+    assert "Duplicate invoice number" in response.errors[3].message
 
 
 # --- Endpoint Integration Tests ---
@@ -207,19 +213,24 @@ def test_get_sales_success(client, auth_headers):
 
 def test_upload_sales_unauthenticated(client):
     files = {"file": ("test.csv", b"some-csv-data", "text/csv")}
-    response = client.post("/api/v1/sales/upload", files=files)
+    response = client.post("/api/v1/sales/upload?session_id=dummy-id", files=files)
     assert response.status_code == 401
 
 
 def test_upload_sales_success(client, auth_headers):
+    # 1. Fetch sales first to generate active session
+    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    session_id = get_res.json()["session_id"]
+
     content = (
         b"Pin Number,Customer Name,Invoice Number,Invoice Date,CU Number,VAT Group,Base Amount\n"
         b"P051393568M,Autoports Freight Terminals Limited,IN1080,02/03/2026,|0190439340000000455,16,1118894.84\n"
     )
     files = {"file": ("SEC_B.csv", content, "text/csv")}
-    response = client.post("/api/v1/sales/upload", headers=auth_headers, files=files)
+    response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 200
     data = response.json()
+    assert data["session_id"] == session_id
     assert data["filename"] == "SEC_B.csv"
     assert data["rows"] == 1
     assert data["parsed"] == 1
@@ -231,14 +242,20 @@ def test_upload_sales_success(client, auth_headers):
 
 
 def test_upload_sales_invalid_file_extension(client, auth_headers):
+    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    session_id = get_res.json()["session_id"]
+
     files = {"file": ("SEC_B.txt", b"some-text", "text/plain")}
-    response = client.post("/api/v1/sales/upload", headers=auth_headers, files=files)
+    response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 400
     assert "Only CSV files are allowed" in response.json()["detail"]
 
 
 def test_upload_sales_empty_file(client, auth_headers):
+    get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-31", headers=auth_headers)
+    session_id = get_res.json()["session_id"]
+
     files = {"file": ("SEC_B.csv", b"", "text/csv")}
-    response = client.post("/api/v1/sales/upload", headers=auth_headers, files=files)
+    response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 400
     assert "Uploaded file is empty" in response.json()["detail"]

@@ -2,7 +2,7 @@ import csv
 import io
 from fastapi import UploadFile, HTTPException, status
 from app.core.config import get_settings
-from app.schemas.sales import SalesInvoice, CSVValidationErrorDetail, SalesUploadResponse
+from app.schemas.sales import SalesInvoice, CSVValidationErrorDetail, SalesUploadResponse, InvoiceSource
 from app.services.normalization import normalize_invoice_data
 
 def parse_kra_csv(file: UploadFile) -> SalesUploadResponse:
@@ -106,6 +106,7 @@ def parse_kra_csv(file: UploadFile) -> SalesUploadResponse:
     invoices: list[SalesInvoice] = []
     errors: list[CSVValidationErrorDetail] = []
     seen_invoices = set()
+    seen_cu_numbers = set()
     total_rows = 0
     
     for row_idx, row in enumerate(reader, start=2):
@@ -131,7 +132,20 @@ def parse_kra_csv(file: UploadFile) -> SalesUploadResponse:
         if row_error_occurred:
             continue
             
+        raw_cu = str(row_values["cu_number"]).strip().lstrip("|").strip()
         inv_num = str(row_values["invoice_number"]).strip()
+        
+        if raw_cu:
+            if raw_cu in seen_cu_numbers:
+                errors.append(CSVValidationErrorDetail(
+                    row=row_idx,
+                    column=headers[field_to_index["cu_number"]],
+                    message=f"Duplicate CU Number '{raw_cu}' found in CSV upload"
+                ))
+                row_error_occurred = True
+            else:
+                seen_cu_numbers.add(raw_cu)
+
         if inv_num:
             if inv_num in seen_invoices:
                 errors.append(CSVValidationErrorDetail(
@@ -139,8 +153,12 @@ def parse_kra_csv(file: UploadFile) -> SalesUploadResponse:
                     column=headers[field_to_index["invoice_number"]],
                     message=f"Duplicate invoice number '{inv_num}' found in CSV upload"
                 ))
-                continue
-            seen_invoices.add(inv_num)
+                row_error_occurred = True
+            else:
+                seen_invoices.add(inv_num)
+
+        if row_error_occurred:
+            continue
             
         try:
             normalized = normalize_invoice_data(
@@ -152,7 +170,7 @@ def parse_kra_csv(file: UploadFile) -> SalesUploadResponse:
                 vat_group=row_values["vat_group"],
                 base_amount=row_values["base_amount"]
             )
-            invoice = SalesInvoice(**normalized)
+            invoice = SalesInvoice(**normalized, source=InvoiceSource.KRA)
             invoices.append(invoice)
         except ValueError as ve:
             msg = str(ve)
