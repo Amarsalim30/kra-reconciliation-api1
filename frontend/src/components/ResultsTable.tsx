@@ -1,11 +1,15 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
 import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "@/types";
 
 interface ResultsTableProps {
   results: ReconciliationResult[];
   summary: ReconciliationSummary | null;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 function CompareCell({
@@ -54,30 +58,67 @@ function CompareCell({
   );
 }
 
-export function ResultsTable({ results, summary }: ResultsTableProps) {
+export function ResultsTable({
+  results,
+  summary,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
+}: ResultsTableProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!onLoadMore || !hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentSentinel = sentinelRef.current;
+    if (currentSentinel) {
+      observer.observe(currentSentinel);
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel);
+      }
+    };
+  }, [onLoadMore, hasMore, isLoadingMore]);
+
   if (!results || results.length === 0) return null;
 
   return (
-    <div className="flex flex-col mt-8">
+    <div className="flex flex-col mt-4">
       {summary && (
-        <div className="mb-4 text-sm font-medium text-slate-700">
-          SAP: {summary.total_sap} | KRA: {summary.total_kra} | Matched: {summary.matches} | Issues: {results.length - summary.matches}
+        <div className="mb-4 text-sm font-medium text-slate-700 flex justify-between items-center">
+          <div>
+            SAP: {summary.total_sap} | KRA: {summary.total_kra} | Matched: {summary.matches} | Issues: {summary.total_sap + summary.total_kra - 2 * summary.matches}
+          </div>
+          <span className="text-xs text-slate-500 font-medium">
+            Showing {results.length} results
+          </span>
         </div>
       )}
       
-      <div className="flex flex-col border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider border-b border-slate-200">
+      <div className="flex flex-col border border-slate-200 bg-white shadow-sm overflow-hidden h-[750px]">
+        <div className="overflow-auto flex-1">
+          <table className="w-full text-sm text-left whitespace-nowrap relative">
+            <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider border-b border-slate-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
               <tr>
-                <th className="px-4 py-3 font-medium w-10 text-center"></th>
-                <th className="px-4 py-3 font-medium">Invoice No</th>
-                <th className="px-4 py-3 font-medium">Customer No</th>
-                <th className="px-4 py-3 font-medium">Invoice Date</th>
-                <th className="px-4 py-3 font-medium">CU Number</th>
-                <th className="px-4 py-3 font-medium text-right">Base Amount</th>
-                <th className="px-4 py-3 font-medium text-right">VAT Group</th>
-                <th className="px-4 py-3 font-medium">Remark</th>
+                <th className="px-4 py-3 font-medium w-10 text-center bg-slate-50"></th>
+                <th className="px-4 py-3 font-medium bg-slate-50">Invoice No</th>
+                <th className="px-4 py-3 font-medium bg-slate-50">Customer No</th>
+                <th className="px-4 py-3 font-medium bg-slate-50">Invoice Date</th>
+                <th className="px-4 py-3 font-medium bg-slate-50">CU Number</th>
+                <th className="px-4 py-3 font-medium text-right bg-slate-50">Base Amount</th>
+                <th className="px-4 py-3 font-medium text-right bg-slate-50">VAT Group</th>
+                <th className="px-4 py-3 font-medium bg-slate-50">Remark</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -170,8 +211,29 @@ export function ResultsTable({ results, summary }: ResultsTableProps) {
                   </tr>
                 );
               })}
+
+              {/* Skeleton Loader Rows */}
+              {isLoadingMore && (
+                <>
+                  {[...Array(3)].map((_, i) => (
+                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-4 mx-auto"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-32"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-28"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-16 ml-auto"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-10 ml-auto"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                    </tr>
+                  ))}
+                </>
+              )}
             </tbody>
           </table>
+          
+          {/* Intersection Sentinel element */}
+          {hasMore && <div ref={sentinelRef} className="h-4 w-full" />}
         </div>
       </div>
     </div>

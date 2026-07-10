@@ -42,3 +42,11 @@ class SalesUploadResponse(BaseModel):
     errors_count: int
     errors: list[CSVValidationErrorDetail]
     invoices: list[SalesInvoice]
+
+class PaginatedInvoicesResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    items: list[SalesInvoice]
+

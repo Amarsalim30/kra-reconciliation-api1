@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "@/types";
+import { usePagination } from "@/hooks/usePagination";
 
 export function useReconciliation() {
   const [fromDate, setFromDate] = useState("");
@@ -11,15 +12,45 @@ export function useReconciliation() {
   
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"preview" | "results">("preview");
-  const [sapInvoices, setSapInvoices] = useState<SalesInvoice[]>([]);
-  const [kraInvoices, setKraInvoices] = useState<SalesInvoice[]>([]);
-  const [results, setResults] = useState<ReconciliationResult[]>([]);
-  const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
 
   const [loadingSap, setLoadingSap] = useState(false);
   const [loadingKra, setLoadingKra] = useState(false);
   const [loadingCompare, setLoadingCompare] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
+
+  // Paginated Fetchers
+  const fetchInvoicesPage = useCallback(async (source: "SAP" | "KRA", page: number, limit: number) => {
+    if (!sessionId) throw new Error("No active session");
+    const res = await fetchWithAuth(`/sessions/${sessionId}/invoices?source=${source}&page=${page}&limit=${limit}`);
+    if (!res.ok) throw new Error("Failed to fetch invoices");
+    return res.json();
+  }, [sessionId]);
+
+  const fetchSapPage = useCallback((page: number, limit: number) => 
+    fetchInvoicesPage("SAP", page, limit), 
+    [fetchInvoicesPage]
+  );
+
+  const fetchKraPage = useCallback((page: number, limit: number) => 
+    fetchInvoicesPage("KRA", page, limit), 
+    [fetchInvoicesPage]
+  );
+
+  const fetchResultsPage = useCallback(async (page: number, limit: number) => {
+    if (!sessionId) throw new Error("No active session");
+    const res = await fetchWithAuth(`/sessions/${sessionId}/results?page=${page}&limit=${limit}`);
+    if (!res.ok) throw new Error("Failed to fetch reconciliation results");
+    return res.json();
+  }, [sessionId]);
+
+  // Hook Instantiations
+  const sapPagination = usePagination<SalesInvoice>(fetchSapPage, { limit: 100, enabled: false });
+  const kraPagination = usePagination<SalesInvoice>(fetchKraPage, { limit: 100, enabled: false });
+  const resultsPagination = usePagination<ReconciliationResult>(fetchResultsPage, {
+    limit: 100,
+    enabled: currentView === "results" && !!sessionId,
+  });
 
   const handleLoadSap = async () => {
     if (!fromDate || !toDate) {
@@ -28,11 +59,11 @@ export function useReconciliation() {
     }
     
     setLoadingSap(true);
-    setCurrentView("preview");
     setError(null);
-    setResults([]);
     setSummary(null);
-    setKraInvoices([]);
+    sapPagination.reset();
+    kraPagination.reset();
+    resultsPagination.reset();
     setFileName("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -47,7 +78,11 @@ export function useReconciliation() {
       
       const data = await res.json();
       setSessionId(data.session_id);
-      setSapInvoices(data.invoices || []);
+      setCurrentView("preview");
+      
+      // Seed Page 1 of SAP preview directly
+      const totalPages = Math.ceil(data.count / 100);
+      sapPagination.reset(data.invoices, data.count, totalPages);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -69,10 +104,10 @@ export function useReconciliation() {
 
     setFileName(file.name);
     setLoadingKra(true);
-    setCurrentView("preview");
     setError(null);
-    setResults([]);
     setSummary(null);
+    kraPagination.reset();
+    resultsPagination.reset();
 
     const formData = new FormData();
     formData.append("file", file);
@@ -89,7 +124,11 @@ export function useReconciliation() {
       }
 
       const data = await res.json();
-      setKraInvoices(data.invoices || []);
+      setCurrentView("preview");
+      
+      // Seed Page 1 of KRA preview directly
+      const totalPages = Math.ceil(data.parsed / 100);
+      kraPagination.reset(data.invoices, data.parsed, totalPages);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -108,6 +147,7 @@ export function useReconciliation() {
     
     setLoadingCompare(true);
     setError(null);
+    resultsPagination.reset();
 
     try {
       const res = await fetchWithAuth(`/reconciliation/compare`, {
@@ -123,7 +163,6 @@ export function useReconciliation() {
 
       const data = await res.json();
       setSummary(data.summary);
-      setResults(data.results);
       setCurrentView("results");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -139,10 +178,10 @@ export function useReconciliation() {
   const resetState = () => {
     setSessionId(null);
     setCurrentView("preview");
-    setSapInvoices([]);
-    setKraInvoices([]);
-    setResults([]);
     setSummary(null);
+    sapPagination.reset();
+    kraPagination.reset();
+    resultsPagination.reset();
     setFileName("");
     setFromDate("");
     setToDate("");
@@ -160,9 +199,6 @@ export function useReconciliation() {
     sessionId,
     currentView,
     setCurrentView,
-    sapInvoices,
-    kraInvoices,
-    results,
     summary,
     loadingSap,
     loadingKra,
@@ -173,5 +209,8 @@ export function useReconciliation() {
     handleFileUpload,
     handleCompare,
     resetState,
+    sapPagination,
+    kraPagination,
+    resultsPagination,
   };
 }

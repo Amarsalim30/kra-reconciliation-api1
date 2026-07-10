@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, get_active_session
 from app.database.database import get_db
 from app.models.user import User
+from app.models.reconciliation_session import SessionReconciliationResult
 from app.schemas.sales import SalesInvoice, InvoiceSource
 from app.schemas.reconciliation import ReconciliationCompareRequest, ReconciliationResponse
 from app.services import reconciliation_service
@@ -26,7 +27,10 @@ def compare_session_invoices(
 
     # 2. Return cached results immediately if comparison has already run
     if session.is_compared and session.comparison_results:
-        return ReconciliationResponse(**session.comparison_results)
+        return ReconciliationResponse(
+            session_id=session.id,
+            summary=session.comparison_results["summary"]
+        )
 
     # 3. Retrieve session invoices and build SalesInvoice domain lists
     invoices = session.invoices
@@ -60,31 +64,62 @@ def compare_session_invoices(
     ]
 
     # Validate that KRA upload has occurred
-    # Even if there are KRA invoices, we ensure it's not empty. (If KRA file uploaded had 0 successfully parsed lines, that is checked here)
     if not kra_invoices:
          raise HTTPException(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail="KRA CSV upload is required before starting reconciliation comparison."
          )
 
-    # 4. Run reconciliation match algorithm inside transaction context
+    # 4. Run reconciliation match algorithm inside single database transaction context
     try:
         summary, results = reconciliation_service.reconcile_sales(sap_invoices, kra_invoices)
-        response = ReconciliationResponse(
-            session_id=session.id,
-            summary=summary,
-            results=results
-        )
         
-        # 5. Persist comparison results to database session
+        # Clear any stale results for this session (if run again somehow)
+        db.query(SessionReconciliationResult).filter(
+            SessionReconciliationResult.session_id == session.id
+        ).delete()
+
+        # Cache results relationally
+        db_results = [
+            SessionReconciliationResult(
+                session_id=session.id,
+                row_number=idx + 1,
+                cu_number=r.cu_number,
+                status=r.status,
+                amount_match=r.amount_match,
+                vat_match=r.vat_match,
+                date_match=r.date_match,
+                
+                sap_invoice_number=r.sap.invoice_number if r.sap else None,
+                sap_customer_name=r.sap.customer_name if r.sap else None,
+                sap_invoice_date=r.sap.invoice_date if r.sap else None,
+                sap_base_amount=r.sap.base_amount if r.sap else None,
+                sap_vat_group=r.sap.vat_group if r.sap else None,
+                
+                kra_invoice_number=r.kra.invoice_number if r.kra else None,
+                kra_customer_name=r.kra.customer_name if r.kra else None,
+                kra_invoice_date=r.kra.invoice_date if r.kra else None,
+                kra_base_amount=r.kra.base_amount if r.kra else None,
+                kra_vat_group=r.kra.vat_group if r.kra else None,
+            )
+            for idx, r in enumerate(results)
+        ]
+        
+        db.add_all(db_results)
+        
+        # Persist comparison summary to session model
         session.is_compared = True
-        session.comparison_results = response.model_dump(mode="json")
+        session.comparison_results = {"summary": summary.model_dump(mode="json")}
+        
         db.commit()
+        
+        return ReconciliationResponse(
+            session_id=session.id,
+            summary=summary
+        )
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Reconciliation engine failed: {str(e)}"
         )
-
-    return response

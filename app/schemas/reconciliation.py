@@ -56,4 +56,12 @@ class ReconciliationCompareRequest(BaseModel):
 class ReconciliationResponse(BaseModel):
     session_id: str
     summary: ReconciliationSummary
-    results: list[ReconciliationResult]
+
+class PaginatedReconciliationResultsResponse(BaseModel):
+    session_id: str
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    items: list[ReconciliationResult]
+

@@ -27,3 +27,12 @@ export interface ReconciliationSummary {
   missing_in_sap: number;
   missing_in_kra: number;
 }
+
+export interface PaginatedResponse<T> {
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  items: T[];
+}
+

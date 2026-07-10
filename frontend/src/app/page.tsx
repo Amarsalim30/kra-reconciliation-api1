@@ -20,9 +20,6 @@ export default function ReconciliationDashboard() {
     fileInputRef,
     currentView,
     setCurrentView,
-    sapInvoices,
-    kraInvoices,
-    results,
     summary,
     loadingSap,
     loadingKra,
@@ -31,7 +28,10 @@ export default function ReconciliationDashboard() {
     handleLoadSap,
     handleFileUpload,
     handleCompare,
-    resetState
+    resetState,
+    sapPagination,
+    kraPagination,
+    resultsPagination,
   } = useReconciliation();
 
   useEffect(() => {
@@ -45,6 +45,10 @@ export default function ReconciliationDashboard() {
     resetState();
     router.push("/login");
   };
+
+  const hasInvoices = sapPagination.items.length > 0;
+  const hasKraInvoices = kraPagination.items.length > 0;
+  const hasResults = resultsPagination.items.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -111,14 +115,14 @@ export default function ReconciliationDashboard() {
                 accept=".csv"
                 ref={fileInputRef}
                 onChange={handleFileUpload}
-                disabled={!sapInvoices.length || loadingKra}
+                disabled={!hasInvoices || loadingKra}
                 className="hidden"
                 id="csv-upload"
               />
               <label 
                 htmlFor="csv-upload"
                 className={`px-5 py-2 rounded-md font-medium text-sm border transition-colors flex items-center justify-center cursor-pointer
-                  ${!sapInvoices.length ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}
+                  ${!hasInvoices ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}
                 `}
               >
                 {loadingKra ? "Uploading..." : "Upload KRA CSV"}
@@ -143,7 +147,7 @@ export default function ReconciliationDashboard() {
               Comparing document numbers, dates, base amounts, and VAT codes between SAP and KRA.
             </p>
           </div>
-        ) : currentView === "results" && results.length > 0 ? (
+        ) : currentView === "results" && (hasResults || resultsPagination.isInitialLoading) ? (
           /* Results Table View */
           <section className="pb-16 flex flex-col gap-4">
             <div className="flex items-center">
@@ -155,22 +159,40 @@ export default function ReconciliationDashboard() {
                 Back to Previews
               </button>
             </div>
-            <ResultsTable results={results} summary={summary} />
+            <ResultsTable 
+              results={resultsPagination.items} 
+              summary={summary} 
+              hasMore={resultsPagination.hasMore}
+              isLoadingMore={resultsPagination.isLoadingMore || resultsPagination.isInitialLoading}
+              onLoadMore={resultsPagination.loadNextPage}
+            />
           </section>
         ) : (
           /* Previews & Compare View */
           <>
-            {sapInvoices.length > 0 && (
-              <section className={kraInvoices.length > 0 ? "grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" : "flex flex-col"}>
-                <InvoiceTable title="SAP Sales Preview" data={sapInvoices} />
+            {hasInvoices && (
+              <section className={hasKraInvoices ? "grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" : "flex flex-col"}>
+                <InvoiceTable 
+                  title="SAP Sales Preview" 
+                  data={sapPagination.items} 
+                  hasMore={sapPagination.hasMore}
+                  isLoadingMore={sapPagination.isLoadingMore}
+                  onLoadMore={sapPagination.loadNextPage}
+                />
                 
-                {kraInvoices.length > 0 && (
-                  <InvoiceTable title="KRA Sales Preview" data={kraInvoices} />
+                {hasKraInvoices && (
+                  <InvoiceTable 
+                    title="KRA Sales Preview" 
+                    data={kraPagination.items} 
+                    hasMore={kraPagination.hasMore}
+                    isLoadingMore={kraPagination.isLoadingMore}
+                    onLoadMore={kraPagination.loadNextPage}
+                  />
                 )}
               </section>
             )}
 
-            {sapInvoices.length > 0 && kraInvoices.length > 0 && (
+            {hasInvoices && hasKraInvoices && (
               <div className="flex justify-center">
                 <button
                   onClick={handleCompare}

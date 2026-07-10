@@ -48,6 +48,7 @@ def get_sales(
     db_invoices = [
         SessionInvoice(
             session_id=session.id,
+            row_number=idx + 1,
             source=inv.source,
             pin=inv.pin,
             customer_name=inv.customer_name,
@@ -57,7 +58,7 @@ def get_sales(
             vat_group=inv.vat_group,
             base_amount=inv.base_amount
         )
-        for inv in invoices
+        for idx, inv in enumerate(invoices)
     ]
     db.add_all(db_invoices)
     db.commit()
@@ -68,8 +69,9 @@ def get_sales(
         count=len(invoices),
         from_date=from_date,
         to_date=to_date,
-        invoices=invoices
+        invoices=invoices[:100]
     )
+
 
 
 @router.post("/upload", response_model=SalesUploadResponse)
@@ -99,6 +101,7 @@ def upload_sales_csv(
         db_invoices = [
             SessionInvoice(
                 session_id=session.id,
+                row_number=idx + 1,
                 source=inv.source,
                 pin=inv.pin,
                 customer_name=inv.customer_name,
@@ -108,11 +111,13 @@ def upload_sales_csv(
                 vat_group=inv.vat_group,
                 base_amount=inv.base_amount
             )
-            for inv in upload_res.invoices
+            for idx, inv in enumerate(upload_res.invoices)
         ]
         db.add_all(db_invoices)
         db.commit()
 
     # Make sure session_id is returned
     upload_res.session_id = session.id
+    upload_res.invoices = upload_res.invoices[:100]
     return upload_res
+
