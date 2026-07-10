@@ -10,6 +10,7 @@ export function useReconciliation() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<"preview" | "results">("preview");
   const [sapInvoices, setSapInvoices] = useState<SalesInvoice[]>([]);
   const [kraInvoices, setKraInvoices] = useState<SalesInvoice[]>([]);
   const [results, setResults] = useState<ReconciliationResult[]>([]);
@@ -27,6 +28,7 @@ export function useReconciliation() {
     }
     
     setLoadingSap(true);
+    setCurrentView("preview");
     setError(null);
     setResults([]);
     setSummary(null);
@@ -67,6 +69,7 @@ export function useReconciliation() {
 
     setFileName(file.name);
     setLoadingKra(true);
+    setCurrentView("preview");
     setError(null);
     setResults([]);
     setSummary(null);
@@ -121,6 +124,7 @@ export function useReconciliation() {
       const data = await res.json();
       setSummary(data.summary);
       setResults(data.results);
+      setCurrentView("results");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -134,6 +138,7 @@ export function useReconciliation() {
 
   const resetState = () => {
     setSessionId(null);
+    setCurrentView("preview");
     setSapInvoices([]);
     setKraInvoices([]);
     setResults([]);
@@ -153,6 +158,8 @@ export function useReconciliation() {
     fileName,
     fileInputRef,
     sessionId,
+    currentView,
+    setCurrentView,
     sapInvoices,
     kraInvoices,
     results,

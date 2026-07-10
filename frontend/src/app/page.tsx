@@ -6,7 +6,7 @@ import { getToken, removeToken } from "@/lib/api";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import { InvoiceTable } from "@/components/InvoiceTable";
 import { ResultsTable } from "@/components/ResultsTable";
-import { LogOut } from "lucide-react";
+import { LogOut, ArrowLeft } from "lucide-react";
 
 export default function ReconciliationDashboard() {
   const router = useRouter();
@@ -18,6 +18,8 @@ export default function ReconciliationDashboard() {
     setToDate,
     fileName,
     fileInputRef,
+    currentView,
+    setCurrentView,
     sapInvoices,
     kraInvoices,
     results,
@@ -126,35 +128,59 @@ export default function ReconciliationDashboard() {
           </div>
         </section>
 
-        {/* Previews */}
-        {sapInvoices.length > 0 && (
-          <section className="flex flex-col gap-8">
-            <InvoiceTable title="SAP Sales Preview" data={sapInvoices} />
-            
-            {kraInvoices.length > 0 && (
-              <InvoiceTable title="KRA Sales Preview" data={kraInvoices} />
-            )}
-          </section>
-        )}
-
-        {/* Compare Action */}
-        {sapInvoices.length > 0 && kraInvoices.length > 0 && (
-          <div className="flex justify-center">
-            <button
-              onClick={handleCompare}
-              disabled={loadingCompare}
-              className="bg-blue-600 text-white px-8 py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 text-base"
-            >
-              {loadingCompare ? "Comparing..." : "Compare"}
-            </button>
+        {/* Dynamic Display Area */}
+        {loadingCompare ? (
+          /* High-quality animated loader */
+          <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg shadow-sm">
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 animate-pulse">
+              Reconciling Invoices...
+            </h3>
+            <p className="text-sm text-slate-500 mt-2 max-w-sm text-center">
+              Comparing document numbers, dates, base amounts, and VAT codes between SAP and KRA.
+            </p>
           </div>
-        )}
-
-        {/* Results */}
-        {results.length > 0 && (
-          <section className="pb-16">
+        ) : currentView === "results" && results.length > 0 ? (
+          /* Results Table View */
+          <section className="pb-16 flex flex-col gap-4">
+            <div className="flex items-center">
+              <button 
+                onClick={() => setCurrentView("preview")}
+                className="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Previews
+              </button>
+            </div>
             <ResultsTable results={results} summary={summary} />
           </section>
+        ) : (
+          /* Previews & Compare View */
+          <>
+            {sapInvoices.length > 0 && (
+              <section className="flex flex-col gap-8">
+                <InvoiceTable title="SAP Sales Preview" data={sapInvoices} />
+                
+                {kraInvoices.length > 0 && (
+                  <InvoiceTable title="KRA Sales Preview" data={kraInvoices} />
+                )}
+              </section>
+            )}
+
+            {sapInvoices.length > 0 && kraInvoices.length > 0 && (
+              <div className="flex justify-center">
+                <button
+                  onClick={handleCompare}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors shadow-sm text-base"
+                >
+                  Compare
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </main>
