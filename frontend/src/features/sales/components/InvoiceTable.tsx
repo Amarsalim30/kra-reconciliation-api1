@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { SalesInvoice } from "@/types";
+import { SalesInvoice } from "../types";
 
 interface InvoiceTableProps {
   title: string;

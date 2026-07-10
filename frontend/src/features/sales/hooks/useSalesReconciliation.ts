@@ -1,9 +1,15 @@
 import { useState, useRef, useCallback } from "react";
-import { fetchWithAuth } from "@/lib/api";
-import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "@/types";
 import { usePagination } from "@/hooks/usePagination";
+import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "../types";
+import {
+  fetchSalesPreview,
+  uploadSalesCSV,
+  compareSales,
+  fetchSalesInvoicesPage,
+  fetchReconciliationResultsPage
+} from "../api/reconciliation";
 
-export function useReconciliation() {
+export function useSalesReconciliation() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [fileName, setFileName] = useState("");
@@ -20,28 +26,19 @@ export function useReconciliation() {
   const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
 
   // Paginated Fetchers
-  const fetchInvoicesPage = useCallback(async (source: "SAP" | "KRA", page: number, limit: number) => {
-    if (!sessionId) throw new Error("No active session");
-    const res = await fetchWithAuth(`/sessions/${sessionId}/invoices?source=${source}&page=${page}&limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to fetch invoices");
-    return res.json();
+  const fetchSapPage = useCallback((page: number, limit: number) => {
+    if (!sessionId) return Promise.reject("No active session");
+    return fetchSalesInvoicesPage(sessionId, "SAP", page, limit);
   }, [sessionId]);
 
-  const fetchSapPage = useCallback((page: number, limit: number) => 
-    fetchInvoicesPage("SAP", page, limit), 
-    [fetchInvoicesPage]
-  );
+  const fetchKraPage = useCallback((page: number, limit: number) => {
+    if (!sessionId) return Promise.reject("No active session");
+    return fetchSalesInvoicesPage(sessionId, "KRA", page, limit);
+  }, [sessionId]);
 
-  const fetchKraPage = useCallback((page: number, limit: number) => 
-    fetchInvoicesPage("KRA", page, limit), 
-    [fetchInvoicesPage]
-  );
-
-  const fetchResultsPage = useCallback(async (page: number, limit: number) => {
-    if (!sessionId) throw new Error("No active session");
-    const res = await fetchWithAuth(`/sessions/${sessionId}/results?page=${page}&limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to fetch reconciliation results");
-    return res.json();
+  const fetchResultsPage = useCallback((page: number, limit: number) => {
+    if (!sessionId) return Promise.reject("No active session");
+    return fetchReconciliationResultsPage(sessionId, page, limit);
   }, [sessionId]);
 
   // Hook Instantiations
@@ -70,13 +67,7 @@ export function useReconciliation() {
     }
 
     try {
-      const res = await fetchWithAuth(`/sales?from=${fromDate}&to=${toDate}`);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Failed to load SAP data");
-      }
-      
-      const data = await res.json();
+      const data = await fetchSalesPreview(fromDate, toDate);
       setSessionId(data.session_id);
       setCurrentView("preview");
       
@@ -109,21 +100,8 @@ export function useReconciliation() {
     kraPagination.reset();
     resultsPagination.reset();
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetchWithAuth(`/sales/upload?session_id=${sessionId}`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Failed to upload KRA CSV");
-      }
-
-      const data = await res.json();
+      const data = await uploadSalesCSV(sessionId, file);
       setCurrentView("preview");
       
       // Seed Page 1 of KRA preview directly
@@ -150,18 +128,7 @@ export function useReconciliation() {
     resultsPagination.reset();
 
     try {
-      const res = await fetchWithAuth(`/reconciliation/compare`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Reconciliation failed");
-      }
-
-      const data = await res.json();
+      const data = await compareSales(sessionId);
       setSummary(data.summary);
       setCurrentView("results");
     } catch (err: unknown) {

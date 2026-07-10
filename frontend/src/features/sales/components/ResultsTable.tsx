@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
-import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "@/types";
+import { SalesInvoice, ReconciliationResult, ReconciliationSummary } from "../types";
 
 interface ResultsTableProps {
   results: ReconciliationResult[];
