@@ -62,7 +62,7 @@ export default function ReconciliationDashboard() {
         </button>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-8 flex flex-col gap-8">
+      <main className="flex-1 w-full px-8 py-8 flex flex-col gap-8">
         
         {/* Error Alert */}
         {error && (
@@ -161,7 +161,7 @@ export default function ReconciliationDashboard() {
           /* Previews & Compare View */
           <>
             {sapInvoices.length > 0 && (
-              <section className="flex flex-col gap-8">
+              <section className={kraInvoices.length > 0 ? "grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" : "flex flex-col"}>
                 <InvoiceTable title="SAP Sales Preview" data={sapInvoices} />
                 
                 {kraInvoices.length > 0 && (
