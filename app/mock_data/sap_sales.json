@@ -52,5 +52,1058 @@
     "CU Number": "|0190439340000000465",
     "VAT Group": 16,
     "Base Amount": "1742083.19"
+  },
+  {
+    "PIN": "P051258944K",
+    "Customer Name": "TECH SOLUTIONS KENYA",
+    "Invoice Number": "IN1086",
+    "Invoice Date": "18/04/2026",
+    "CU Number": "|0190439340000000470",
+    "VAT Group": 16,
+    "Base Amount": 2450000.50
+  },
+  {
+    "PIN": "P051445670R",
+    "Customer Name": "EAST AFRICA LOGISTICS",
+    "Invoice Number": "IN1087",
+    "Invoice Date": "20/04/2026",
+    "CU Number": "|0190439340000000471",
+    "VAT Group": "16.0",
+    "Base Amount": "890450.75"
+  },
+  {
+    "PIN": "P051389201N",
+    "Customer Name": "PREMIER DISTRIBUTION CENTRE",
+    "Invoice Number": "IN1088",
+    "Invoice Date": "22/04/2026",
+    "CU Number": "|0190439340000000472",
+    "VAT Group": 16,
+    "Base Amount": 1567800.25
+  },
+  {
+    "PIN": "P051512334T",
+    "Customer Name": "INNOVATIVE SYSTEMS LIMITED",
+    "Invoice Number": "IN1089",
+    "Invoice Date": "25/04/2026",
+    "CU Number": "|0190439340000000473",
+    "VAT Group": "16",
+    "Base Amount": "3245670.00"
+  },
+  {
+    "PIN": "P051278956P",
+    "Customer Name": "GLOBAL TRADERS NETWORK",
+    "Invoice Number": "IN1090",
+    "Invoice Date": "28/04/2026",
+    "CU Number": "|0190439340000000474",
+    "VAT Group": 0,
+    "Base Amount": 750000
+  },
+  {
+    "PIN": "P051401223Q",
+    "Customer Name": "PREMIER MANUFACTURING CO",
+    "Invoice Number": "IN1091",
+    "Invoice Date": "30/04/2026",
+    "CU Number": "|0190439340000000475",
+    "VAT Group": 16,
+    "Base Amount": "2180000.60"
+  },
+  {
+    "PIN": "P051367895H",
+    "Customer Name": "HORIZON BUSINESS GROUP",
+    "Invoice Number": "IN1092",
+    "Invoice Date": "05/05/2026",
+    "CU Number": "|0190439340000000476",
+    "VAT Group": "16.0",
+    "Base Amount": "1345790.40"
+  },
+  {
+    "PIN": "P051490178S",
+    "Customer Name": "APEX TRADING SOLUTIONS",
+    "Invoice Number": "IN1093",
+    "Invoice Date": "08/05/2026",
+    "CU Number": "|0190439340000000477",
+    "VAT Group": 16,
+    "Base Amount": 2890450.85
+  },
+  {
+    "PIN": "P051256733U",
+    "Customer Name": "STRATEGIC VENTURES LLC",
+    "Invoice Number": "IN1094",
+    "Invoice Date": "10/05/2026",
+    "CU Number": "|0190439340000000478",
+    "VAT Group": "16",
+    "Base Amount": "3567200.15"
+  },
+  {
+    "PIN": "P051423908D",
+    "Customer Name": "ELITE BUSINESS CONSULTANTS",
+    "Invoice Number": "IN1095",
+    "Invoice Date": "12/05/2026",
+    "CU Number": "|0190439340000000479",
+    "VAT Group": 0,
+    "Base Amount": 890000
+  },
+  {
+    "PIN": "P051301456W",
+    "Customer Name": "NATIONAL SUPPLY CHAIN",
+    "Invoice Number": "IN1096",
+    "Invoice Date": "15/05/2026",
+    "CU Number": "|0190439340000000480",
+    "VAT Group": 16,
+    "Base Amount": "4125670.30"
+  },
+  {
+    "PIN": "P051478264F",
+    "Customer Name": "CONTINENTAL TRADE HOUSE",
+    "Invoice Number": "IN1097",
+    "Invoice Date": "18/05/2026",
+    "CU Number": "|0190439340000000481",
+    "VAT Group": "16.0",
+    "Base Amount": "2756890.45"
+  },
+  {
+    "PIN": "P051345892G",
+    "Customer Name": "MERIDIAN ENTERPRISES",
+    "Invoice Number": "IN1098",
+    "Invoice Date": "20/05/2026",
+    "CU Number": "|0190439340000000482",
+    "VAT Group": 16,
+    "Base Amount": 1923400.70
+  },
+  {
+    "PIN": "P051512667B",
+    "Customer Name": "ZENITH INVESTMENT GROUP",
+    "Invoice Number": "IN1099",
+    "Invoice Date": "22/05/2026",
+    "CU Number": "|0190439340000000483",
+    "VAT Group": "16",
+    "Base Amount": "3412300.55"
+  },
+  {
+    "PIN": "P051289034C",
+    "Customer Name": "NEXUS COMMERCIAL LIMITED",
+    "Invoice Number": "IN1100",
+    "Invoice Date": "25/05/2026",
+    "CU Number": "|0190439340000000484",
+    "VAT Group": 0,
+    "Base Amount": 650000
+  },
+  {
+    "PIN": "P051456789E",
+    "Customer Name": "PINNACLE TRADE PARTNERS",
+    "Invoice Number": "IN1101",
+    "Invoice Date": "28/05/2026",
+    "CU Number": "|0190439340000000485",
+    "VAT Group": 16,
+    "Base Amount": "2634500.20"
+  },
+  {
+    "PIN": "P051378901Z",
+    "Customer Name": "CAPITAL MARKETS GROUP",
+    "Invoice Number": "IN1102",
+    "Invoice Date": "30/05/2026",
+    "CU Number": "|0190439340000000486",
+    "VAT Group": "16.0",
+    "Base Amount": "3891200.65"
+  },
+  {
+    "PIN": "P051523456A",
+    "Customer Name": "PREMIUM DISTRIBUTION SYSTEMS",
+    "Invoice Number": "IN1103",
+    "Invoice Date": "02/06/2026",
+    "CU Number": "|0190439340000000487",
+    "VAT Group": 16,
+    "Base Amount": 2178900.40
+  },
+  {
+    "PIN": "P051267890I",
+    "Customer Name": "FORTUNA BUSINESS HOLDINGS",
+    "Invoice Number": "IN1104",
+    "Invoice Date": "05/06/2026",
+    "CU Number": "|0190439340000000488",
+    "VAT Group": "16",
+    "Base Amount": "3756400.10"
+  },
+  {
+    "PIN": "P051434567O",
+    "Customer Name": "SUMMIT TRADE CORPORATION",
+    "Invoice Number": "IN1105",
+    "Invoice Date": "08/06/2026",
+    "CU Number": "|0190439340000000489",
+    "VAT Group": 0,
+    "Base Amount": 920000
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+
+
+
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },
+  {
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
+  },{
+    "PIN": "P051393568M",
+    "Customer Name": "  Autoports Freight Terminals Limited  ",
+    "Invoice Number": "IN1080",
+    "Invoice Date": "02/03/2026",
+    "CU Number": "|0190439340000000455",
+    "VAT Group": "16",
+    "Base Amount": "1118894.84"
   }
 ]
