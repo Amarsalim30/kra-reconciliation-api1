@@ -25,6 +25,21 @@ class Settings(BaseSettings):
     sap_password: SecretStr = Field(default=SecretStr(""), alias="SAP_PASSWORD")
     sap_company_db: str = Field(default="", alias="SAP_COMPANY_DB")
 
+    max_upload_size_mb: int = Field(default=5, alias="MAX_UPLOAD_SIZE_MB")
+    kra_header_mapping: dict[str, str] = Field(
+        default={
+            "pin number": "pin",
+            "pin": "pin",
+            "customer name": "customer_name",
+            "invoice number": "invoice_number",
+            "invoice date": "invoice_date",
+            "cu number": "cu_number",
+            "vat group": "vat_group",
+            "base amount": "base_amount"
+        },
+        alias="KRA_HEADER_MAPPING"
+    )
+
     @field_validator("sap_base_url", mode="before")
     @classmethod
     def empty_str_to_none(cls, v: object) -> object:
