@@ -100,8 +100,8 @@ def test_sap_client_get_invoices_pagination():
         assert mock_exec.call_count == 2
 
 
-def test_sap_mapper_line_flattening():
-    # Test that 1 SAP invoice with 3 lines maps/flattens to exactly 3 canonical records
+def test_sap_mapper_line_aggregation():
+    # Test that 1 SAP invoice with 3 lines of same VAT group aggregates to exactly 1 record
     raw_invoice = {
         "DocNum": 764,
         "CardName": "Welding Alloys Ltd",
@@ -116,18 +116,46 @@ def test_sap_mapper_line_flattening():
     }
 
     records = map_sap_invoice_to_normalized_records(raw_invoice)
-    assert len(records) == 3
+    assert len(records) == 1
     assert records[0]["invoice_number"] == "764"
-    assert records[0]["base_amount"] == Decimal("172005.12")
-    assert records[1]["base_amount"] == Decimal("267563.52")
-    assert records[2]["base_amount"] == Decimal("442400.00")
-    for r in records:
-        assert r["pin"] == "P000609554G"
-        assert r["cu_number"] == "0190439340000000134"
+    assert records[0]["base_amount"] == Decimal("881968.64")
+    assert records[0]["pin"] == "P000609554G"
+    assert records[0]["cu_number"] == "0190439340000000134"
 
 
-def test_sap_mapper_vat_group_preservation():
-    # Test that 1 invoice with 2 lines with different VAT groups preserves those VAT groups
+def test_sap_mapper_aggregation_boundaries():
+    # Test that aggregation never combines lines from different SAP invoices even if they share CU and VAT.
+    invoice_a = {
+        "DocNum": 100,
+        "CardName": "Customer A",
+        "FederalTaxID": "P12345",
+        "DocDate": "2026-03-01T00:00:00Z",
+        "U_CUINV": "CU1",
+        "DocumentLines": [{"VatGroup": "O1", "LineTotal": 100.00}]
+    }
+    invoice_b = {
+        "DocNum": 101,
+        "CardName": "Customer B",
+        "FederalTaxID": "P12345",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "CU1",
+        "DocumentLines": [{"VatGroup": "O1", "LineTotal": 200.00}]
+    }
+
+    records_a = map_sap_invoice_to_normalized_records(invoice_a)
+    records_b = map_sap_invoice_to_normalized_records(invoice_b)
+
+    assert len(records_a) == 1
+    assert records_a[0]["invoice_number"] == "100"
+    assert records_a[0]["base_amount"] == Decimal("100.00")
+
+    assert len(records_b) == 1
+    assert records_b[0]["invoice_number"] == "101"
+    assert records_b[0]["base_amount"] == Decimal("200.00")
+
+
+def test_sap_mapper_vat_group_normalization():
+    # Test that SAP VAT codes are normalized to canonical percentage strings
     raw_invoice = {
         "DocNum": 765,
         "CardName": "Welding Alloys Ltd",
@@ -140,10 +168,10 @@ def test_sap_mapper_vat_group_preservation():
         ]
     }
 
-    records = map_sap_invoice_to_normalized_records(raw_invoice)
+    records = map_sap_invoice_to_normalized_records(raw_invoice, reconciliation_type="sales")
     assert len(records) == 2
-    assert records[0]["vat_group"] == "O1"
-    assert records[1]["vat_group"] == "A16"
+    assert records[0]["vat_group"] == "16"   # O1 -> 16
+    assert records[1]["vat_group"] == "A16"  # unknown code passes through
 
 
 def test_sap_mapper_fallback_warnings():
@@ -197,10 +225,8 @@ def test_sap_mapper_base_amount_policies():
         # 3. ALLOW Policy
         settings.sap_base_amount_policy = BaseAmountPolicy.ALLOW
         records = map_sap_invoice_to_normalized_records(raw_invoice)
-        assert len(records) == 3
-        assert records[0]["base_amount"] == Decimal("100.00")
-        assert records[1]["base_amount"] == Decimal("0.00")
-        assert records[2]["base_amount"] == Decimal("-50.00")
+        assert len(records) == 1
+        assert records[0]["base_amount"] == Decimal("50.00")
     finally:
         settings.sap_base_amount_policy = original_policy
 

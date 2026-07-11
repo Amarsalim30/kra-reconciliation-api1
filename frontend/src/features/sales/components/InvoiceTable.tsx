@@ -11,6 +11,12 @@ interface InvoiceTableProps {
   onLoadMore?: () => void;
 }
 
+const formatVatGroup = (vat?: string) => {
+  if (!vat) return "";
+  const value = vat.trim();
+  return /^\d+(\.\d+)?$/.test(value) ? `${value}%` : value;
+};
+
 export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = false, onLoadMore }: InvoiceTableProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +86,7 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
                     <td className="px-4 py-2 text-right font-mono text-slate-700">
                       {inv.base_amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-2 text-right text-slate-700">{inv.vat_group}%</td>
+                    <td className="px-4 py-2 text-right text-slate-700">{formatVatGroup(inv.vat_group)}</td>
                   </tr>
                 ))}
                 

@@ -15,10 +15,9 @@ def build_summary(
     mismatches = sum(1 for r in rows if r.status in (
         ReconciliationStatus.AMOUNT_MISMATCH,
         ReconciliationStatus.VAT_MISMATCH,
-        ReconciliationStatus.DATE_MISMATCH,
         ReconciliationStatus.MULTIPLE_MISMATCHES,
     ))
-    duplicate_cu = sum(1 for r in rows if r.status == ReconciliationStatus.DUPLICATE_CU)
+    duplicate_cu = sum(1 for r in rows if r.status == ReconciliationStatus.DUPLICATE_SOURCE_KEY)
 
     # total_distinct_cus = total number of unique rows
     total_distinct_cus = len(rows)
@@ -30,15 +29,12 @@ def build_summary(
         if r.status in (
             ReconciliationStatus.AMOUNT_MISMATCH,
             ReconciliationStatus.VAT_MISMATCH,
-            ReconciliationStatus.DATE_MISMATCH,
             ReconciliationStatus.MULTIPLE_MISMATCHES,
         ):
             if not r.amount_match:
                 mismatch_stats.amount += 1
             if not r.vat_match:
                 mismatch_stats.vat += 1
-            if not r.date_match:
-                mismatch_stats.date += 1
 
     return ReconciliationSummary(
         total_sap=total_sap,

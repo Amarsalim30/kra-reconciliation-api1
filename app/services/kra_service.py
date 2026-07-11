@@ -119,8 +119,6 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
 
     invoices: list[Invoice] = []
     errors: list[CSVValidationErrorDetail] = []
-    seen_invoices = set()
-    seen_cu_numbers = set()
     total_rows = 0
 
     for row_idx, row in enumerate(reader, start=2):
@@ -145,31 +143,6 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
 
         if row_error_occurred:
             continue
-
-        raw_cu = str(row_values["cu_number"]).strip().lstrip("|").strip()
-        inv_num = str(row_values["invoice_number"]).strip()
-
-        if raw_cu:
-            if raw_cu in seen_cu_numbers:
-                errors.append(CSVValidationErrorDetail(
-                    row=row_idx,
-                    column=headers[field_to_index["cu_number"]],
-                    message=f"Duplicate CU Number '{raw_cu}' found in CSV upload"
-                ))
-                row_error_occurred = True
-            else:
-                seen_cu_numbers.add(raw_cu)
-
-        if inv_num:
-            if inv_num in seen_invoices:
-                errors.append(CSVValidationErrorDetail(
-                    row=row_idx,
-                    column=headers[field_to_index["invoice_number"]],
-                    message=f"Duplicate invoice number '{inv_num}' found in CSV upload"
-                ))
-                row_error_occurred = True
-            else:
-                seen_invoices.add(inv_num)
 
         if row_error_occurred:
             continue

@@ -102,7 +102,7 @@ def test_reconcile_invoices_various_cases():
         base_amount=Decimal("300.00"), source=InvoiceSource.KRA
     )
 
-    # Date Mismatch
+    # Date Mismatch (now MATCH since date is ignored)
     sap_date_mis = Invoice(
         pin="P4", partner_name="Cust4", invoice_number="INV4",
         invoice_date=date(2026, 3, 4), cu_number="CU_DATE", vat_group="16",
@@ -149,23 +149,21 @@ def test_reconcile_invoices_various_cases():
     # 3. Assert Summary metrics
     assert summary.total_sap == 6
     assert summary.total_kra == 6
-    assert summary.matches == 1
+    assert summary.matches == 2  # CU_MATCH, CU_DATE
     assert summary.missing_in_sap == 1
     assert summary.missing_in_kra == 1
-    assert summary.mismatches == 4
+    assert summary.mismatches == 3  # CU_AMT, CU_VAT, CU_MULTI
     assert summary.duplicate_cu == 0
-    # Match percentage = (matches / total_distinct_cus) * 100
-    # Total distinct cus = MATCH, AMT, VAT, DATE, MULTI, KRA_ONLY, SAP_ONLY = 7
-    # (1 / 7) * 100 = 14.2857%
-    assert round(summary.match_percentage, 2) == 14.29
-    # Completion percentage = (matches / total_sap) * 100
-    # (1 / 6) * 100 = 16.6667%
-    assert round(summary.completion_percentage, 2) == 16.67
+    # Total distinct results in results is 7 (CU_MATCH, CU_AMT, CU_VAT, CU_DATE, CU_MULTI, CU_SAP_ONLY, CU_KRA_ONLY)
+    # (2 / 7) * 100 = 28.5714%
+    assert round(summary.match_percentage, 2) == 28.57
+    # (2 / 6) * 100 = 33.3333%
+    assert round(summary.completion_percentage, 2) == 33.33
 
     # Assert Mismatch stats
     assert summary.mismatch_stats.amount == 2 # AMT, MULTI
     assert summary.mismatch_stats.vat == 2    # VAT, MULTI
-    assert summary.mismatch_stats.date == 1   # DATE
+    assert summary.mismatch_stats.date == 0   # date check removed, should be 0
 
     # 4. Assert individual results
     res_dict = {r.cu_number: r for r in results}
@@ -193,13 +191,10 @@ def test_reconcile_invoices_various_cases():
     assert res_dict["CU_VAT"].differences[0].sap_value == "16"
     assert res_dict["CU_VAT"].differences[0].kra_value == "0"
 
-    # Date mismatch CU
-    assert res_dict["CU_DATE"].status == ReconciliationStatus.DATE_MISMATCH
-    assert res_dict["CU_DATE"].date_match is False
-    assert len(res_dict["CU_DATE"].differences) == 1
-    assert res_dict["CU_DATE"].differences[0].field == DifferenceField.INVOICE_DATE
-    assert res_dict["CU_DATE"].differences[0].sap_value == "2026-03-04"
-    assert res_dict["CU_DATE"].differences[0].kra_value == "2026-03-05"
+    # Date mismatch CU (now MATCH)
+    assert res_dict["CU_DATE"].status == ReconciliationStatus.MATCH
+    assert res_dict["CU_DATE"].date_match is True
+    assert len(res_dict["CU_DATE"].differences) == 0
 
     # Multiple mismatches CU
     assert res_dict["CU_MULTI"].status == ReconciliationStatus.MULTIPLE_MISMATCHES
@@ -255,12 +250,16 @@ def test_reconcile_invoices_resilient_duplicate_cu():
     assert summary.total_sap == 3
     assert summary.total_kra == 2
     assert summary.matches == 1
-    assert summary.duplicate_cu == 1
+    assert summary.duplicate_cu == 2
     assert summary.mismatches == 0
 
-    res_dict = {r.cu_number: r for r in results}
+    res_dict = {r.cu_number: r for r in results if r.status != ReconciliationStatus.DUPLICATE_SOURCE_KEY}
     assert res_dict["CU_MATCH"].status == ReconciliationStatus.MATCH
-    assert res_dict["CU_DUP"].status == ReconciliationStatus.DUPLICATE_CU
+    
+    dup_results = [r for r in results if r.cu_number == "CU_DUP"]
+    # We should have 2 DUPLICATE_SOURCE_KEY from SAP and 1 MISSING_IN_SAP from KRA (since the duplicate side is excluded)
+    assert len([r for r in dup_results if r.status == ReconciliationStatus.DUPLICATE_SOURCE_KEY]) == 2
+    assert len([r for r in dup_results if r.status == ReconciliationStatus.MISSING_IN_SAP]) == 1
 
 
 def test_reconcile_invoices_empty_sources():
@@ -377,3 +376,277 @@ def test_compare_flow_expired_session(client, auth_headers, db_session):
     )
     assert compare_res.status_code == 400
     assert "Session has expired" in compare_res.json()["detail"]
+
+
+def test_reconciliation_exact_match_precedence():
+    # Exact Match Precedence Test Case: verifies that exact composite key match takes precedence over Phase 2 fallback logic.
+    sap_rec = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    kra_rec = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("90.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_rec], [kra_rec])
+    assert summary.matches == 0
+    assert summary.mismatches == 1
+    assert results[0].status == ReconciliationStatus.AMOUNT_MISMATCH
+
+
+def test_reconciliation_duplicate_dominance():
+    # Duplicate Dominance Test Case: verifies that duplicate KRA groups are removed and not "salvaged".
+    sap_rec = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    kra_rec1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra_rec2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_rec], [kra_rec1, kra_rec2])
+    assert summary.duplicate_cu == 2
+    assert summary.missing_in_kra == 1
+    assert len([r for r in results if r.status == ReconciliationStatus.DUPLICATE_SOURCE_KEY]) == 2
+    assert len([r for r in results if r.status == ReconciliationStatus.MISSING_IN_KRA]) == 1
+
+
+def test_reconciliation_mixed_duplicate_ambiguity():
+    # Mixed Duplicate + Ambiguity Test Case: Phase 2 ignores duplicate-excluded keys.
+    sap_dup1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_dup2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_unmatched = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="8",
+        base_amount=Decimal("50.00"), source=InvoiceSource.SAP
+    )
+    kra_dup = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra_unmatched = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
+        base_amount=Decimal("50.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_dup1, sap_dup2, sap_unmatched], [kra_dup, kra_unmatched])
+    # No VAT_MISMATCH pairing should occur because duplicate-excluded MatchKeys (CU1, 16) are excluded,
+    # and Phase 2 doesn't couple them.
+    assert len([r for r in results if r.status == ReconciliationStatus.DUPLICATE_SOURCE_KEY]) == 2
+    assert len([r for r in results if r.status == ReconciliationStatus.MISSING_IN_KRA]) == 1 # sap_unmatched
+    assert len([r for r in results if r.status == ReconciliationStatus.MISSING_IN_SAP]) == 2 # kra_dup and kra_unmatched
+
+
+def test_reconciliation_duplicate_isolation():
+    # Duplicate Isolation Test Case: duplicate on one CU does not affect reconciliation of unrelated CUs
+    sap_dup1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU100", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_dup2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU100", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_valid = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
+        invoice_date=date(2026, 3, 2), cu_number="CU200", vat_group="16",
+        base_amount=Decimal("200.00"), source=InvoiceSource.SAP
+    )
+    kra_valid1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU100", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra_valid2 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
+        invoice_date=date(2026, 3, 2), cu_number="CU200", vat_group="16",
+        base_amount=Decimal("200.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_dup1, sap_dup2, sap_valid], [kra_valid1, kra_valid2])
+    assert summary.matches == 1  # CU200 matches
+    assert summary.duplicate_cu == 2
+    assert summary.missing_in_sap == 1  # CU100 KRA record is missing in SAP because SAP's CU100 is duplicate-excluded
+
+
+def test_reconciliation_duplicate_isolation_within_same_cu():
+    # Duplicate Isolation Within Same CU: duplicates on one MatchKey do not invalidate reconciliation of different MatchKeys in same CU
+    sap_dup1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_dup2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_valid = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
+        base_amount=Decimal("50.00"), source=InvoiceSource.SAP
+    )
+    kra_valid = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
+        base_amount=Decimal("50.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_dup1, sap_dup2, sap_valid], [kra_valid])
+    assert summary.matches == 1  # (CU1, VAT0) matches
+    assert summary.duplicate_cu == 2
+
+
+def test_reconciliation_ambiguity_bypass():
+    # Ambiguity Bypass Test Case: Phase 2 refuses heuristic pairing when multiple candidates remain after successful exact matches.
+    sap_m = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="8",
+        base_amount=Decimal("50.00"), source=InvoiceSource.SAP
+    )
+    sap2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
+        base_amount=Decimal("50.00"), source=InvoiceSource.SAP
+    )
+    kra_m = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="X",
+        base_amount=Decimal("50.00"), source=InvoiceSource.KRA
+    )
+    kra2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="Y",
+        base_amount=Decimal("50.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_m, sap1, sap2], [kra_m, kra1, kra2])
+    assert summary.matches == 1  # VAT16 matches
+    # Since there are multiple unmatched on each side (SAP: VAT8, VAT0; KRA: VATX, VATY), Phase 2 refuses heuristic pairing.
+    assert len([r for r in results if r.status == ReconciliationStatus.MISSING_IN_KRA]) == 2 # VAT8 and VAT0
+    assert len([r for r in results if r.status == ReconciliationStatus.MISSING_IN_SAP]) == 2 # VATX and VATY
+
+
+def test_reconciliation_decimal_normalization():
+    # Decimal Normalization Test Case
+    sap_rec = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.0"), source=InvoiceSource.SAP
+    )
+    kra_rec = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap_rec], [kra_rec])
+    assert summary.matches == 1
+
+
+def test_reconciliation_input_order_independence():
+    # Input Order Independence Test Case
+    sap1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap2 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
+        invoice_date=date(2026, 3, 2), cu_number="CU2", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    kra1 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
+        invoice_date=date(2026, 3, 2), cu_number="CU2", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap1, sap2], [kra1, kra2])
+    assert summary.matches == 2
+
+
+def test_reconciliation_multi_vat_partial_success():
+    # Multi-VAT Partial Success Test Case
+    sap1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
+        base_amount=Decimal("50.00"), source=InvoiceSource.SAP
+    )
+    kra1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
+        base_amount=Decimal("60.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap1, sap2], [kra1, kra2])
+    assert summary.matches == 1
+    assert summary.mismatches == 1
+    res_dict = {r.sap.vat_group if r.sap else r.kra.vat_group: r for r in results}
+    assert res_dict["16"].status == ReconciliationStatus.MATCH
+    assert res_dict["0"].status == ReconciliationStatus.AMOUNT_MISMATCH
+
+
+def test_reconciliation_multiple_invoices_identical_vat():
+    # Multiple Invoices with Identical VAT Layouts Test Case
+    sap1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap2 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
+        invoice_date=date(2026, 3, 2), cu_number="CU2", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    kra1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    kra2 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV2",
+        invoice_date=date(2026, 3, 2), cu_number="CU2", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    summary, results = reconciliation_service.reconcile_invoices([sap1, sap2], [kra1, kra2])
+    assert summary.matches == 2

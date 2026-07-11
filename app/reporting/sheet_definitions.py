@@ -46,12 +46,11 @@ _MATCH_VAT = SheetColumn(header="VAT Match", attr="vat_match", is_bool=True, wid
 _MATCH_DATE = SheetColumn(header="Date Match", attr="date_match", is_bool=True, width=14)
 
 NEEDS_REVIEW_STATUSES = frozenset({
-    ReconciliationStatus.DUPLICATE_CU,
+    ReconciliationStatus.DUPLICATE_SOURCE_KEY,
     ReconciliationStatus.MISSING_IN_SAP,
     ReconciliationStatus.MISSING_IN_KRA,
     ReconciliationStatus.AMOUNT_MISMATCH,
     ReconciliationStatus.VAT_MISMATCH,
-    ReconciliationStatus.DATE_MISMATCH,
     ReconciliationStatus.MULTIPLE_MISMATCHES,
 })
 
@@ -102,16 +101,5 @@ SHEET_DEFINITIONS: tuple[SheetDefinition, ...] = (
             _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
         ),
         statuses=frozenset({ReconciliationStatus.VAT_MISMATCH, ReconciliationStatus.MULTIPLE_MISMATCHES}),
-    ),
-    SheetDefinition(
-        filename="07 Date Mismatches.xlsx",
-        title="Date Mismatches",
-        columns=(
-            _CU_COL, _REMARK_COL,
-            _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
-            _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-            _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
-        ),
-        statuses=frozenset({ReconciliationStatus.DATE_MISMATCH, ReconciliationStatus.MULTIPLE_MISMATCHES}),
     ),
 )

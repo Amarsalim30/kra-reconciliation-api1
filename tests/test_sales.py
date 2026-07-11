@@ -182,8 +182,8 @@ def test_parse_kra_csv_aggregate_errors():
     
     response = kra_service.parse_kra_csv(mock_file)
     assert response.rows == 3
-    assert response.parsed == 0
-    assert response.errors_count == 4
+    assert response.parsed == 1
+    assert response.errors_count == 2
     
     assert response.errors[0].row == 2
     assert "Invoice Date" in response.errors[0].column
@@ -192,16 +192,6 @@ def test_parse_kra_csv_aggregate_errors():
     assert response.errors[1].row == 3
     assert "VAT Group" in response.errors[1].column
     assert "VAT Group is required" in response.errors[1].message
-
-    # Row 4 duplicate errors
-    # Note: CU number error is processed first
-    assert response.errors[2].row == 4
-    assert "CU Number" in response.errors[2].column
-    assert "Duplicate CU Number" in response.errors[2].message
-
-    assert response.errors[3].row == 4
-    assert "Invoice Number" in response.errors[3].column
-    assert "Duplicate invoice number" in response.errors[3].message
 
 
 # --- Endpoint Integration Tests ---

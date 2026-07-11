@@ -25,6 +25,8 @@ class ReconciliationResult(BaseModel):
     vat_match: bool
     date_match: bool
     differences: list[Difference]
+    sap_source_index: int | None = None
+    kra_source_index: int | None = None
 
 class MismatchStats(BaseModel):
     amount: int = 0

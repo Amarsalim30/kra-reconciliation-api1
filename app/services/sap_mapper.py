@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List
 from app.core.config import get_settings, BaseAmountPolicy
 from app.core.exceptions import SAPQueryError
+from app.services.vat_normalizer import vat_normalizer
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,9 @@ def parse_sap_date(date_val: Any) -> datetime.date:
 
 
 def map_sap_invoice_to_normalized_records(
-    raw_invoice: Dict[str, Any], reconciliation_session_id: str = "N/A"
+    raw_invoice: Dict[str, Any],
+    reconciliation_type: str = "sales",
+    reconciliation_session_id: str = "N/A"
 ) -> List[Dict[str, Any]]:
     """
     Flattens a raw SAP Invoice and maps it to a list of canonical NormalizedSalesRecord dict structures.
@@ -82,13 +85,12 @@ def map_sap_invoice_to_normalized_records(
 
     document_lines = raw_invoice.get("DocumentLines", [])
     if not document_lines:
-        # If there are no lines, check if it's a valid empty document. Normally, Service Layer invoices always have lines.
         logger.warning(
             f"[ReconciliationSession: {reconciliation_session_id}] Invoice {invoice_number} has no DocumentLines."
         )
         return []
 
-    normalized_records = []
+    valid_lines = []
     for line_idx, line in enumerate(document_lines):
         # 1. VAT Group
         vat_group = line.get("VatGroup")
@@ -101,6 +103,9 @@ def map_sap_invoice_to_normalized_records(
             raise SAPQueryError(
                 f"SAP Invoice {invoice_number} line {line_idx} has empty VatGroup"
             )
+
+        # Normalize SAP VAT code to canonical percentage string
+        vat_group_str = vat_normalizer.normalize("sap", reconciliation_type, vat_group_str)
 
         # 2. Base Amount (LineTotal)
         line_total_raw = line.get("LineTotal")
@@ -132,7 +137,16 @@ def map_sap_invoice_to_normalized_records(
                 )
             # Under ALLOW, we proceed and include the record
 
-        # Add flat record
+        valid_lines.append((vat_group_str, base_amount))
+
+    # Group by normalized VAT Group and sum LineTotal
+    grouped_totals = {}
+    for vat_group_str, base_amount in valid_lines:
+        grouped_totals[vat_group_str] = grouped_totals.get(vat_group_str, Decimal("0.00")) + base_amount
+
+    # Create normalized records
+    normalized_records = []
+    for vat_group_str, total_amount in grouped_totals.items():
         normalized_records.append({
             "pin": pin,
             "partner_name": partner_name,
@@ -140,7 +154,8 @@ def map_sap_invoice_to_normalized_records(
             "invoice_date": invoice_date,
             "cu_number": cu_number,
             "vat_group": vat_group_str,
-            "base_amount": base_amount.quantize(Decimal("0.01"))
+            "base_amount": total_amount.quantize(Decimal("0.01"))
         })
 
     return normalized_records
+

@@ -4,6 +4,12 @@ import { useEffect, useRef } from "react";
 import { Check, X } from "lucide-react";
 import { Invoice, ReconciliationResult, ReconciliationSummary } from "../types";
 
+const formatVatGroup = (vat?: string) => {
+  if (!vat) return "";
+  const value = vat.trim();
+  return /^\d+(\.\d+)?$/.test(value) ? `${value}%` : value;
+};
+
 interface ResultsTableProps {
   results: ReconciliationResult[];
   summary: ReconciliationSummary | null;
@@ -133,11 +139,10 @@ export function ResultsTable({
                 let remark = r.status;
                 if (r.status === "AMOUNT_MISMATCH") remark = "Amount mismatch";
                 if (r.status === "VAT_MISMATCH") remark = "VAT mismatch";
-                if (r.status === "DATE_MISMATCH") remark = "Date mismatch";
                 if (r.status === "MISSING_IN_SAP") remark = "Missing in SAP";
                 if (r.status === "MISSING_IN_KRA") remark = "Missing in KRA";
                 if (r.status === "MULTIPLE_MISMATCHES") remark = "Multiple mismatches";
-                if (r.status === "DUPLICATE_CU") remark = "Duplicate CU";
+                if (r.status === "DUPLICATE_SOURCE_KEY") remark = "Duplicate MatchKey detected (CU Number + VAT Group)";
                 if (r.status === "MATCH") remark = "Matched";
 
                 return (
@@ -197,8 +202,8 @@ export function ResultsTable({
                     
                     <td className="px-4 py-2 text-right align-middle">
                       <CompareCell
-                        sapVal={sap.vat_group}
-                        kraVal={kra.vat_group}
+                        sapVal={formatVatGroup(sap.vat_group)}
+                        kraVal={formatVatGroup(kra.vat_group)}
                         isMatch={r.vat_match || isMatch}
                         isMissingSap={isMissingSap}
                         isMissingKra={isMissingKra}

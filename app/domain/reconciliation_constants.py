@@ -7,13 +7,12 @@ from app.domain.reconciliation_status import ReconciliationStatus
 # Changing STATUS_ORDER automatically updates STATUS_PRIORITY and SQL sort order.
 # Starting at 1: 0 conventionally means "unspecified" in CASE expressions.
 STATUS_ORDER: tuple[ReconciliationStatus, ...] = (
-    ReconciliationStatus.DUPLICATE_CU,
+    ReconciliationStatus.DUPLICATE_SOURCE_KEY,
     ReconciliationStatus.MISSING_IN_SAP,
     ReconciliationStatus.MISSING_IN_KRA,
     ReconciliationStatus.MULTIPLE_MISMATCHES,
     ReconciliationStatus.AMOUNT_MISMATCH,
     ReconciliationStatus.VAT_MISMATCH,
-    ReconciliationStatus.DATE_MISMATCH,
     ReconciliationStatus.MATCH,
 )
 
@@ -30,11 +29,10 @@ REMARK_MAP: dict[ReconciliationStatus, str] = {
     ReconciliationStatus.MATCH:               "Match",
     ReconciliationStatus.AMOUNT_MISMATCH:     "Amount Mismatch",
     ReconciliationStatus.VAT_MISMATCH:        "VAT Mismatch",
-    ReconciliationStatus.DATE_MISMATCH:       "Date Mismatch",
     ReconciliationStatus.MULTIPLE_MISMATCHES: "Multiple Mismatches",
     ReconciliationStatus.MISSING_IN_SAP:      "Missing in SAP",
     ReconciliationStatus.MISSING_IN_KRA:      "Missing in KRA",
-    ReconciliationStatus.DUPLICATE_CU:        "Duplicate CU",
+    ReconciliationStatus.DUPLICATE_SOURCE_KEY: "Duplicate MatchKey detected (CU Number + VAT Group)",
 }
 
 # ---------------------------------------------------------------------------
@@ -43,5 +41,5 @@ REMARK_MAP: dict[ReconciliationStatus, str] = {
 # STATUS_PRIORITY_VERSION — increment ONLY when STATUS_ORDER changes
 # EXPORT_SCHEMA_VERSION   — increment ONLY when workbook layout or Export.json structure changes
 # REMARK_MAP              — change wording freely; no version tracked
-STATUS_PRIORITY_VERSION: str = "1"
+STATUS_PRIORITY_VERSION: str = "2"
 EXPORT_SCHEMA_VERSION:   str = "1.0"

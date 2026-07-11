@@ -144,8 +144,8 @@ class SAPClient:
         """
         self._ensure_session()
 
-        # OData filter query
-        filter_str = f"DocDate ge '{from_date}' and DocDate le '{to_date}'"
+        # OData filter query — exclude cancelled invoices
+        filter_str = f"DocDate ge '{from_date}' and DocDate le '{to_date}' and Cancelled eq 'tNO'"
         params = {"$filter": filter_str}
 
         # Try optimizing with $select if supported. Falling back if query returns HTTP 400.

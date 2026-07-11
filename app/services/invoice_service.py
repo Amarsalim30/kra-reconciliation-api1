@@ -48,6 +48,7 @@ def get_invoices(
                 # 1. Map/Flatten raw SAP invoice to canonical NormalizedSalesRecord dict structures
                 mapped_records = map_sap_invoice_to_normalized_records(
                     raw_inv,
+                    reconciliation_type=reconciliation_type.value,
                     reconciliation_session_id=reconciliation_session_id
                 )
 

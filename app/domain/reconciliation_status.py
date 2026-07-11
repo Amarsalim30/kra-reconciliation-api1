@@ -8,6 +8,5 @@ class ReconciliationStatus(str, Enum):
     MISSING_IN_KRA      = "Missing in KRA"
     AMOUNT_MISMATCH     = "Amount Mismatch"
     VAT_MISMATCH        = "VAT Mismatch"
-    DATE_MISMATCH       = "Date Mismatch"
     MULTIPLE_MISMATCHES = "Multiple Mismatches"
-    DUPLICATE_CU        = "Duplicate CU"
+    DUPLICATE_SOURCE_KEY = "Duplicate Source Key"
