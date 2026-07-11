@@ -106,7 +106,7 @@ def get_session_reconciliation_results(
         sap_invoice = None
         if r.sap_invoice_number:
             sap_invoice = Invoice(
-                pin=session.invoices[0].pin if session.invoices else "",
+                pin=r.sap_pin or "",
                 partner_name=r.sap_partner_name or "",
                 invoice_number=r.sap_invoice_number,
                 invoice_date=r.sap_invoice_date or date.today(),
@@ -119,7 +119,7 @@ def get_session_reconciliation_results(
         kra_invoice = None
         if r.kra_invoice_number:
             kra_invoice = Invoice(
-                pin=session.invoices[0].pin if session.invoices else "",
+                pin=r.kra_pin or "",
                 partner_name=r.kra_partner_name or "",
                 invoice_number=r.kra_invoice_number,
                 invoice_date=r.kra_invoice_date or date.today(),

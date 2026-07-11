@@ -37,7 +37,7 @@ export function Header() {
     <header className="bg-white border-b border-slate-200 px-8 flex justify-between items-center shadow-sm sticky top-0 z-10 h-16">
       <div className="flex items-center gap-8 h-full">
         <h1 className="text-lg font-bold text-slate-800 tracking-tight shrink-0">
-          KRA-SAP Reconciliation Bridge
+          SAP-KRA Reconciliation Bridge
         </h1>
         <nav className="flex gap-6 h-full">
           <Link

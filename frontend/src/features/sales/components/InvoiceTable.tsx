@@ -58,6 +58,7 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
         <table className="w-full text-sm text-left whitespace-nowrap relative">
           <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider border-b border-slate-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
             <tr>
+              <th className="px-4 py-3 font-medium bg-slate-50">PIN</th>
               <th className="px-4 py-3 font-medium bg-slate-50">Invoice No</th>
               <th className="px-4 py-3 font-medium bg-slate-50">Partner Name</th>
               <th className="px-4 py-3 font-medium bg-slate-50">Invoice Date</th>
@@ -69,7 +70,7 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
           <tbody className="divide-y divide-slate-100">
             {data.length === 0 && !isLoadingMore ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                   No records available
                 </td>
               </tr>
@@ -77,6 +78,7 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
               <>
                 {data.map((inv, idx) => (
                   <tr key={`${inv.invoice_number}-${idx}`} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-2 font-mono text-slate-700">{inv.pin || <span className="text-slate-400">-</span>}</td>
                     <td className="px-4 py-2 font-mono text-slate-700">{inv.invoice_number}</td>
                     <td className="px-4 py-2 text-slate-700 truncate max-w-[200px]" title={inv.partner_name}>
                       {inv.partner_name}
@@ -94,14 +96,15 @@ export function InvoiceTable({ title, data, hasMore = false, isLoadingMore = fal
                 {isLoadingMore && (
                   <>
                     {[...Array(3)].map((_, i) => (
-                      <tr key={`skeleton-${i}`} className="animate-pulse">
-                        <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
-                        <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-32"></div></td>
-                        <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
-                        <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-28"></div></td>
-                        <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-16 ml-auto"></div></td>
-                        <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-10 ml-auto"></div></td>
-                      </tr>
+                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-32"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-28"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-16 ml-auto"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-10 ml-auto"></div></td>
+                    </tr>
                     ))}
                   </>
                 )}

@@ -118,6 +118,7 @@ export function ResultsTable({
             <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider border-b border-slate-200 sticky top-0 z-10 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
               <tr>
                 <th className="px-4 py-3 font-medium w-10 text-center bg-slate-50"></th>
+                <th className="px-4 py-3 font-medium bg-slate-50">PIN</th>
                 <th className="px-4 py-3 font-medium bg-slate-50">Invoice No</th>
                 <th className="px-4 py-3 font-medium bg-slate-50">Partner Name</th>
                 <th className="px-4 py-3 font-medium bg-slate-50">Invoice Date</th>
@@ -157,9 +158,19 @@ export function ResultsTable({
                     
                     <td className="px-4 py-2 font-mono align-middle">
                       <CompareCell
+                        sapVal={sap.pin}
+                        kraVal={kra.pin}
+                        isMatch={sap.pin === kra.pin}
+                        isMissingSap={isMissingSap}
+                        isMissingKra={isMissingKra}
+                      />
+                    </td>
+                    
+                    <td className="px-4 py-2 font-mono align-middle">
+                      <CompareCell
                         sapVal={sap.invoice_number}
                         kraVal={kra.invoice_number}
-                        isMatch={sap.invoice_number === kra.invoice_number || isMatch}
+                        isMatch={isMatch}
                         isMissingSap={isMissingSap}
                         isMissingKra={isMissingKra}
                       />
@@ -169,7 +180,7 @@ export function ResultsTable({
                       <CompareCell
                         sapVal={sap.partner_name}
                         kraVal={kra.partner_name}
-                        isMatch={sap.partner_name === kra.partner_name || isMatch}
+                        isMatch={isMatch}
                         isMissingSap={isMissingSap}
                         isMissingKra={isMissingKra}
                       />
@@ -223,6 +234,7 @@ export function ResultsTable({
                   {[...Array(3)].map((_, i) => (
                     <tr key={`skeleton-${i}`} className="animate-pulse">
                       <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-4 mx-auto"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
                       <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
                       <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-32"></div></td>
                       <td className="px-4 py-3"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
