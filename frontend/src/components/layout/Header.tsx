@@ -2,14 +2,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { removeToken } from "@/lib/api";
+import { removeToken, getToken, API_BASE_URL } from "@/lib/api";
 import { LogOut } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = getToken();
+    if (token) {
+      try {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({}),
+        });
+      } catch {
+        // Proceed with local cleanup even if backend call fails
+      }
+    }
     removeToken();
     router.push("/login");
   };

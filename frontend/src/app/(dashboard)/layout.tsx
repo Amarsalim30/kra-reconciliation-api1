@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken } from "@/lib/api";
+import { getToken, removeToken, API_BASE_URL } from "@/lib/api";
 import { Header } from "@/components/layout/Header";
 
 export default function DashboardLayout({
@@ -14,15 +14,30 @@ export default function DashboardLayout({
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    if (!getToken()) {
-      router.push("/login");
-    } else {
-      setTimeout(() => setAuthorized(true), 0);
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+      return;
     }
+
+    fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          removeToken();
+          router.replace("/login");
+        } else {
+          setAuthorized(true);
+        }
+      })
+      .catch(() => {
+        removeToken();
+        router.replace("/login");
+      });
   }, [router]);
 
   if (!authorized) {
-    // Avoid flash of content before client-side redirect
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="relative w-10 h-10">

@@ -9,9 +9,9 @@ export default function RootPage() {
 
   useEffect(() => {
     if (!getToken()) {
-      router.push("/login");
+      router.replace("/login");
     } else {
-      router.push("/sales");
+      router.replace("/sales");
     }
   }, [router]);
 
