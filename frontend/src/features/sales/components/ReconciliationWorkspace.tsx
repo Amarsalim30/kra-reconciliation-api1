@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useReconciliation } from "../hooks/useReconciliation";
 import { InvoiceTable } from "./InvoiceTable";
 import { ResultsTable } from "./ResultsTable";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
+import { exportReconciliationZip } from "../api/exportApi";
 
 interface ReconciliationWorkspaceProps {
   type: "sales" | "purchases";
@@ -17,6 +19,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
     setToDate,
     fileName,
     fileInputRef,
+    sessionId,
     currentView,
     setCurrentView,
     summary,
@@ -32,12 +35,32 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
     resultsPagination,
   } = useReconciliation(type);
 
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
   const hasInvoices = sapPagination.items.length > 0;
   const hasKraInvoices = kraPagination.items.length > 0;
   const hasResults = resultsPagination.items.length > 0;
 
   const sapTitle = type === "sales" ? "SAP Sales Preview" : "SAP Purchases Preview";
   const kraTitle = type === "sales" ? "KRA Sales Preview" : "KRA Purchases Preview";
+
+  const handleExport = async () => {
+    if (!sessionId) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportReconciliationZip(type, sessionId);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setExportError(err.message);
+      } else {
+        setExportError("Export failed");
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -52,9 +75,9 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
       </div>
 
       {/* Error Alert */}
-      {error && (
+      {(error || exportError) && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm shadow-sm animate-shake">
-          {error}
+          {error || exportError}
         </div>
       )}
 
@@ -133,13 +156,30 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
       ) : currentView === "results" && (hasResults || resultsPagination.isInitialLoading) ? (
         /* Results Table View */
         <section className="pb-16 flex flex-col gap-4">
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
             <button 
               onClick={() => setCurrentView("preview")}
               className="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center gap-1.5 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Previews
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="bg-emerald-600 text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {exporting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export ZIP
+                </>
+              )}
             </button>
           </div>
           <ResultsTable 

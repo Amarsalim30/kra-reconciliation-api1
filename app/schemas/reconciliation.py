@@ -2,15 +2,8 @@ from enum import Enum
 from pydantic import BaseModel
 from app.schemas.invoice import Invoice
 
-class ReconciliationStatus(str, Enum):
-    MATCH = "Match"
-    MISSING_IN_SAP = "Missing in SAP"
-    MISSING_IN_KRA = "Missing in KRA"
-    AMOUNT_MISMATCH = "Amount Mismatch"
-    VAT_MISMATCH = "VAT Mismatch"
-    DATE_MISMATCH = "Date Mismatch"
-    MULTIPLE_MISMATCHES = "Multiple Mismatches"
-    DUPLICATE_CU = "Duplicate CU"
+# Re-exported from domain for backward compatibility — import from here or from domain directly
+from app.domain.reconciliation_status import ReconciliationStatus  # noqa: F401
 
 class DifferenceField(str, Enum):
     BASE_AMOUNT = "base_amount"

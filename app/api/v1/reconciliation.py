@@ -1,10 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.dependencies import get_current_user, get_active_session
 from app.database.database import get_db
 from app.models.user import User
 from app.models.reconciliation_session import SessionReconciliationResult
+from app.reporting.context import ExportContext
+from app.reporting.errors import UnsupportedExportFormatError
+from app.reporting.export_format import ExportFormat
+from app.reporting.exporter import build_export
+from app.reporting.registry import ExportStrategyRegistry
 from app.schemas.invoice import Invoice, InvoiceSource
 from app.schemas.reconciliation import ReconciliationCompareRequest, ReconciliationResponse
 from app.services import reconciliation_service
@@ -92,12 +101,14 @@ def compare_session_invoices(
                 
                 sap_invoice_number=r.sap.invoice_number if r.sap else None,
                 sap_partner_name=r.sap.partner_name if r.sap else None,
+                sap_pin=r.sap.pin if r.sap else None,
                 sap_invoice_date=r.sap.invoice_date if r.sap else None,
                 sap_base_amount=r.sap.base_amount if r.sap else None,
                 sap_vat_group=r.sap.vat_group if r.sap else None,
                 
                 kra_invoice_number=r.kra.invoice_number if r.kra else None,
                 kra_partner_name=r.kra.partner_name if r.kra else None,
+                kra_pin=r.kra.pin if r.kra else None,
                 kra_invoice_date=r.kra.invoice_date if r.kra else None,
                 kra_base_amount=r.kra.base_amount if r.kra else None,
                 kra_vat_group=r.kra.vat_group if r.kra else None,
@@ -123,3 +134,44 @@ def compare_session_invoices(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Reconciliation engine failed: {str(e)}"
         )
+
+
+@router.get("/{session_id}/export")
+def export_session(
+    session_id: str,
+    request: Request,
+    format: ExportFormat = Query(default=ExportFormat.ZIP),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export reconciliation results as a ZIP archive containing Excel workbooks."""
+    session = get_active_session(session_id=session_id, db=db, current_user=current_user)
+
+    if not session.is_compared:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session must be compared before export. Run /compare first.",
+        )
+
+    registry: ExportStrategyRegistry = request.app.state.export_registry
+    settings = get_settings()
+
+    context = ExportContext(
+        generated_by=current_user.username,
+        app_version=settings.app_version,
+        generated_at=datetime.now(timezone.utc),
+    )
+
+    try:
+        artifact = build_export(session, db, context, format, registry)
+    except UnsupportedExportFormatError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    return StreamingResponse(
+        artifact.content,
+        media_type=artifact.media_type,
+        headers={"Content-Disposition": f'attachment; filename="{artifact.filename}"'},
+    )

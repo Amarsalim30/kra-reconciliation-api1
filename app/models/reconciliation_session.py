@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 from app.schemas.invoice import InvoiceSource, ReconciliationType
-from app.schemas.reconciliation import ReconciliationStatus
+from app.domain.reconciliation_status import ReconciliationStatus
 
 
 class ReconciliationSession(Base):
@@ -85,6 +85,10 @@ class SessionReconciliationResult(Base):
     kra_invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     kra_base_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
     kra_vat_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # PIN snapshot — populated at /compare time from session_invoices
+    sap_pin: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    kra_pin: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     session: Mapped["ReconciliationSession"] = relationship("ReconciliationSession", back_populates="results")
 

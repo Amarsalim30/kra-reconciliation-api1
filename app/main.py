@@ -7,6 +7,7 @@ from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
 from app.core.sap_client import SAPClient
 from app.core.exceptions import SAPConnectionError, SAPQueryError, SAPConfigurationError
+from app.reporting.registry import create_default_registry
 
 settings = get_settings()
 
@@ -15,6 +16,8 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     # Initialize SAP client on app state for dependency injection
     app.state.sap_client = SAPClient()
+    # Initialize export strategy registry
+    app.state.export_registry = create_default_registry()
     yield
 
 

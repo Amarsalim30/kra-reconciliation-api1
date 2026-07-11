@@ -1,24 +1,13 @@
 from app.schemas.invoice import Invoice
 from app.schemas.reconciliation import (
-    ReconciliationStatus,
     DifferenceField,
     Difference,
     ReconciliationResult,
     MismatchStats,
     ReconciliationSummary
 )
-
-# Sorting priority: duplicate/missing errors prioritized, followed by mismatches, followed by clean matches
-STATUS_PRIORITY = {
-    ReconciliationStatus.DUPLICATE_CU: 1,
-    ReconciliationStatus.MISSING_IN_SAP: 2,
-    ReconciliationStatus.MISSING_IN_KRA: 3,
-    ReconciliationStatus.MULTIPLE_MISMATCHES: 4,
-    ReconciliationStatus.AMOUNT_MISMATCH: 5,
-    ReconciliationStatus.VAT_MISMATCH: 6,
-    ReconciliationStatus.DATE_MISMATCH: 7,
-    ReconciliationStatus.MATCH: 8,
-}
+from app.domain.reconciliation_status import ReconciliationStatus
+from app.domain.reconciliation_constants import STATUS_PRIORITY
 
 
 def compare_amount(sap: Invoice, kra: Invoice) -> Difference:
