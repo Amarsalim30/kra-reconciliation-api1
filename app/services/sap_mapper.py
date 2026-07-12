@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from app.core.config import get_settings, BaseAmountPolicy
 from app.core.exceptions import SAPQueryError
 from app.services.vat_normalizer import vat_normalizer
+from app.domain.document_types import CanonicalReconciliationRow, IngestionProvenance
 
 logger = logging.getLogger(__name__)
 
@@ -31,64 +32,71 @@ def parse_sap_date(date_val: Any) -> datetime.date:
         raise ValueError(f"Invalid SAP DocDate format: '{date_val}'")
 
 
-def map_sap_invoice_to_normalized_records(
-    raw_invoice: Dict[str, Any],
+def map_sap_document_to_canonical_rows(
+    raw_document: Dict[str, Any],
+    source_document_type: str,
+    endpoint_name: str,
     reconciliation_type: str = "sales",
     reconciliation_session_id: str = "N/A"
-) -> List[Dict[str, Any]]:
+) -> List[CanonicalReconciliationRow]:
     """
-    Flattens a raw SAP Invoice and maps it to a list of canonical NormalizedSalesRecord dict structures.
-    Applies configurable base amount policies and warns on missing/invalid fields.
+    Flattens a raw SAP document and maps it to a list of CanonicalReconciliationRow objects.
+    Applies configurable base amount policies, aggregates by VAT group, applies sign normalization,
+    and warns on missing/invalid fields.
     """
     settings = get_settings()
     policy = settings.sap_base_amount_policy
 
     # Extract header fields
-    invoice_number_raw = raw_invoice.get("DocNum")
+    invoice_number_raw = raw_document.get("DocNum")
     if invoice_number_raw is None:
-        raise SAPQueryError("SAP invoice is missing required field: DocNum")
+        raise SAPQueryError(f"SAP {source_document_type} is missing required field: DocNum")
     invoice_number = str(invoice_number_raw).strip()
 
-    partner_name = raw_invoice.get("CardName")
+    partner_name = raw_document.get("CardName")
     if partner_name is None:
-        raise SAPQueryError(f"SAP Invoice {invoice_number} is missing required field: CardName")
+        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} is missing required field: CardName")
     partner_name = str(partner_name).strip()
 
-    doc_date_raw = raw_invoice.get("DocDate")
+    doc_date_raw = raw_document.get("DocDate")
     if doc_date_raw is None:
-        raise SAPQueryError(f"SAP Invoice {invoice_number} is missing required field: DocDate")
+        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} is missing required field: DocDate")
 
     try:
         invoice_date = parse_sap_date(doc_date_raw)
     except ValueError as exc:
-        raise SAPQueryError(f"SAP Invoice {invoice_number} has invalid DocDate: {exc}")
+        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} has invalid DocDate: {exc}")
 
     # Fallbacks and warnings for PIN
-    raw_pin = raw_invoice.get("FederalTaxID")
+    raw_pin = raw_document.get("FederalTaxID")
     if not raw_pin:
         pin = ""
         logger.warning(
-            f"[ReconciliationSession: {reconciliation_session_id}] Invoice {invoice_number} has missing FederalTaxID; using empty string."
+            f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} has missing FederalTaxID; using empty string."
         )
     else:
         pin = str(raw_pin).strip()
 
-    # Fallbacks and warnings for CU Number
-    raw_cu = raw_invoice.get("U_CUINV")
+    # Mandatory CU Number
+    raw_cu = raw_document.get("U_CUINV")
     if not raw_cu:
-        cu_number = ""
-        logger.warning(
-            f"[ReconciliationSession: {reconciliation_session_id}] Invoice {invoice_number} has missing U_CUINV; using empty string."
-        )
-    else:
-        cu_number = str(raw_cu).strip().lstrip("|").strip()
+        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} is missing required field: U_CUINV")
+    cu_number = str(raw_cu).strip().lstrip("|").strip()
+    if not cu_number:
+        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} has empty U_CUINV")
 
-    document_lines = raw_invoice.get("DocumentLines", [])
+    document_lines = raw_document.get("DocumentLines", [])
     if not document_lines:
         logger.warning(
-            f"[ReconciliationSession: {reconciliation_session_id}] Invoice {invoice_number} has no DocumentLines."
+            f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} has no DocumentLines."
         )
         return []
+
+    # Determine exact document type (differentiate Debit Memos from standard Invoices)
+    actual_document_type = source_document_type
+    subtype = raw_document.get("DocumentSubType")
+    if source_document_type == "Invoice" and subtype == "bod_DebitMemo":
+        actual_document_type = "DebitNote"
 
     valid_lines = []
     for line_idx, line in enumerate(document_lines):
@@ -96,12 +104,12 @@ def map_sap_invoice_to_normalized_records(
         vat_group = line.get("VatGroup")
         if vat_group is None:
             raise SAPQueryError(
-                f"SAP Invoice {invoice_number} line {line_idx} is missing required field: VatGroup"
+                f"SAP {source_document_type} {invoice_number} line {line_idx} is missing required field: VatGroup"
             )
         vat_group_str = str(vat_group).strip()
         if not vat_group_str:
             raise SAPQueryError(
-                f"SAP Invoice {invoice_number} line {line_idx} has empty VatGroup"
+                f"SAP {source_document_type} {invoice_number} line {line_idx} has empty VatGroup"
             )
 
         # Normalize SAP VAT code to canonical percentage string
@@ -111,29 +119,29 @@ def map_sap_invoice_to_normalized_records(
         line_total_raw = line.get("LineTotal")
         if line_total_raw is None:
             raise SAPQueryError(
-                f"SAP Invoice {invoice_number} line {line_idx} is missing required field: LineTotal"
+                f"SAP {source_document_type} {invoice_number} line {line_idx} is missing required field: LineTotal"
             )
 
         try:
             base_amount = Decimal(str(line_total_raw).strip())
         except (InvalidOperation, ValueError, TypeError) as exc:
             raise SAPQueryError(
-                f"SAP Invoice {invoice_number} line {line_idx} has invalid LineTotal: {exc}"
+                f"SAP {source_document_type} {invoice_number} line {line_idx} has invalid LineTotal: {exc}"
             )
 
         # 3. Base Amount Policy Check
         if base_amount <= 0:
             if policy == BaseAmountPolicy.SKIP:
                 logger.warning(
-                    f"[ReconciliationSession: {reconciliation_session_id}] Invoice {invoice_number} line {line_idx} skipped because base_amount ({base_amount}) <= 0 under policy 'skip'."
+                    f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} line {line_idx} skipped because base_amount ({base_amount}) <= 0 under policy 'skip'."
                 )
                 continue
             elif policy == BaseAmountPolicy.REJECT:
                 logger.error(
-                    f"[ReconciliationSession: {reconciliation_session_id}] Invoice {invoice_number} line {line_idx} rejected because base_amount ({base_amount}) <= 0 under policy 'reject'."
+                    f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} line {line_idx} rejected because base_amount ({base_amount}) <= 0 under policy 'reject'."
                 )
                 raise SAPQueryError(
-                    f"SAP Invoice {invoice_number} line {line_idx} rejected: Base Amount ({base_amount}) <= 0."
+                    f"SAP {source_document_type} {invoice_number} line {line_idx} rejected: Base Amount ({base_amount}) <= 0."
                 )
             # Under ALLOW, we proceed and include the record
 
@@ -144,18 +152,44 @@ def map_sap_invoice_to_normalized_records(
     for vat_group_str, base_amount in valid_lines:
         grouped_totals[vat_group_str] = grouped_totals.get(vat_group_str, Decimal("0.00")) + base_amount
 
-    # Create normalized records
-    normalized_records = []
+    # Create canonical reconciliation rows
+    canonical_rows = []
     for vat_group_str, total_amount in grouped_totals.items():
-        normalized_records.append({
-            "pin": pin,
-            "partner_name": partner_name,
-            "invoice_number": invoice_number,
-            "invoice_date": invoice_date,
-            "cu_number": cu_number,
-            "vat_group": vat_group_str,
-            "base_amount": total_amount.quantize(Decimal("0.01"))
-        })
+        # Sign normalization: +abs for Invoices/DebitNotes, -abs for CreditNotes
+        if actual_document_type in ("Invoice", "DebitNote"):
+            normalized_amount = abs(total_amount)
+        elif actual_document_type == "CreditNote":
+            normalized_amount = -abs(total_amount)
+        else:
+            normalized_amount = abs(total_amount)
 
-    return normalized_records
+        provenance = IngestionProvenance(
+            session_source=f"SAP {reconciliation_type.capitalize()}",
+            source_endpoint=endpoint_name,
+            source_table=None,
+            sap_object_type=None,
+            source_document_type=actual_document_type,
+            doc_entry=raw_document.get("DocEntry"),
+            doc_num=invoice_number,
+            base_doc_entry=None,
+            base_doc_num=None,
+            doc_object_code=None,
+            raw_amount=total_amount,
+            normalized_amount=normalized_amount
+        )
+
+        row = CanonicalReconciliationRow(
+            pin=pin,
+            partner_name=partner_name,
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            cu_number=cu_number,
+            vat_group=vat_group_str,
+            base_amount=normalized_amount.quantize(Decimal("0.01")),
+            provenance=provenance
+        )
+        canonical_rows.append(row)
+
+    return canonical_rows
+
 

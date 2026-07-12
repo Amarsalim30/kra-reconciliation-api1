@@ -8,7 +8,7 @@ from app.core.config import get_settings, BaseAmountPolicy
 from app.core.exceptions import SAPConfigurationError, SAPConnectionError, SAPQueryError
 from app.core.sap_client import SAPClient
 from app.services import invoice_service
-from app.services.sap_mapper import map_sap_invoice_to_normalized_records, parse_sap_date
+from app.services.sap_mapper import map_sap_document_to_canonical_rows, parse_sap_date
 
 
 def test_parse_sap_date():
@@ -92,7 +92,7 @@ def test_sap_client_get_invoices_pagination():
         raise ValueError(f"Unexpected URL: {url}")
 
     with patch.object(client, "_execute_request_with_retry", side_effect=mock_request) as mock_exec:
-        pages = list(client.get_invoices_pages("2026-03-01", "2026-03-02"))
+        pages = list(client.get_documents_pages("2026-03-01", "2026-03-02", "Invoices"))
         
         assert len(pages) == 2
         assert pages[0][0]["DocNum"] == 100
@@ -115,12 +115,12 @@ def test_sap_mapper_line_aggregation():
         ]
     }
 
-    records = map_sap_invoice_to_normalized_records(raw_invoice)
+    records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
     assert len(records) == 1
-    assert records[0]["invoice_number"] == "764"
-    assert records[0]["base_amount"] == Decimal("881968.64")
-    assert records[0]["pin"] == "P000609554G"
-    assert records[0]["cu_number"] == "0190439340000000134"
+    assert records[0].invoice_number == "764"
+    assert records[0].base_amount == Decimal("881968.64")
+    assert records[0].pin == "P000609554G"
+    assert records[0].cu_number == "0190439340000000134"
 
 
 def test_sap_mapper_aggregation_boundaries():
@@ -142,16 +142,16 @@ def test_sap_mapper_aggregation_boundaries():
         "DocumentLines": [{"VatGroup": "O1", "LineTotal": 200.00}]
     }
 
-    records_a = map_sap_invoice_to_normalized_records(invoice_a)
-    records_b = map_sap_invoice_to_normalized_records(invoice_b)
+    records_a = map_sap_document_to_canonical_rows(invoice_a, "Invoice", "Invoices")
+    records_b = map_sap_document_to_canonical_rows(invoice_b, "Invoice", "Invoices")
 
     assert len(records_a) == 1
-    assert records_a[0]["invoice_number"] == "100"
-    assert records_a[0]["base_amount"] == Decimal("100.00")
+    assert records_a[0].invoice_number == "100"
+    assert records_a[0].base_amount == Decimal("100.00")
 
     assert len(records_b) == 1
-    assert records_b[0]["invoice_number"] == "101"
-    assert records_b[0]["base_amount"] == Decimal("200.00")
+    assert records_b[0].invoice_number == "101"
+    assert records_b[0].base_amount == Decimal("200.00")
 
 
 def test_sap_mapper_vat_group_normalization():
@@ -168,30 +168,31 @@ def test_sap_mapper_vat_group_normalization():
         ]
     }
 
-    records = map_sap_invoice_to_normalized_records(raw_invoice, reconciliation_type="sales")
+    records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices", reconciliation_type="sales")
     assert len(records) == 2
-    assert records[0]["vat_group"] == "16"   # O1 -> 16
-    assert records[1]["vat_group"] == "A16"  # unknown code passes through
+    assert records[0].vat_group == "16"   # O1 -> 16
+    assert records[1].vat_group == "A16"  # unknown code passes through
 
 
 def test_sap_mapper_fallback_warnings():
-    # Test fallback warning logic for missing FederalTaxID and U_CUINV
+    # Test fallback warning logic for missing FederalTaxID
     raw_invoice = {
         "DocNum": 766,
         "CardName": "Welding Alloys Ltd",
         "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "CU1",
         "DocumentLines": [
             {"VatGroup": "O1", "LineTotal": 100.00}
         ]
     }
 
     with patch("app.services.sap_mapper.logger.warning") as mock_warn:
-        records = map_sap_invoice_to_normalized_records(raw_invoice)
+        records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
         assert len(records) == 1
-        assert records[0]["pin"] == ""
-        assert records[0]["cu_number"] == ""
-        # 2 warnings expected (one for FederalTaxID, one for U_CUINV)
-        assert mock_warn.call_count == 2
+        assert records[0].pin == ""
+        assert records[0].cu_number == "CU1"
+        # 1 warning expected (for FederalTaxID)
+        assert mock_warn.call_count == 1
 
 
 def test_sap_mapper_base_amount_policies():
@@ -200,6 +201,7 @@ def test_sap_mapper_base_amount_policies():
         "CardName": "Welding Alloys Ltd",
         "FederalTaxID": "P000609554G",
         "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "CU1",
         "DocumentLines": [
             {"VatGroup": "O1", "LineTotal": 100.00},
             {"VatGroup": "O1", "LineTotal": 0.00},     # <= 0
@@ -213,22 +215,81 @@ def test_sap_mapper_base_amount_policies():
     try:
         # 1. SKIP Policy (default)
         settings.sap_base_amount_policy = BaseAmountPolicy.SKIP
-        records = map_sap_invoice_to_normalized_records(raw_invoice)
+        records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
         assert len(records) == 1
-        assert records[0]["base_amount"] == Decimal("100.00")
+        assert records[0].base_amount == Decimal("100.00")
 
         # 2. REJECT Policy
         settings.sap_base_amount_policy = BaseAmountPolicy.REJECT
         with pytest.raises(SAPQueryError, match="Base Amount.*<= 0"):
-            map_sap_invoice_to_normalized_records(raw_invoice)
+            map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
 
         # 3. ALLOW Policy
         settings.sap_base_amount_policy = BaseAmountPolicy.ALLOW
-        records = map_sap_invoice_to_normalized_records(raw_invoice)
+        records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
+        # With allow, -50 is mapped to 50 for Invoices (abs value) if allow permits processing it
+        # Wait, the aggregation does 100 + 0 - 50 = 50, then abs(50) = 50.
         assert len(records) == 1
-        assert records[0]["base_amount"] == Decimal("50.00")
+        assert records[0].base_amount == Decimal("50.00")
     finally:
         settings.sap_base_amount_policy = original_policy
+
+
+def test_sap_mapper_credit_note_and_debit_note_sign_normalization():
+    # Test Credit Note (negative mapping)
+    raw_credit_note = {
+        "DocNum": 768,
+        "CardName": "Customer",
+        "FederalTaxID": "P123",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "CU1",
+        "DocumentLines": [{"VatGroup": "16", "LineTotal": 500.00}]
+    }
+    
+    # Even if line total is positive, credit note maps to negative
+    cn_records = map_sap_document_to_canonical_rows(raw_credit_note, "CreditNote", "CreditNotes")
+    assert len(cn_records) == 1
+    assert cn_records[0].base_amount == Decimal("-500.00")
+    assert cn_records[0].provenance.source_document_type == "CreditNote"
+
+    # Test Debit Note mapping (+abs) via DocumentSubType
+    raw_debit_note = {
+        "DocNum": 769,
+        "CardName": "Customer",
+        "FederalTaxID": "P123",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "CU1",
+        "DocumentSubType": "bod_DebitMemo",
+        "DocumentLines": [{"VatGroup": "16", "LineTotal": -200.00}]
+    }
+
+    settings = get_settings()
+    settings.sap_base_amount_policy = BaseAmountPolicy.ALLOW # allow negative line
+    dn_records = map_sap_document_to_canonical_rows(raw_debit_note, "Invoice", "Invoices")
+    assert len(dn_records) == 1
+    assert dn_records[0].base_amount == Decimal("200.00")
+    assert dn_records[0].provenance.source_document_type == "DebitNote"
+
+
+def test_sap_mapper_multiple_vat_groups_emit_multiple_rows():
+    raw_doc = {
+        "DocNum": 770,
+        "CardName": "Customer",
+        "FederalTaxID": "P123",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "CU1",
+        "DocumentLines": [
+            {"VatGroup": "O1", "LineTotal": 100.00},
+            {"VatGroup": "0", "LineTotal": 50.00}
+        ]
+    }
+    
+    records = map_sap_document_to_canonical_rows(raw_doc, "Invoice", "Invoices")
+    assert len(records) == 2
+    assert records[0].vat_group == "16" # O1 mapped
+    assert records[0].base_amount == Decimal("100.00")
+    assert records[1].vat_group == "0"
+    assert records[1].base_amount == Decimal("50.00")
 
 
 def test_sap_configuration_startup_validation():
@@ -242,3 +303,4 @@ def test_sap_configuration_startup_validation():
             SAP_BASE_URL="https://sap-test:50000/b1s/v1",
             SAP_USERNAME=""  # Missing username
         )
+
