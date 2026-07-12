@@ -156,6 +156,32 @@ export function ResultsTable({
     setExpandedRows(newExpanded);
   };
 
+  const availableFilters = useMemo(() => {
+    const filterSet = new Set<FilterType>(["All"]);
+    results.forEach((r) => {
+      const st = r.status;
+      if (st === "MATCH" || st === "Matched" || st === "Match") {
+        filterSet.add("Matches");
+      } else {
+        filterSet.add("Issues");
+        if (st === "MISSING_IN_SAP" || st === "Missing in SAP") filterSet.add("Missing SAP");
+        if (st === "MISSING_IN_KRA" || st === "Missing in KRA") filterSet.add("Missing KRA");
+        if (st === "AMOUNT_MISMATCH") filterSet.add("Amount");
+        if (st === "VAT_MISMATCH") filterSet.add("VAT");
+        if (st === "DATE_MISMATCH") filterSet.add("Date");
+        if (st === "MULTIPLE_MISMATCHES" || st === "DUPLICATE_SOURCE_KEY") filterSet.add("Multiple");
+      }
+    });
+    const order: FilterType[] = ["All", "Issues", "Matches", "Missing SAP", "Missing KRA", "Amount", "VAT", "Date", "Multiple"];
+    return order.filter(f => filterSet.has(f));
+  }, [results]);
+
+  useEffect(() => {
+    if (!availableFilters.includes(filter)) {
+      setFilter("All");
+    }
+  }, [availableFilters, filter]);
+
   const filteredResults = useMemo(() => {
     return results.filter((r) => {
       const st = r.status;
@@ -204,7 +230,6 @@ export function ResultsTable({
 
   if (!results || results.length === 0) return null;
 
-  const filters: FilterType[] = ["All", "Issues", "Matches", "Missing SAP", "Missing KRA", "Amount", "VAT", "Date", "Multiple"];
   const issuesCount = summary ? summary.total_sap + summary.total_kra - 2 * summary.matches : 0;
 
   return (
@@ -227,7 +252,7 @@ export function ResultsTable({
       {/* Segmented Filters */}
       <div className="flex px-2 mb-3">
         <div className="bg-slate-100 p-1 rounded-md flex inline-flex text-sm font-medium">
-          {filters.map((f) => (
+          {availableFilters.map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
