@@ -46,9 +46,7 @@ _KRA_DATE = SheetColumn(header="KRA Date", attr="kra_invoice_date", is_date=True
 _KRA_AMOUNT = SheetColumn(header="KRA Amount", attr="kra_base_amount", is_amount=True, width=18)
 _KRA_VAT = SheetColumn(header="KRA VAT", attr="kra_vat_group", width=12)
 
-_MATCH_AMT = SheetColumn(header="Amount Match", attr="amount_match", is_bool=True, width=14)
-_MATCH_VAT = SheetColumn(header="VAT Match", attr="vat_match", is_bool=True, width=12)
-_MATCH_DATE = SheetColumn(header="Date Match", attr="date_match", is_bool=True, width=14)
+
 
 NEEDS_REVIEW_STATUSES = frozenset({
     ReconciliationStatus.DUPLICATE_SOURCE_KEY,
@@ -94,7 +92,6 @@ WORKBOOK_DEFINITIONS: tuple[WorkbookDefinition, ...] = (
                     _CU_COL,
                     _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
                     _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
                 ),
                 statuses=frozenset({ReconciliationStatus.AMOUNT_MISMATCH}),
             ),
@@ -104,7 +101,6 @@ WORKBOOK_DEFINITIONS: tuple[WorkbookDefinition, ...] = (
                     _CU_COL,
                     _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
                     _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
                 ),
                 statuses=frozenset({ReconciliationStatus.VAT_MISMATCH}),
             ),
@@ -115,7 +111,6 @@ WORKBOOK_DEFINITIONS: tuple[WorkbookDefinition, ...] = (
                     _CU_COL,
                     _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
                     _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
                 ),
                 statuses=frozenset({ReconciliationStatus.DUPLICATE_SOURCE_KEY}),
             ),
@@ -125,7 +120,6 @@ WORKBOOK_DEFINITIONS: tuple[WorkbookDefinition, ...] = (
                     _CU_COL,
                     _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
                     _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
                 ),
                 statuses=frozenset({ReconciliationStatus.MULTIPLE_MISMATCHES}),
             ),
