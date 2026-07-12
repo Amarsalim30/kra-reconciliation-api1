@@ -46,5 +46,6 @@ def build_summary(
         duplicate_cu=duplicate_cu,
         match_percentage=match_percentage,
         completion_percentage=completion_percentage,
+        total_reconciled_rows=total_distinct_cus,
         mismatch_stats=mismatch_stats,
     )

@@ -28,6 +28,18 @@ class Invoice(BaseModel):
     def serialize_base_amount(self, base_amount: Decimal) -> float:
         return float(base_amount)
 
+    @property
+    def normalized_pin(self) -> str:
+        return self.pin.strip().upper() if self.pin else ""
+
+    @property
+    def normalized_cu_number(self) -> str:
+        return self.cu_number.strip() if self.cu_number else ""
+
+    @property
+    def normalized_vat_group(self) -> str:
+        return self.vat_group.strip().upper() if self.vat_group else ""
+
 
 class InvoiceFetchResponse(BaseModel):
     session_id: str

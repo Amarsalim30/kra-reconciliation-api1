@@ -4,7 +4,8 @@ from app.reporting.export_row import to_export_rows
 from app.reporting.registry import ExportStrategyRegistry
 from app.reporting.artifact import ExportArtifact
 from app.reporting.utils import compute_sha256, build_status_counts
-from app.services.summary_service import build_summary
+from app.reporting.errors import UnsupportedExportFormatError, ReconciliationSummaryMissingError
+from app.schemas.reconciliation import ReconciliationSummary
 
 from app.models.reconciliation_session import ReconciliationSession
 from app.repositories.reconciliation_repository import get_projections
@@ -26,16 +27,11 @@ def build_export(
     # 2. Transform to export rows
     rows = to_export_rows(projections)
 
-    # 3. Build summary — prefer cached totals from session comparison
-    if session.comparison_results and "summary" in session.comparison_results:
-        summary_data = session.comparison_results["summary"]
-        total_sap = summary_data.get("total_sap", len(rows))
-        total_kra = summary_data.get("total_kra", len(rows))
-    else:
-        total_sap = len(rows)
-        total_kra = len(rows)
+    # 3. Load cached summary directly from session comparison results
+    if not session.comparison_results or "summary" not in session.comparison_results:
+        raise ReconciliationSummaryMissingError("Reconciliation summary is missing for compared session.")
 
-    summary = build_summary(rows, total_sap, total_kra)
+    summary = ReconciliationSummary(**session.comparison_results["summary"])
 
     # 4. Dispatch to strategy
     strategy = registry.get(fmt)

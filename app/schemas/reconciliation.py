@@ -43,6 +43,7 @@ class ReconciliationSummary(BaseModel):
     duplicate_cu: int
     match_percentage: float
     completion_percentage: float
+    total_reconciled_rows: int = 0
     mismatch_stats: MismatchStats
 
 class ReconciliationCompareRequest(BaseModel):

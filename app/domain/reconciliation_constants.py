@@ -42,4 +42,4 @@ REMARK_MAP: dict[ReconciliationStatus, str] = {
 # EXPORT_SCHEMA_VERSION   — increment ONLY when workbook layout or Export.json structure changes
 # REMARK_MAP              — change wording freely; no version tracked
 STATUS_PRIORITY_VERSION: str = "2"
-EXPORT_SCHEMA_VERSION:   str = "1.0"
+EXPORT_SCHEMA_VERSION:   str = "2.0"

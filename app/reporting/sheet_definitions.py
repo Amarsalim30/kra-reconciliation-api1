@@ -16,11 +16,16 @@ class SheetColumn:
 
 @dataclass(frozen=True)
 class SheetDefinition:
-    filename: str
     title: str
     columns: tuple[SheetColumn, ...]
     statuses: frozenset[ReconciliationStatus] | None = None  # None = all rows
     is_compact: bool = False  # compact = no redundant SAP/KRA columns
+
+
+@dataclass(frozen=True)
+class WorkbookDefinition:
+    filename: str
+    sheets: tuple[SheetDefinition, ...]
 
 
 # Reusable column sets
@@ -56,50 +61,89 @@ NEEDS_REVIEW_STATUSES = frozenset({
 
 MATCH_STATUSES = frozenset({ReconciliationStatus.MATCH})
 
-# Sheet definitions — order matters for ZIP layout
-SHEET_DEFINITIONS: tuple[SheetDefinition, ...] = (
-    SheetDefinition(
-        filename="02 Needs Review.xlsx",
-        title="Needs Review",
-        columns=(
-            _CU_COL, _REMARK_COL,
-            _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
-            _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-            _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
+# ==============================================================================
+# EXPORT FORMAT CONTRACT:
+# Workbook names, worksheet names, and worksheet order are part of the public
+# export format. They MUST NOT be changed without incrementing EXPORT_SCHEMA_VERSION.
+# ==============================================================================
+WORKBOOK_DEFINITIONS: tuple[WorkbookDefinition, ...] = (
+    WorkbookDefinition(
+        filename="02 Exceptions.xlsx",
+        sheets=(
+            SheetDefinition(
+                title="Missing in SAP",
+                columns=(
+                    _CU_COL,
+                    _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                ),
+                statuses=frozenset({ReconciliationStatus.MISSING_IN_SAP}),
+                is_compact=True,
+            ),
+            SheetDefinition(
+                title="Missing in KRA",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                ),
+                statuses=frozenset({ReconciliationStatus.MISSING_IN_KRA}),
+                is_compact=True,
+            ),
+            SheetDefinition(
+                title="Amount Mismatch",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                    _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
+                ),
+                statuses=frozenset({ReconciliationStatus.AMOUNT_MISMATCH}),
+            ),
+            SheetDefinition(
+                title="VAT Mismatch",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                    _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
+                ),
+                statuses=frozenset({ReconciliationStatus.VAT_MISMATCH}),
+            ),
+
+            SheetDefinition(
+                title="Duplicate CU",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                    _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
+                ),
+                statuses=frozenset({ReconciliationStatus.DUPLICATE_SOURCE_KEY}),
+            ),
+            SheetDefinition(
+                title="Multiple Issues",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                    _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                    _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
+                ),
+                statuses=frozenset({ReconciliationStatus.MULTIPLE_MISMATCHES}),
+            ),
         ),
-        statuses=NEEDS_REVIEW_STATUSES,
     ),
-    SheetDefinition(
-        filename="04 Matches.xlsx",
-        title="Matches",
-        columns=(
-            _CU_COL, _REMARK_COL,
-            _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
-            _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+    WorkbookDefinition(
+        filename="03 Matches.xlsx",
+        sheets=(
+            SheetDefinition(
+                title="Matches",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                    _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                ),
+                statuses=frozenset({ReconciliationStatus.MATCH}),
+                is_compact=True,
+            ),
         ),
-        statuses=MATCH_STATUSES,
-        is_compact=True,
-    ),
-    SheetDefinition(
-        filename="05 Amount Mismatches.xlsx",
-        title="Amount Mismatches",
-        columns=(
-            _CU_COL, _REMARK_COL,
-            _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
-            _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-            _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
-        ),
-        statuses=frozenset({ReconciliationStatus.AMOUNT_MISMATCH, ReconciliationStatus.MULTIPLE_MISMATCHES}),
-    ),
-    SheetDefinition(
-        filename="06 VAT Mismatches.xlsx",
-        title="VAT Mismatches",
-        columns=(
-            _CU_COL, _REMARK_COL,
-            _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
-            _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
-            _MATCH_AMT, _MATCH_VAT, _MATCH_DATE,
-        ),
-        statuses=frozenset({ReconciliationStatus.VAT_MISMATCH, ReconciliationStatus.MULTIPLE_MISMATCHES}),
     ),
 )

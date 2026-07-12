@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -10,7 +11,7 @@ from app.database.database import get_db
 from app.models.user import User
 from app.models.reconciliation_session import SessionReconciliationResult
 from app.reporting.context import ExportContext
-from app.reporting.errors import UnsupportedExportFormatError
+from app.reporting.errors import UnsupportedExportFormatError, ReconciliationSummaryMissingError
 from app.reporting.export_format import ExportFormat
 from app.reporting.exporter import build_export
 from app.reporting.registry import ExportStrategyRegistry
@@ -19,6 +20,7 @@ from app.schemas.reconciliation import ReconciliationCompareRequest, Reconciliat
 from app.services import reconciliation_service
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/compare", response_model=ReconciliationResponse)
@@ -168,6 +170,21 @@ def export_session(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
+        )
+    except ReconciliationSummaryMissingError as e:
+        logger.error(
+            "Unable to generate export: Reconciliation summary missing for compared session.",
+            exc_info=True,
+            extra={
+                "session_id": session_id,
+                "session_type": session.session_type.value,
+                "schema_version": context.export_version,
+                "user_id": current_user.id,
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to generate export due to an internal reconciliation state error.",
         )
 
     return StreamingResponse(

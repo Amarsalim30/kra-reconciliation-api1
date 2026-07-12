@@ -59,9 +59,9 @@ def reconcile_invoices(
     # Map input lists to ReconciliationRecord instances
     sap_records = [
         ReconciliationRecord(
-            match_key=MatchKey(cu_number=inv.cu_number, vat_group=inv.vat_group),
+            match_key=MatchKey(cu_number=inv.normalized_cu_number, vat_group=inv.normalized_vat_group),
             base_amount=inv.base_amount,
-            pin=inv.pin,
+            pin=inv.normalized_pin,
             partner_name=inv.partner_name,
             invoice_number=inv.invoice_number,
             invoice_date=inv.invoice_date,
@@ -71,9 +71,9 @@ def reconcile_invoices(
     ]
     kra_records = [
         ReconciliationRecord(
-            match_key=MatchKey(cu_number=inv.cu_number, vat_group=inv.vat_group),
+            match_key=MatchKey(cu_number=inv.normalized_cu_number, vat_group=inv.normalized_vat_group),
             base_amount=inv.base_amount,
-            pin=inv.pin,
+            pin=inv.normalized_pin,
             partner_name=inv.partner_name,
             invoice_number=inv.invoice_number,
             invoice_date=inv.invoice_date,
@@ -288,6 +288,7 @@ def reconcile_invoices(
         duplicate_cu=duplicate_cu,
         match_percentage=match_percentage,
         completion_percentage=completion_percentage,
+        total_reconciled_rows=total_distinct,
         mismatch_stats=mismatch_stats
     )
 

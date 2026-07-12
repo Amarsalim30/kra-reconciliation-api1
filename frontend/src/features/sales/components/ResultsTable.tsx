@@ -278,11 +278,11 @@ export function ResultsTable({
                       </td>
                       
                       <td className="px-4 py-2 font-mono align-middle">
-                        <CompareCell sapVal={sap.pin} kraVal={kra.pin} isMatch={sap.pin === kra.pin} isMissingSap={isMissingSap} isMissingKra={isMissingKra} />
+                        <CompareCell sapVal={sap.pin} kraVal={kra.pin} isMatch={sap.pin?.trim().toUpperCase() === kra.pin?.trim().toUpperCase()} isMissingSap={isMissingSap} isMissingKra={isMissingKra} />
                       </td>
                       
                       <td className="px-4 py-2 font-mono align-middle">
-                        <CompareCell sapVal={sap.invoice_number} kraVal={kra.invoice_number} isMatch={isMatch} isMissingSap={isMissingSap} isMissingKra={isMissingKra} />
+                        <CompareCell sapVal={sap.invoice_number} kraVal={kra.invoice_number} isMatch={true} isMissingSap={isMissingSap} isMissingKra={isMissingKra} />
                       </td>
                       
                       <td className="px-4 py-2 truncate max-w-[150px] align-middle text-slate-800">
@@ -340,11 +340,11 @@ export function ResultsTable({
                                   let sVal: string | number | undefined | null = "-"; let kVal: string | number | undefined | null = "-";
                                   let isFieldMatch = false;
                                   
-                                  if (field === "PIN") { sVal = sap.pin; kVal = kra.pin; isFieldMatch = sVal === kVal; }
-                                  if (field === "Invoice No") { sVal = sap.invoice_number; kVal = kra.invoice_number; isFieldMatch = sVal === kVal; }
+                                  if (field === "PIN") { sVal = sap.pin; kVal = kra.pin; isFieldMatch = sVal?.trim().toUpperCase() === kVal?.trim().toUpperCase(); }
+                                  if (field === "Invoice No") { sVal = sap.invoice_number; kVal = kra.invoice_number; isFieldMatch = true; }
                                   if (field === "Partner Name") { sVal = sap.partner_name; kVal = kra.partner_name; isFieldMatch = sVal === kVal; }
                                   if (field === "Invoice Date") { sVal = sap.invoice_date; kVal = kra.invoice_date; isFieldMatch = r.date_match ?? (sVal === kVal); }
-                                  if (field === "CU Number") { sVal = sap.cu_number; kVal = kra.cu_number; isFieldMatch = sVal === kVal; }
+                                  if (field === "CU Number") { sVal = sap.cu_number; kVal = kra.cu_number; isFieldMatch = sVal?.trim() === kVal?.trim(); }
                                   if (field === "VAT Group") { sVal = formatVatGroup(sap.vat_group); kVal = formatVatGroup(kra.vat_group); isFieldMatch = r.vat_match ?? (sVal === kVal); }
                                   if (field === "Base Amount") { sVal = sap.base_amount; kVal = kra.base_amount; isFieldMatch = r.amount_match ?? (sVal === kVal); }
                                   if (field === "Total Amount") { sVal = sap.total_amount; kVal = kra.total_amount; isFieldMatch = sVal === kVal; }

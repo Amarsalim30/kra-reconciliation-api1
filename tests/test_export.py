@@ -323,11 +323,10 @@ def test_export_zip_structure(client, auth_headers):
 
     with ZipFile(io.BytesIO(res.content)) as zf:
         names = zf.namelist()
-        assert "Metadata/Export.json" in names
-        # At least Summary workbook
-        assert any("Summary" in n for n in names)
-        # At least one Details workbook or README
-        assert any(n.startswith("Details/") for n in names)
+        assert "_metadata.json" in names
+        assert "01 Summary.xlsx" in names
+        assert "02 Exceptions.xlsx" in names
+        assert "03 Matches.xlsx" in names
 
 
 def test_export_metadata_json_fields(client, auth_headers):
@@ -335,12 +334,13 @@ def test_export_metadata_json_fields(client, auth_headers):
     res = client.get(f"/api/v1/reconciliation/{session_id}/export?format=zip", headers=auth_headers)
 
     with ZipFile(io.BytesIO(res.content)) as zf:
-        export_json = json.loads(zf.read("Metadata/Export.json"))
-        assert "schema_version" in export_json
+        export_json = json.loads(zf.read("_metadata.json"))
+        assert export_json["schema_version"] == "2.0"
         assert "status_priority_version" in export_json
-        assert "status_counts" in export_json
-        assert "sha256" in export_json
-        assert "row_count" in export_json
+        assert "record_counts" in export_json
+        assert "checksum" in export_json
+        assert "generated_at" in export_json
+        assert "application_version" in export_json
         assert export_json["session_id"] == session_id
 
 
@@ -405,11 +405,10 @@ def test_export_empty_session(client, auth_headers, db_session):
 
     with ZipFile(io.BytesIO(res.content)) as zf:
         names = zf.namelist()
-        assert "Metadata/Export.json" in names
-        assert "Details/README.txt" in names
-        readme = zf.read("Details/README.txt").decode("utf-8")
-        assert "KRA Reconciliation Export" in readme
-        assert session.id in readme
+        assert "_metadata.json" in names
+        assert "01 Summary.xlsx" in names
+        assert "02 Exceptions.xlsx" not in names
+        assert "03 Matches.xlsx" not in names
 
 
 def test_export_large_dataset_correctness(client, auth_headers, db_session):
@@ -486,10 +485,9 @@ def test_export_large_dataset_correctness(client, auth_headers, db_session):
     assert res.status_code == 200
 
     with ZipFile(io.BytesIO(res.content)) as zf:
-        export_json = json.loads(zf.read("Metadata/Export.json"))
-        assert export_json["row_count"] == 100
-        assert export_json["status_counts"].get("Match") == 50
-        assert export_json["status_counts"].get("Amount Mismatch") == 50
+        export_json = json.loads(zf.read("_metadata.json"))
+        assert export_json["record_counts"]["matches"] == 50
+        assert export_json["record_counts"]["exceptions"] == 50
 
 
 def test_export_needs_review_excludes_matches(client, auth_headers):
@@ -499,10 +497,10 @@ def test_export_needs_review_excludes_matches(client, auth_headers):
 
     with ZipFile(io.BytesIO(res.content)) as zf:
         names = zf.namelist()
-        needs_review = [n for n in names if "Needs Review" in n]
-        if needs_review:
-            # If there are non-match rows, the file should exist
-            assert len(needs_review) == 1
+        assert "02 Exceptions.xlsx" in names
+        from openpyxl import load_workbook
+        wb = load_workbook(io.BytesIO(zf.read("02 Exceptions.xlsx")))
+        assert "Matches" not in wb.sheetnames
 
 
 def test_export_matches_compact_no_sap_kra_duplicates(client, auth_headers):
@@ -512,12 +510,59 @@ def test_export_matches_compact_no_sap_kra_duplicates(client, auth_headers):
 
     with ZipFile(io.BytesIO(res.content)) as zf:
         names = zf.namelist()
-        matches_file = [n for n in names if "Matches.xlsx" in n and "Needs" not in n]
-        if matches_file:
-            from openpyxl import load_workbook
-            wb = load_workbook(io.BytesIO(zf.read(matches_file[0])))
-            ws = wb.active
-            headers = [cell.value for cell in ws[1]]
-            # Compact: should NOT have KRA PIN/Partner columns
-            assert "KRA PIN" not in headers
-            assert "KRA Partner" not in headers
+        assert "03 Matches.xlsx" in names
+        from openpyxl import load_workbook
+        wb = load_workbook(io.BytesIO(zf.read("03 Matches.xlsx")))
+        ws = wb["Matches"]
+        headers = [cell.value for cell in ws[1]]
+        # Compact: should NOT have KRA PIN/Partner columns
+        assert "KRA PIN" not in headers
+        assert "KRA Partner" not in headers
+
+
+def test_export_missing_summary_handling(client, auth_headers, db_session):
+    from app.models.reconciliation_session import ReconciliationSession
+    from app.models.user import User
+
+    user = db_session.query(User).filter(User.username == "export_tester").first()
+    
+    # Create session marked as compared, but comparison_results is empty/missing summary
+    session = ReconciliationSession(
+        user_id=user.id,
+        from_date=date(2026, 3, 1),
+        to_date=date(2026, 3, 31),
+        is_compared=True,
+        comparison_results={},  # missing summary!
+    )
+    db_session.add(session)
+    db_session.commit()
+
+    res = client.get(f"/api/v1/reconciliation/{session.id}/export?format=zip", headers=auth_headers)
+    assert res.status_code == 500
+    assert "Unable to generate export due to an internal reconciliation state error." in res.json()["detail"]
+
+
+def test_worksheet_order_preservation(client, auth_headers):
+    # Setup session with some exceptions
+    session_id = _setup_compared_session(client, auth_headers)
+    res = client.get(f"/api/v1/reconciliation/{session_id}/export?format=zip", headers=auth_headers)
+    assert res.status_code == 200
+
+    with ZipFile(io.BytesIO(res.content)) as zf:
+        from openpyxl import load_workbook
+        wb = load_workbook(io.BytesIO(zf.read("02 Exceptions.xlsx")))
+        
+        # Defined order
+        defined_order = [
+            "Missing in SAP",
+            "Missing in KRA",
+            "Amount Mismatch",
+            "VAT Mismatch",
+            "Duplicate CU",
+            "Multiple Issues"
+        ]
+        
+        # Verify the actual sheets in wb.sheetnames are in correct relative order
+        actual_sheets = wb.sheetnames
+        indexes = [defined_order.index(name) for name in actual_sheets if name in defined_order]
+        assert indexes == sorted(indexes), f"Sheet order is not preserved: {actual_sheets}"
