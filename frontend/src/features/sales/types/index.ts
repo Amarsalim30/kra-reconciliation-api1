@@ -15,6 +15,8 @@ export interface ReconciliationResult {
   amount_match: boolean;
   vat_match: boolean;
   date_match: boolean;
+  partner_name_matches: boolean;
+  pin_matches: boolean;
   sap: Invoice | null;
   kra: Invoice | null;
 }

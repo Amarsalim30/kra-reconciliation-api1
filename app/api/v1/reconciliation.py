@@ -100,6 +100,8 @@ def compare_session_invoices(
                 amount_match=r.amount_match,
                 vat_match=r.vat_match,
                 date_match=r.date_match,
+                partner_name_matches=r.partner_name_matches,
+                pin_matches=r.pin_matches,
                 
                 sap_invoice_number=r.sap.invoice_number if r.sap else None,
                 sap_partner_name=r.sap.partner_name if r.sap else None,

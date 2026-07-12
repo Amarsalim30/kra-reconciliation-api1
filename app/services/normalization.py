@@ -1,5 +1,46 @@
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+import re
+
+LEGAL_SUFFIXES = {
+    "LIMITED": "",
+    "LTD": "",
+    "COMPANY": "",
+    "CO": "",
+    "PLC": "",
+    "INC": "",
+    "LLC": "",
+}
+
+def normalize_partner_name(name: str | None) -> str:
+    """
+    Normalizes a partner name for equivalence checking.
+    Removes punctuation, collapses whitespace, and removes common legal suffixes.
+    Returns an uppercase string.
+    """
+    if not name:
+        return ""
+    
+    n = name.upper()
+    # Expand common abbreviations before removing punctuation
+    n = re.sub(r'\(K\)', ' KENYA ', n)
+    # Replace any non-alphanumeric character with a space to prevent merging (e.g., A&B -> A B, not AB)
+    n = re.sub(r'[^A-Z0-9]', ' ', n)
+    
+    # Split into words to handle whitespace and suffixes
+    words = n.split()
+    normalized_words = [w for w in words if w not in LEGAL_SUFFIXES]
+    
+    return " ".join(normalized_words)
+
+def normalize_pin(pin: str | None) -> str:
+    """
+    Normalizes a PIN by removing all whitespace and uppercasing.
+    Does not strip other characters.
+    """
+    if not pin:
+        return ""
+    return re.sub(r'\s+', '', pin.upper())
 
 def normalize_invoice_data(
     pin: str | None,

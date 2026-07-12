@@ -138,6 +138,8 @@ def get_session_reconciliation_results(
                 amount_match=r.amount_match,
                 vat_match=r.vat_match,
                 date_match=r.date_match,
+                partner_name_matches=r.partner_name_matches,
+                pin_matches=r.pin_matches,
                 differences=[] # derived by frontend, empty is safe
             )
         )
