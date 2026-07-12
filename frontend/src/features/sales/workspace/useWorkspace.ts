@@ -171,8 +171,8 @@ export function useWorkspace(type: "sales" | "purchases") {
     uiState, 
     sapPagination.totalItems || 0, 
     kraPagination.totalItems || 0,
-    summary?.matched_count,
-    summary?.mismatched_count
+    summary?.matches,
+    summary?.mismatches
   );
 
   return {

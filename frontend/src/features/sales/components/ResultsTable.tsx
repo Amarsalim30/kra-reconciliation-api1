@@ -71,6 +71,50 @@ function CompareCell({
   );
 }
 
+function InformationalCell({
+  sapVal,
+  kraVal,
+  hasDiff,
+  isMissingSapRecord,
+  isMissingKraRecord,
+  isName = false,
+}: {
+  sapVal?: string;
+  kraVal?: string;
+  hasDiff: boolean;
+  isMissingSapRecord: boolean;
+  isMissingKraRecord: boolean;
+  isName?: boolean;
+}) {
+  const s = sapVal?.trim() || "Not available";
+  const k = kraVal?.trim() || "Not available";
+
+  if (isMissingSapRecord) return <span className="text-red-600 font-medium truncate block max-w-[150px]" title={k}>{k}</span>;
+  if (isMissingKraRecord) return <span className="text-red-600 font-medium truncate block max-w-[150px]" title={s}>{s}</span>;
+
+  if (!hasDiff) {
+    const displayVal = sapVal?.trim() ? sapVal.trim() : (kraVal?.trim() || (isName ? "-" : "Not available"));
+    return <span className="text-slate-800 truncate block max-w-[150px]" title={displayVal}>{displayVal}</span>;
+  }
+
+  return (
+    <div className="flex flex-col text-xs leading-tight">
+      <div className="flex items-center justify-between">
+        <span className="text-slate-500 w-8">SAP:</span>
+        <span className="text-slate-800 font-medium text-right truncate max-w-[110px]" title={s}>{s}</span>
+      </div>
+      <div className="flex items-center justify-between mt-0.5">
+        <span className="text-slate-500 w-8">KRA:</span>
+        <span className="text-slate-800 font-medium text-right truncate max-w-[110px]" title={k}>{k}</span>
+      </div>
+      <div className="text-amber-600 mt-1 font-medium flex items-center justify-end gap-1">
+        <AlertTriangle className="w-3 h-3" />
+        Diff
+      </div>
+    </div>
+  );
+}
+
 export function ResultsTable({
   results,
   summary,
@@ -256,6 +300,9 @@ export function ResultsTable({
                   else if (r.status === "DUPLICATE_SOURCE_KEY") remark = "Duplicate MatchKey";
                 }
 
+                const pinHasDiff = !r.pin_matches;
+                const nameHasDiff = !r.partner_name_matches;
+
                 return (
                   <React.Fragment key={rowId}>
                     <tr 
@@ -278,15 +325,15 @@ export function ResultsTable({
                       </td>
                       
                       <td className="px-4 py-2 font-mono align-middle">
-                        <CompareCell sapVal={sap.pin} kraVal={kra.pin} isMatch={sap.pin?.trim().toUpperCase() === kra.pin?.trim().toUpperCase()} isMissingSap={isMissingSap} isMissingKra={isMissingKra} />
+                        <InformationalCell sapVal={sap.pin} kraVal={kra.pin} hasDiff={pinHasDiff} isMissingSapRecord={isMissingSap} isMissingKraRecord={isMissingKra} />
                       </td>
                       
                       <td className="px-4 py-2 font-mono align-middle">
                         <CompareCell sapVal={sap.invoice_number} kraVal={kra.invoice_number} isMatch={true} isMissingSap={isMissingSap} isMissingKra={isMissingKra} />
                       </td>
                       
-                      <td className="px-4 py-2 truncate max-w-[150px] align-middle text-slate-800">
-                        {sap.partner_name || kra.partner_name || "-"}
+                      <td className="px-4 py-2 align-middle">
+                        <InformationalCell sapVal={sap.partner_name} kraVal={kra.partner_name} hasDiff={nameHasDiff} isMissingSapRecord={isMissingSap} isMissingKraRecord={isMissingKra} isName={true} />
                       </td>
                       
                       <td className="px-4 py-2 align-middle font-mono">
@@ -336,18 +383,17 @@ export function ResultsTable({
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
-                                {["PIN", "Invoice No", "Partner Name", "Invoice Date", "CU Number", "VAT Group", "Base Amount", "Total Amount"].map((field) => {
+                                {["PIN", "Invoice No", "Partner Name", "Invoice Date", "CU Number", "VAT Group", "Base Amount"].map((field) => {
                                   let sVal: string | number | undefined | null = "-"; let kVal: string | number | undefined | null = "-";
                                   let isFieldMatch = false;
                                   
-                                  if (field === "PIN") { sVal = sap.pin; kVal = kra.pin; isFieldMatch = sVal?.trim().toUpperCase() === kVal?.trim().toUpperCase(); }
+                                  if (field === "PIN") { sVal = sap.pin?.trim() || "Not available"; kVal = kra.pin?.trim() || "Not available"; isFieldMatch = !pinHasDiff; }
                                   if (field === "Invoice No") { sVal = sap.invoice_number; kVal = kra.invoice_number; isFieldMatch = true; }
-                                  if (field === "Partner Name") { sVal = sap.partner_name; kVal = kra.partner_name; isFieldMatch = sVal === kVal; }
+                                  if (field === "Partner Name") { sVal = sap.partner_name?.trim() || "Not available"; kVal = kra.partner_name?.trim() || "Not available"; isFieldMatch = !nameHasDiff; }
                                   if (field === "Invoice Date") { sVal = sap.invoice_date; kVal = kra.invoice_date; isFieldMatch = r.date_match ?? (sVal === kVal); }
                                   if (field === "CU Number") { sVal = sap.cu_number; kVal = kra.cu_number; isFieldMatch = sVal?.trim() === kVal?.trim(); }
                                   if (field === "VAT Group") { sVal = formatVatGroup(sap.vat_group); kVal = formatVatGroup(kra.vat_group); isFieldMatch = r.vat_match ?? (sVal === kVal); }
                                   if (field === "Base Amount") { sVal = sap.base_amount; kVal = kra.base_amount; isFieldMatch = r.amount_match ?? (sVal === kVal); }
-                                  if (field === "Total Amount") { sVal = sap.total_amount; kVal = kra.total_amount; isFieldMatch = sVal === kVal; }
 
                                   // Skip rows where both are null/empty
                                   if (!sVal && !kVal) return null;

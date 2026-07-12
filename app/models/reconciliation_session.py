@@ -71,6 +71,8 @@ class SessionReconciliationResult(Base):
     amount_match: Mapped[bool] = mapped_column(default=True, nullable=False)
     vat_match: Mapped[bool] = mapped_column(default=True, nullable=False)
     date_match: Mapped[bool] = mapped_column(default=True, nullable=False)
+    partner_name_matches: Mapped[bool] = mapped_column(default=True, nullable=False)
+    pin_matches: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     # Snapshot values for SAP
     sap_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)

@@ -24,6 +24,8 @@ class ReconciliationResult(BaseModel):
     amount_match: bool
     vat_match: bool
     date_match: bool
+    partner_name_matches: bool = True
+    pin_matches: bool = True
     differences: list[Difference]
     sap_source_index: int | None = None
     kra_source_index: int | None = None

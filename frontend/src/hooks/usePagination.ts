@@ -74,6 +74,7 @@ export function usePagination<T>(
     setItems,
     page,
     total,
+    totalItems: total,
     totalPages,
     isInitialLoading,
     isLoadingMore,

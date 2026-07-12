@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from datetime import date
 from typing import Sequence, Dict, List, Set, Tuple
+import difflib
 
 from app.schemas.invoice import Invoice, InvoiceSource
 from app.schemas.reconciliation import (
@@ -14,6 +15,36 @@ from app.schemas.reconciliation import (
 )
 from app.domain.reconciliation_status import ReconciliationStatus
 from app.domain.reconciliation_constants import STATUS_PRIORITY
+from app.services.normalization import normalize_partner_name, normalize_pin
+
+def check_pin_matches(sap_inv: Invoice | None, kra_inv: Invoice | None) -> bool:
+    """
+    PIN matches are advisory. If either PIN is missing, we consider it a 'match' 
+    so the UI does not highlight it as a difference.
+    """
+    if not sap_inv or not kra_inv:
+        return True
+    sap_pin = normalize_pin(sap_inv.pin)
+    kra_pin = normalize_pin(kra_inv.pin)
+    if not sap_pin or not kra_pin:
+        return True
+    return sap_pin == kra_pin
+
+def check_partner_name_matches(sap_inv: Invoice | None, kra_inv: Invoice | None) -> bool:
+    """
+    Partner Name matches are advisory. If either is missing, they do not match.
+    """
+    if not sap_inv or not kra_inv:
+        return False
+        
+    sap_norm = normalize_partner_name(sap_inv.partner_name)
+    kra_norm = normalize_partner_name(kra_inv.partner_name)
+    
+    if sap_norm == kra_norm:
+        return True
+        
+    ratio = difflib.SequenceMatcher(None, sap_norm, kra_norm).ratio()
+    return ratio >= 0.85
 
 
 @dataclass(frozen=True)
@@ -108,6 +139,8 @@ def reconcile_invoices(
                         amount_match=False,
                         vat_match=False,
                         date_match=True,  # Date check removed, default to True
+                        partner_name_matches=check_partner_name_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
+                        pin_matches=check_pin_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
                         differences=[
                             Difference(
                                 field=DifferenceField.BASE_AMOUNT,
@@ -147,6 +180,8 @@ def reconcile_invoices(
             amount_match=amount_match,
             vat_match=True,  # MatchKey matched, so VAT group matches
             date_match=True,
+            partner_name_matches=check_partner_name_matches(sap_rec.original_invoice, kra_rec.original_invoice),
+            pin_matches=check_pin_matches(sap_rec.original_invoice, kra_rec.original_invoice),
             differences=differences,
             sap_source_index=sap_idx,
             kra_source_index=kra_idx
@@ -203,6 +238,8 @@ def reconcile_invoices(
                 amount_match=amount_match,
                 vat_match=False,
                 date_match=True,
+                partner_name_matches=check_partner_name_matches(sap_rec.original_invoice, kra_rec.original_invoice),
+                pin_matches=check_pin_matches(sap_rec.original_invoice, kra_rec.original_invoice),
                 differences=differences,
                 sap_source_index=sap_idx,
                 kra_source_index=kra_idx
@@ -230,6 +267,8 @@ def reconcile_invoices(
             amount_match=False,
             vat_match=False,
             date_match=True,
+            partner_name_matches=False,
+            pin_matches=True,
             differences=[],
             sap_source_index=sap_idx,
             kra_source_index=None
@@ -244,6 +283,8 @@ def reconcile_invoices(
             amount_match=False,
             vat_match=False,
             date_match=True,
+            partner_name_matches=False,
+            pin_matches=True,
             differences=[],
             sap_source_index=None,
             kra_source_index=kra_idx
