@@ -28,3 +28,28 @@ export async function exportReconciliationZip(
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export async function downloadTemplate(
+  type: "sales" | "purchases"
+): Promise<void> {
+  const res = await fetchWithAuth(`/templates/${type}`);
+
+  if (!res.ok) {
+    throw new Error("Failed to download template");
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+
+  const disposition = res.headers.get("Content-Disposition");
+  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+  a.download = filenameMatch?.[1] ?? `kra_${type}_template.csv`;
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
