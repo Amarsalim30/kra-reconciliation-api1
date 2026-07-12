@@ -77,8 +77,13 @@ def mock_sap_client(request):
     ]
 
     with patch("app.core.sap_client.SAPClient.login") as mock_login, \
-         patch("app.core.sap_client.SAPClient.get_invoices_pages") as mock_get_pages:
+         patch("app.core.sap_client.SAPClient.get_documents_pages") as mock_get_pages:
         mock_login.return_value = None
-        # Mock generator returning one page of invoices
-        mock_get_pages.return_value = (p for p in [mock_data])
+        
+        def mock_get_pages_side_effect(from_date, to_date, endpoint_name, *args, **kwargs):
+            if endpoint_name == "Invoices":
+                return (p for p in [mock_data])
+            return (p for p in [[]])
+            
+        mock_get_pages.side_effect = mock_get_pages_side_effect
         yield mock_login, mock_get_pages

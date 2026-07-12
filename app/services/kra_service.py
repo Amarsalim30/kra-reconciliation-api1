@@ -155,7 +155,8 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
                 invoice_date=row_values["invoice_date"],
                 cu_number=row_values["cu_number"],
                 vat_group=row_values["vat_group"],
-                base_amount=row_values["base_amount"]
+                base_amount=row_values["base_amount"],
+                allow_negative=True
             )
             invoice = Invoice(**normalized, source=InvoiceSource.KRA)
             invoices.append(invoice)

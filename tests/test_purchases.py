@@ -65,21 +65,25 @@ def fixture_auth_headers(client):
 
 def test_get_purchases_success(client: TestClient, auth_headers, mock_sap_client):
     mock_login, mock_get_pages = mock_sap_client
-    # Mock return data for /PurchaseInvoices page
-    mock_get_pages.return_value = (p for p in [
-        [
-            {
-                "DocNum": 5001,
-                "CardName": "Supplier A",
-                "DocDate": "2026-03-10",
-                "FederalTaxID": "SUPP-PIN-1",
-                "U_CUINV": "CU-PURCH-1",
-                "DocumentLines": [
-                    {"VatGroup": "A16", "LineTotal": 2000.00}
+    def mock_get_pages_side_effect(from_date, to_date, endpoint_name, **kwargs):
+        if endpoint_name == "PurchaseInvoices":
+            return (p for p in [
+                [
+                    {
+                        "DocNum": 5001,
+                        "CardName": "Supplier A",
+                        "DocDate": "2026-03-10",
+                        "FederalTaxID": "SUPP-PIN-1",
+                        "U_CUINV": "CU-PURCH-1",
+                        "DocumentLines": [
+                            {"VatGroup": "A16", "LineTotal": 2000.00}
+                        ]
+                    }
                 ]
-            }
-        ]
-    ])
+            ])
+        return (p for p in [[]])
+        
+    mock_get_pages.side_effect = mock_get_pages_side_effect
 
     response = client.get(
         "/api/v1/purchases?from=2026-03-01&to=2026-03-30",
@@ -95,12 +99,17 @@ def test_get_purchases_success(client: TestClient, auth_headers, mock_sap_client
     assert data["invoices"][0]["cu_number"] == "CU-PURCH-1"
     assert data["invoices"][0]["base_amount"] == 2000.00
 
-    # Verify mock was called with ReconciliationType.PURCHASES
-    mock_get_pages.assert_called_once_with(
-        "2026-03-01", "2026-03-30",
-        reconciliation_type=ReconciliationType.PURCHASES,
-        reconciliation_session_id=data["session_id"]
-    )
+    # Verify mock was called for both PurchaseInvoices and PurchaseCreditNotes
+    assert mock_get_pages.call_count == 2
+    
+    first_call_args = mock_get_pages.call_args_list[0]
+    assert first_call_args[0][0] == "2026-03-01"
+    assert first_call_args[0][1] == "2026-03-30"
+    assert first_call_args[1]["endpoint_name"] == "PurchaseInvoices"
+    assert first_call_args[1]["reconciliation_session_id"] == data["session_id"]
+    
+    second_call_args = mock_get_pages.call_args_list[1]
+    assert second_call_args[1]["endpoint_name"] == "PurchaseCreditNotes"
 
 
 def test_upload_purchases_success(client: TestClient, auth_headers, db_session):

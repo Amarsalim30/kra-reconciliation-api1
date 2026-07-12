@@ -134,31 +134,31 @@ class SAPClient:
 
         raise SAPConnectionError(f"SAP Service Layer returned transient error after {attempts} attempts.")
 
-    def get_invoices_pages(
-        self, from_date: str, to_date: str, reconciliation_type: ReconciliationType = ReconciliationType.SALES, reconciliation_session_id: str = "N/A"
+    def get_documents_pages(
+        self, from_date: str, to_date: str, endpoint_name: str, reconciliation_session_id: str = "N/A"
     ) -> Generator[List[Dict[str, Any]], None, None]:
         """
-        Fetches Invoices (Sales or Purchases) page-by-page from Service Layer filtered by date range.
+        Fetches SAP documents (Invoices or Credit Notes) page-by-page from Service Layer filtered by date range.
         Traverses @odata.nextLink exactly as returned by SAP.
-        Yields raw invoice lists (pages) to keep memory footprint low.
+        Yields raw document lists (pages) to keep memory footprint low.
         """
         self._ensure_session()
 
-        # OData filter query — exclude cancelled invoices
+        # OData filter query — Population Filter (exclude cancelled invoices based on default ingestion policy)
+        # TODO: Move to configurable ingestion policy in settings if needed
         filter_str = f"DocDate ge '{from_date}' and DocDate le '{to_date}'  and Cancelled eq 'tNO'"
         params = {"$filter": filter_str}
 
         # Try optimizing with $select if supported. Falling back if query returns HTTP 400.
-        select_str = "FederalTaxID,CardName,DocNum,DocDate,U_CUINV,DocumentLines"
+        select_str = "FederalTaxID,CardName,DocNum,DocDate,U_CUINV,DocumentLines,DocumentSubType"
         params_with_select = {**params, "$select": select_str}
 
-        endpoint = self.ENDPOINT_MAP.get(reconciliation_type, "Invoices")
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/{endpoint_name}"
         next_url = url
         use_select = True
 
         logger.info(
-            f"[ReconciliationSession: {reconciliation_session_id}] Fetching {reconciliation_type.name} from SAP for range {from_date} to {to_date}"
+            f"[ReconciliationSession: {reconciliation_session_id}] Fetching {endpoint_name} from SAP for range {from_date} to {to_date}"
         )
 
         while next_url:
@@ -172,7 +172,7 @@ class SAPClient:
                 )
             except SAPConnectionError as exc:
                 logger.error(
-                    f"[ReconciliationSession: {reconciliation_session_id}] Connection error fetching SAP invoices: {exc}"
+                    f"[ReconciliationSession: {reconciliation_session_id}] Connection error fetching SAP documents: {exc}"
                 )
                 raise
 
@@ -188,7 +188,7 @@ class SAPClient:
                 logger.error(
                     f"[ReconciliationSession: {reconciliation_session_id}] SAP Query failed with status {response.status_code}: {response.text}"
                 )
-                raise SAPQueryError(f"SAP Invoices query failed (HTTP {response.status_code}): {response.text}")
+                raise SAPQueryError(f"SAP documents query failed (HTTP {response.status_code}): {response.text}")
 
             try:
                 data = response.json()
@@ -196,10 +196,10 @@ class SAPClient:
                 logger.error(
                     f"[ReconciliationSession: {reconciliation_session_id}] SAP returned non-JSON data: {response.text}"
                 )
-                raise SAPQueryError("SAP Invoices query returned invalid JSON.")
+                raise SAPQueryError("SAP documents query returned invalid JSON.")
 
-            invoices_page = data.get("value", [])
-            yield invoices_page
+            documents_page = data.get("value", [])
+            yield documents_page
 
             # Traverse @odata.nextLink exactly as returned by SAP
             next_link = data.get("odata.nextLink") or data.get("@odata.nextLink")
