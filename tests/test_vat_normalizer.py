@@ -37,14 +37,40 @@ class TestVatNormalizer:
     def test_already_normalized_value_passthrough(self):
         assert self.normalizer.normalize("sap", "purchases", "16") == "16"
 
+    def test_percent_sign_normalization(self):
+        assert self.normalizer.normalize("sap", "purchases", "16%") == "16"
+        assert self.normalizer.normalize("sap", "purchases", "8%") == "8"
+        assert self.normalizer.normalize("sap", "purchases", "0%") == "0"
+
+    def test_decimal_float_normalization(self):
+        assert self.normalizer.normalize("sap", "purchases", "16.0") == "16"
+        assert self.normalizer.normalize("sap", "purchases", "16.00") == "16"
+        assert self.normalizer.normalize("sap", "purchases", "8.0") == "8"
+        assert self.normalizer.normalize("sap", "purchases", "0.0") == "0"
+
+    def test_exempt_keyword_normalization(self):
+        assert self.normalizer.normalize("sap", "purchases", "EXEMPT") == "EXEMPT"
+        assert self.normalizer.normalize("sap", "purchases", "Exempted") == "EXEMPT"
+        assert self.normalizer.normalize("sap", "purchases", "EX") == "EXEMPT"
+        assert self.normalizer.normalize("sap", "purchases", "E") == "EXEMPT"
+
+    def test_distinction_between_zero_and_exempt(self):
+        assert self.normalizer.normalize("sap", "purchases", "0") == "0"
+        assert self.normalizer.normalize("sap", "purchases", "0.0") == "0"
+        assert self.normalizer.normalize("sap", "purchases", "0%") == "0"
+        assert self.normalizer.normalize("sap", "purchases", "EXEMPT") == "EXEMPT"
+        assert self.normalizer.normalize("sap", "purchases", "I2") == "0"
+        assert self.normalizer.normalize("sap", "purchases", "X1") == "EXEMPT"
+
     def test_empty_string(self):
         assert self.normalizer.normalize("sap", "purchases", "") == ""
 
     def test_whitespace_stripped(self):
         assert self.normalizer.normalize("sap", "purchases", " I1 ") == "16"
 
-    def test_unknown_source_passthrough(self):
-        assert self.normalizer.normalize("dynamics365", "purchases", "I1") == "I1"
+    def test_unknown_source_passthrough_normalized(self):
+        assert self.normalizer.normalize("kra", "purchases", "16.0%") == "16"
+        assert self.normalizer.normalize("kra", "purchases", "EXEMPT") == "EXEMPT"
 
     def test_custom_maps(self):
         custom = VatNormalizer(

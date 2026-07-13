@@ -60,6 +60,16 @@ export function Header() {
           >
             Purchases
           </Link>
+          <Link
+            href="/settings"
+            className={`h-full flex items-center px-1 border-b-2 font-medium text-sm transition-colors gap-1.5 ${
+              isActive("/settings")
+                ? "border-blue-600 text-blue-600 font-semibold"
+                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+            }`}
+          >
+            Settings
+          </Link>
         </nav>
       </div>
 
