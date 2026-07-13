@@ -39,17 +39,17 @@ export default function DashboardLayout({
 
   if (!authorized) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="relative w-10 h-10">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+      <div suppressHydrationWarning className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div suppressHydrationWarning className="relative w-10 h-10">
+          <div suppressHydrationWarning className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+          <div suppressHydrationWarning className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div suppressHydrationWarning className="min-h-screen bg-slate-50 flex flex-col">
       <Header />
       <main className="flex-1 w-full px-8 py-8 flex flex-col gap-8">
         {children}
