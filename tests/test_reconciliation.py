@@ -388,7 +388,7 @@ def test_reconciliation_exact_match_precedence():
     kra_rec = Invoice(
         pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="16",
-        base_amount=Decimal("90.00"), source=InvoiceSource.KRA
+        base_amount=Decimal("89.99"), source=InvoiceSource.KRA
     )
     summary, results = reconciliation_service.reconcile_invoices([sap_rec], [kra_rec])
     assert summary.matches == 0
@@ -616,7 +616,7 @@ def test_reconciliation_multi_vat_partial_success():
     kra2 = Invoice(
         pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=date(2026, 3, 1), cu_number="CU1", vat_group="0",
-        base_amount=Decimal("60.00"), source=InvoiceSource.KRA
+        base_amount=Decimal("60.01"), source=InvoiceSource.KRA
     )
     summary, results = reconciliation_service.reconcile_invoices([sap1, sap2], [kra1, kra2])
     assert summary.matches == 1

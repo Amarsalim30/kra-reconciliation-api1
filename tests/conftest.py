@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 @pytest.fixture(autouse=True)
 def mock_sap_client(request):
-    if "test_sap_integration" in request.node.nodeid:
+    if "test_sap_integration" in request.node.nodeid or "test_relaxed_filters_tolerance" in request.node.nodeid:
         yield None, None
         return
 

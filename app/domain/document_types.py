@@ -31,8 +31,6 @@ class CanonicalReconciliationRow:
 
     def __post_init__(self):
         # Enforce mandatory fields
-        if not self.cu_number:
-            raise ValueError("CU Number is a mandatory field for CanonicalReconciliationRow")
         if not self.vat_group:
             raise ValueError("VAT Group is a mandatory field for CanonicalReconciliationRow")
         if self.base_amount is None:
