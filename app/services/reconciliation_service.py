@@ -79,12 +79,17 @@ class ReconciliationRecord:
 
 def reconcile_invoices(
     sap: list[Invoice],
-    kra: list[Invoice]
+    kra: list[Invoice],
+    amount_tolerance: Decimal = None
 ) -> tuple[ReconciliationSummary, list[ReconciliationResult]]:
     """
     Executes the 4-phase reconciliation matching algorithm on SAP and KRA invoices.
     Uses MatchKey and CuKey abstractions for ERP-agnostic, deterministic O(n) reconciliation.
     """
+    if amount_tolerance is None:
+        from app.core.config import get_settings
+        amount_tolerance = get_settings().amount_tolerance
+
     results: list[ReconciliationResult] = []
 
     # Map input lists to ReconciliationRecord instances
@@ -159,7 +164,7 @@ def reconcile_invoices(
         sap_rec, sap_idx = sap_index[match_key]
         kra_rec, kra_idx = kra_index[match_key]
         
-        amount_match = sap_rec.base_amount == kra_rec.base_amount
+        amount_match = abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
         
         differences = []
         if not amount_match:
@@ -200,7 +205,7 @@ def reconcile_invoices(
     kra_unmatched_by_cu = defaultdict(list)
     for record, idx in remaining_kra_records:
         kra_unmatched_by_cu[CuKey(record.cu_number)].append((record, idx))
-
+ 
     sap_paired_keys: set[MatchKey] = set()
     kra_paired_keys: set[MatchKey] = set()
 
@@ -209,8 +214,8 @@ def reconcile_invoices(
             sap_rec, sap_idx = sap_unmatched_by_cu[cu_key][0]
             kra_rec, kra_idx = kra_unmatched_by_cu[cu_key][0]
             
-            # Compare base amounts (VAT groups differ)
-            amount_match = sap_rec.base_amount == kra_rec.base_amount
+            # Compare base amounts (VAT groups differ) using tolerance
+            amount_match = abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
             
             differences = [
                 Difference(

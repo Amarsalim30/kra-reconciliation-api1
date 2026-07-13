@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
@@ -35,6 +36,8 @@ class Settings(BaseSettings):
     sap_company_db: str = Field(default="", alias="SAP_COMPANY_DB")
     sap_verify_ssl: bool = Field(default=True, alias="SAP_VERIFY_SSL")
     sap_base_amount_policy: BaseAmountPolicy = Field(default=BaseAmountPolicy.SKIP, alias="SAP_BASE_AMOUNT_POLICY")
+
+    amount_tolerance: Decimal = Field(default=Decimal("10.00"), alias="AMOUNT_TOLERANCE")
 
     max_upload_size_mb: int = Field(default=5, alias="MAX_UPLOAD_SIZE_MB")
     kra_header_mapping: dict[str, str] = Field(

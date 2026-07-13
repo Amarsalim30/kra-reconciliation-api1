@@ -98,9 +98,9 @@ def test_normalization_iso_date_success():
 
 
 def test_normalization_missing_fields():
-    # Customer name is required
-    with pytest.raises(ValueError, match="Customer Name is required"):
-        normalize_invoice_data("PIN123", None, "IN1080", "2026-03-02", "CU123", "16", 100)
+    # Customer name, PIN and CU number are optional, defaulting to empty string
+    res = normalize_invoice_data("PIN123", None, "IN1080", "2026-03-02", "CU123", "16", 100)
+    assert res["partner_name"] == ""
 
     # Invoice Date is required
     with pytest.raises(ValueError, match="Invoice Date is required"):

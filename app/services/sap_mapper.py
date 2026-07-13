@@ -53,10 +53,8 @@ def map_sap_document_to_canonical_rows(
         raise SAPQueryError(f"SAP {source_document_type} is missing required field: DocNum")
     invoice_number = str(invoice_number_raw).strip()
 
-    partner_name = raw_document.get("CardName")
-    if partner_name is None:
-        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} is missing required field: CardName")
-    partner_name = str(partner_name).strip()
+    partner_name_raw = raw_document.get("CardName")
+    partner_name = str(partner_name_raw).strip() if partner_name_raw is not None else ""
 
     doc_date_raw = raw_document.get("DocDate")
     if doc_date_raw is None:
@@ -77,13 +75,9 @@ def map_sap_document_to_canonical_rows(
     else:
         pin = str(raw_pin).strip()
 
-    # Mandatory CU Number
+    # CU Number (Relaxed validation, allows empty/missing)
     raw_cu = raw_document.get("U_CUINV")
-    if not raw_cu:
-        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} is missing required field: U_CUINV")
-    cu_number = str(raw_cu).strip().lstrip("|").strip()
-    if not cu_number:
-        raise SAPQueryError(f"SAP {source_document_type} {invoice_number} has empty U_CUINV")
+    cu_number = str(raw_cu).strip().lstrip("|").strip() if raw_cu else ""
 
     document_lines = raw_document.get("DocumentLines", [])
     if not document_lines:

@@ -59,12 +59,8 @@ def normalize_invoice_data(
     # 1. PIN (Allow empty string as fallback)
     norm_pin = "" if pin is None else str(pin).strip()
 
-    # 2. Partner Name
-    if partner_name is None:
-        raise ValueError("Customer Name is required")  # Keep exception message for KRA CSV validation compatibility if needed, but let's change to Partner Name or keep it as is
-    norm_partner_name = str(partner_name).strip()
-    if not norm_partner_name:
-        raise ValueError("Customer Name cannot be empty")
+    # 2. Partner Name (Allow empty string as fallback)
+    norm_partner_name = "" if partner_name is None else str(partner_name).strip()
 
     # 3. Invoice Number
     if invoice_number is None:
