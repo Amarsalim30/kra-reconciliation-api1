@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType
+from app.schemas.reconciliation import ReconciliationStatus
 from app.services.sap_mapper import map_sap_document_to_canonical_rows
 from app.services.normalization import normalize_invoice_data
 from app.services.reconciliation_service import reconcile_invoices
@@ -183,3 +184,95 @@ def test_amount_tolerance_sign_check():
     assert summary.matches == 0
     assert summary.mismatches == 1
     assert results[0].amount_match is False
+
+
+def test_missing_cu_number_cannot_participate_in_reconciliation():
+    # Verify that a document with empty/missing CU number cannot participate in reconciliation
+    sap_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    # Even if KRA has a document with matching details (e.g. amount, pin, vat, same blank/no CU),
+    # they cannot reconcile because the primary match key is absent.
+    kra_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    
+    summary, results = reconcile_invoices([sap_inv], [kra_inv])
+    assert summary.matches == 0
+    assert summary.missing_cu == 2
+    for r in results:
+        assert r.status == ReconciliationStatus.MISSING_CU_NUMBER
+
+
+def test_duplicate_source_key_only_on_non_empty_cu():
+    # Verify that duplicate source key is only generated when two or more documents
+    # share the same non-empty (cu_number, vat_group).
+    # Multiple documents with empty/missing CU number should not trigger duplicates of each other,
+    # they should just be treated as missing CU numbers.
+    sap_inv_empty1 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_inv_empty2 = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV2",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    
+    # Non-empty duplicate keys
+    sap_inv_dup1 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV3",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    sap_inv_dup2 = Invoice(
+        pin="P2", partner_name="Cust2", invoice_number="INV4",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="CU_DUP", vat_group="16",
+        base_amount=Decimal("150.00"), source=InvoiceSource.SAP
+    )
+    
+    summary, results = reconcile_invoices([sap_inv_empty1, sap_inv_empty2, sap_inv_dup1, sap_inv_dup2], [])
+    
+    # We should have:
+    # 2 MISSING_CU_NUMBER (from empty1 and empty2)
+    # 2 DUPLICATE_SOURCE_KEY (from dup1 and dup2)
+    assert summary.missing_cu == 2
+    assert summary.duplicate_cu == 2
+    
+    empty_results = [r for r in results if r.status == ReconciliationStatus.MISSING_CU_NUMBER]
+    dup_results = [r for r in results if r.status == ReconciliationStatus.DUPLICATE_SOURCE_KEY]
+    
+    assert len(empty_results) == 2
+    assert len(dup_results) == 2
+
+
+def test_unknown_vat_group_handling_graceful():
+    # Verify that an unknown VAT group from SAP is handled gracefully:
+    # it is passed through stripped and doesn't cause any crashes or exceptions.
+    sap_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="CU1", vat_group="UK_VAT_UNKNOWN",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    kra_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    
+    summary, results = reconcile_invoices([sap_inv], [kra_inv])
+    # The different VAT groups ("UK_VAT_UNKNOWN" vs "16") will cause a VAT mismatch,
+    # but the reconciliation process completes successfully without crashing.
+    assert summary.matches == 0
+    assert summary.mismatches == 1
+    assert results[0].status == ReconciliationStatus.VAT_MISMATCH
+    assert results[0].vat_match is False
+    assert results[0].differences[0].sap_value == "UK_VAT_UNKNOWN"
+    assert results[0].differences[0].kra_value == "16"
+
+
