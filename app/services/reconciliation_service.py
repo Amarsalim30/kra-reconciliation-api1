@@ -159,12 +159,16 @@ def reconcile_invoices(
                     ))
 
     # Phase 1: Exact Match
-    intersection = sap_index.keys() & kra_index.keys()
+    intersection = {k for k in (sap_index.keys() & kra_index.keys()) if k.cu_number.strip() != ""}
     for match_key in intersection:
         sap_rec, sap_idx = sap_index[match_key]
         kra_rec, kra_idx = kra_index[match_key]
         
-        amount_match = abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
+        # Enforce that amounts have compatible signs and are within tolerance
+        amount_match = (
+            (sap_rec.base_amount * kra_rec.base_amount >= 0)
+            and abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
+        )
         
         differences = []
         if not amount_match:
@@ -197,14 +201,16 @@ def reconcile_invoices(
     remaining_sap_records = [item for k, item in sap_index.items() if k not in intersection]
     remaining_kra_records = [item for k, item in kra_index.items() if k not in intersection]
     
-    # Group remaining unmatched records by their CuKey
+    # Group remaining unmatched records by their CuKey, excluding empty CU numbers from pairing
     sap_unmatched_by_cu = defaultdict(list)
     for record, idx in remaining_sap_records:
-        sap_unmatched_by_cu[CuKey(record.cu_number)].append((record, idx))
+        if record.cu_number.strip() != "":
+            sap_unmatched_by_cu[CuKey(record.cu_number)].append((record, idx))
         
     kra_unmatched_by_cu = defaultdict(list)
     for record, idx in remaining_kra_records:
-        kra_unmatched_by_cu[CuKey(record.cu_number)].append((record, idx))
+        if record.cu_number.strip() != "":
+            kra_unmatched_by_cu[CuKey(record.cu_number)].append((record, idx))
  
     sap_paired_keys: set[MatchKey] = set()
     kra_paired_keys: set[MatchKey] = set()
@@ -214,8 +220,11 @@ def reconcile_invoices(
             sap_rec, sap_idx = sap_unmatched_by_cu[cu_key][0]
             kra_rec, kra_idx = kra_unmatched_by_cu[cu_key][0]
             
-            # Compare base amounts (VAT groups differ) using tolerance
-            amount_match = abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
+            # Compare base amounts (VAT groups differ) using tolerance and sign check
+            amount_match = (
+                (sap_rec.base_amount * kra_rec.base_amount >= 0)
+                and abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
+            )
             
             differences = [
                 Difference(

@@ -142,3 +142,43 @@ def test_amount_tolerance_matching():
     assert results_10_01[0].amount_match is False
     assert len(results_10_01[0].differences) == 1
     assert results_10_01[0].differences[0].field == "base_amount"
+
+
+def test_empty_cu_numbers_do_not_match():
+    # Verify that two records with empty CU numbers do not match in Phase 1 or 2, and remain separate.
+    sap_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.SAP
+    )
+    kra_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
+        base_amount=Decimal("100.00"), source=InvoiceSource.KRA
+    )
+    
+    summary, results = reconcile_invoices([sap_inv], [kra_inv], amount_tolerance=Decimal("10.00"))
+    # Should not pair them. They should remain as MISSING_IN_KRA (for SAP) and MISSING_IN_SAP (for KRA).
+    assert summary.matches == 0
+    assert summary.missing_in_kra == 1
+    assert summary.missing_in_sap == 1
+    assert len(results) == 2
+
+
+def test_amount_tolerance_sign_check():
+    # Verify that even if difference is <= tolerance, different signs do not match.
+    sap_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("2.00"), source=InvoiceSource.SAP
+    )
+    kra_inv = Invoice(
+        pin="P1", partner_name="Cust1", invoice_number="INV1",
+        invoice_date=datetime.date(2026, 3, 1), cu_number="CU1", vat_group="16",
+        base_amount=Decimal("-2.00"), source=InvoiceSource.KRA
+    )
+    
+    summary, results = reconcile_invoices([sap_inv], [kra_inv], amount_tolerance=Decimal("10.00"))
+    assert summary.matches == 0
+    assert summary.mismatches == 1
+    assert results[0].amount_match is False
