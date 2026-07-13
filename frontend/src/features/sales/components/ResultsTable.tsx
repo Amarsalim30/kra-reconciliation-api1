@@ -26,7 +26,7 @@ interface ResultsTableProps {
   onLoadMore?: () => void;
 }
 
-type FilterType = "All" | "Issues" | "Matches" | "Missing SAP" | "Missing KRA" | "Amount" | "VAT" | "Date" | "Multiple";
+type FilterType = "All" | "Issues" | "Matches" | "Missing CU" | "Missing SAP" | "Missing KRA" | "Amount" | "VAT" | "Date" | "Multiple";
 type SortField = "pin" | "invoice_number" | "invoice_date" | "base_amount" | "vat_group" | "status";
 type SortOrder = "asc" | "desc" | null;
 
@@ -164,6 +164,7 @@ export function ResultsTable({
         filterSet.add("Matches");
       } else {
         filterSet.add("Issues");
+        if (st === "MISSING_CU_NUMBER" || st === "Missing CU Number") filterSet.add("Missing CU");
         if (st === "MISSING_IN_SAP" || st === "Missing in SAP") filterSet.add("Missing SAP");
         if (st === "MISSING_IN_KRA" || st === "Missing in KRA") filterSet.add("Missing KRA");
         if (st === "AMOUNT_MISMATCH") filterSet.add("Amount");
@@ -172,7 +173,7 @@ export function ResultsTable({
         if (st === "MULTIPLE_MISMATCHES" || st === "DUPLICATE_SOURCE_KEY") filterSet.add("Multiple");
       }
     });
-    const order: FilterType[] = ["All", "Issues", "Matches", "Missing SAP", "Missing KRA", "Amount", "VAT", "Date", "Multiple"];
+    const order: FilterType[] = ["All", "Issues", "Matches", "Missing CU", "Missing SAP", "Missing KRA", "Amount", "VAT", "Date", "Multiple"];
     return order.filter(f => filterSet.has(f));
   }, [results]);
 
@@ -184,6 +185,7 @@ export function ResultsTable({
       if (activeFilter === "All") return true;
       if (activeFilter === "Matches") return st === "MATCH" || st === "Matched" || st === "Match";
       if (activeFilter === "Issues") return st !== "MATCH" && st !== "Matched" && st !== "Match";
+      if (activeFilter === "Missing CU") return st === "MISSING_CU_NUMBER" || st === "Missing CU Number";
       if (activeFilter === "Missing SAP") return st === "MISSING_IN_SAP" || st === "Missing in SAP";
       if (activeFilter === "Missing KRA") return st === "MISSING_IN_KRA" || st === "Missing in KRA";
       if (activeFilter === "Amount") return st === "AMOUNT_MISMATCH";
@@ -294,6 +296,7 @@ export function ResultsTable({
                 const isMatch = r.status === "Match" || r.status === "Matched" || r.status === "MATCH";
                 const isMissingSap = r.status === "Missing in SAP" || r.status === "MISSING_IN_SAP";
                 const isMissingKra = r.status === "Missing in KRA" || r.status === "MISSING_IN_KRA";
+                const isMissingCu = r.status === "Missing CU Number" || r.status === "MISSING_CU_NUMBER";
                 
                 const sap = r.sap || {} as Partial<Invoice>;
                 const kra = r.kra || {} as Partial<Invoice>;
@@ -306,6 +309,9 @@ export function ResultsTable({
                 if (isMatch) {
                   remark = "Match";
                   remarkColor = "text-green-600";
+                } else if (isMissingCu) {
+                  remark = "Missing CU Number";
+                  remarkColor = "text-purple-600";
                 } else if (isMissingSap) {
                   remark = "Missing in SAP";
                   remarkColor = "text-red-600";

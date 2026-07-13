@@ -145,7 +145,7 @@ def test_amount_tolerance_matching():
 
 
 def test_empty_cu_numbers_do_not_match():
-    # Verify that two records with empty CU numbers do not match in Phase 1 or 2, and remain separate.
+    # Verify that two records with empty CU numbers do not match in Phase 1 or 2, and receive MISSING_CU_NUMBER status.
     sap_inv = Invoice(
         pin="P1", partner_name="Cust1", invoice_number="INV1",
         invoice_date=datetime.date(2026, 3, 1), cu_number="", vat_group="16",
@@ -158,11 +158,12 @@ def test_empty_cu_numbers_do_not_match():
     )
     
     summary, results = reconcile_invoices([sap_inv], [kra_inv], amount_tolerance=Decimal("10.00"))
-    # Should not pair them. They should remain as MISSING_IN_KRA (for SAP) and MISSING_IN_SAP (for KRA).
+    # Should not pair them. They should receive MISSING_CU_NUMBER status.
     assert summary.matches == 0
-    assert summary.missing_in_kra == 1
-    assert summary.missing_in_sap == 1
+    assert summary.missing_cu == 2
     assert len(results) == 2
+    assert results[0].status == "Missing CU Number"
+    assert results[1].status == "Missing CU Number"
 
 
 def test_amount_tolerance_sign_check():

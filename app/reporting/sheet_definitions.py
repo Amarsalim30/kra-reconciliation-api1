@@ -50,6 +50,7 @@ _KRA_VAT = SheetColumn(header="KRA VAT", attr="kra_vat_group", width=12)
 
 NEEDS_REVIEW_STATUSES = frozenset({
     ReconciliationStatus.DUPLICATE_SOURCE_KEY,
+    ReconciliationStatus.MISSING_CU_NUMBER,
     ReconciliationStatus.MISSING_IN_SAP,
     ReconciliationStatus.MISSING_IN_KRA,
     ReconciliationStatus.AMOUNT_MISMATCH,
@@ -68,6 +69,15 @@ WORKBOOK_DEFINITIONS: tuple[WorkbookDefinition, ...] = (
     WorkbookDefinition(
         filename="02 Exceptions.xlsx",
         sheets=(
+            SheetDefinition(
+                title="Missing CU Number",
+                columns=(
+                    _CU_COL,
+                    _SAP_PIN, _SAP_PARTNER, _SAP_INV_NUM, _SAP_DATE, _SAP_AMOUNT, _SAP_VAT,
+                    _KRA_PIN, _KRA_PARTNER, _KRA_INV_NUM, _KRA_DATE, _KRA_AMOUNT, _KRA_VAT,
+                ),
+                statuses=frozenset({ReconciliationStatus.MISSING_CU_NUMBER}),
+            ),
             SheetDefinition(
                 title="Missing in SAP",
                 columns=(

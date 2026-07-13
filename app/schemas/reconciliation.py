@@ -41,6 +41,7 @@ class ReconciliationSummary(BaseModel):
     matches: int
     missing_in_sap: int
     missing_in_kra: int
+    missing_cu: int = 0
     mismatches: int
     duplicate_cu: int
     match_percentage: float
