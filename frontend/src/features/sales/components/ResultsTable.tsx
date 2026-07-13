@@ -176,27 +176,23 @@ export function ResultsTable({
     return order.filter(f => filterSet.has(f));
   }, [results]);
 
-  useEffect(() => {
-    if (!availableFilters.includes(filter)) {
-      setFilter("All");
-    }
-  }, [availableFilters, filter]);
+  const activeFilter = availableFilters.includes(filter) ? filter : "All";
 
   const filteredResults = useMemo(() => {
     return results.filter((r) => {
       const st = r.status;
-      if (filter === "All") return true;
-      if (filter === "Matches") return st === "MATCH" || st === "Matched" || st === "Match";
-      if (filter === "Issues") return st !== "MATCH" && st !== "Matched" && st !== "Match";
-      if (filter === "Missing SAP") return st === "MISSING_IN_SAP" || st === "Missing in SAP";
-      if (filter === "Missing KRA") return st === "MISSING_IN_KRA" || st === "Missing in KRA";
-      if (filter === "Amount") return st === "AMOUNT_MISMATCH";
-      if (filter === "VAT") return st === "VAT_MISMATCH";
-      if (filter === "Date") return st === "DATE_MISMATCH";
-      if (filter === "Multiple") return st === "MULTIPLE_MISMATCHES" || st === "DUPLICATE_SOURCE_KEY";
+      if (activeFilter === "All") return true;
+      if (activeFilter === "Matches") return st === "MATCH" || st === "Matched" || st === "Match";
+      if (activeFilter === "Issues") return st !== "MATCH" && st !== "Matched" && st !== "Match";
+      if (activeFilter === "Missing SAP") return st === "MISSING_IN_SAP" || st === "Missing in SAP";
+      if (activeFilter === "Missing KRA") return st === "MISSING_IN_KRA" || st === "Missing in KRA";
+      if (activeFilter === "Amount") return st === "AMOUNT_MISMATCH";
+      if (activeFilter === "VAT") return st === "VAT_MISMATCH";
+      if (activeFilter === "Date") return st === "DATE_MISMATCH";
+      if (activeFilter === "Multiple") return st === "MULTIPLE_MISMATCHES" || st === "DUPLICATE_SOURCE_KEY";
       return true;
     });
-  }, [results, filter]);
+  }, [results, activeFilter]);
 
   const sortedResults = useMemo(() => {
     if (!sortField || !sortOrder) return filteredResults;
@@ -256,7 +252,7 @@ export function ResultsTable({
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-md transition-colors ${filter === f ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+              className={`px-3 py-1.5 rounded-md transition-colors ${activeFilter === f ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
             >
               {f}
             </button>
