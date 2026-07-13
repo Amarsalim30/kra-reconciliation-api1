@@ -12,6 +12,7 @@ def build_summary(
     matches = sum(1 for r in rows if r.status == ReconciliationStatus.MATCH)
     missing_in_sap = sum(1 for r in rows if r.status == ReconciliationStatus.MISSING_IN_SAP)
     missing_in_kra = sum(1 for r in rows if r.status == ReconciliationStatus.MISSING_IN_KRA)
+    missing_cu = sum(1 for r in rows if r.status == ReconciliationStatus.MISSING_CU_NUMBER)
     mismatches = sum(1 for r in rows if r.status in (
         ReconciliationStatus.AMOUNT_MISMATCH,
         ReconciliationStatus.VAT_MISMATCH,
@@ -42,6 +43,7 @@ def build_summary(
         matches=matches,
         missing_in_sap=missing_in_sap,
         missing_in_kra=missing_in_kra,
+        missing_cu=missing_cu,
         mismatches=mismatches,
         duplicate_cu=duplicate_cu,
         match_percentage=match_percentage,

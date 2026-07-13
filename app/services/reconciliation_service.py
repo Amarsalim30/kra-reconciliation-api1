@@ -126,6 +126,30 @@ def reconcile_invoices(
     for source_records, source_index_map in ((sap_records, sap_index), (kra_records, kra_index)):
         groups = defaultdict(list)
         for i, record in enumerate(source_records):
+            if not record.cu_number or record.cu_number.strip() == "":
+                is_sap = record.original_invoice.source == InvoiceSource.SAP
+                results.append(ReconciliationResult(
+                    cu_number=record.cu_number or "",
+                    sap=record.original_invoice if is_sap else None,
+                    kra=record.original_invoice if not is_sap else None,
+                    status=ReconciliationStatus.MISSING_CU_NUMBER,
+                    amount_match=False,
+                    vat_match=False,
+                    date_match=True,
+                    partner_name_matches=check_partner_name_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
+                    pin_matches=check_pin_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
+                    differences=[
+                        Difference(
+                            field=DifferenceField.BASE_AMOUNT,
+                            match=False,
+                            sap_value="Missing CU Number" if is_sap else "None",
+                            kra_value="Missing CU Number" if not is_sap else "None"
+                        )
+                    ],
+                    sap_source_index=i if is_sap else None,
+                    kra_source_index=i if not is_sap else None
+                ))
+                continue
             groups[record.match_key].append((record, i))
             
         for match_key, items in groups.items():
@@ -310,6 +334,7 @@ def reconcile_invoices(
     matches = sum(1 for r in results if r.status == ReconciliationStatus.MATCH)
     missing_in_sap = sum(1 for r in results if r.status == ReconciliationStatus.MISSING_IN_SAP)
     missing_in_kra = sum(1 for r in results if r.status == ReconciliationStatus.MISSING_IN_KRA)
+    missing_cu = sum(1 for r in results if r.status == ReconciliationStatus.MISSING_CU_NUMBER)
     duplicate_cu = sum(1 for r in results if r.status == ReconciliationStatus.DUPLICATE_SOURCE_KEY)
     mismatches = sum(1 for r in results if r.status in (
         ReconciliationStatus.AMOUNT_MISMATCH,
@@ -339,6 +364,7 @@ def reconcile_invoices(
         matches=matches,
         missing_in_sap=missing_in_sap,
         missing_in_kra=missing_in_kra,
+        missing_cu=missing_cu,
         mismatches=mismatches,
         duplicate_cu=duplicate_cu,
         match_percentage=match_percentage,

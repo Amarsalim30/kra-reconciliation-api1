@@ -28,4 +28,5 @@ export interface ReconciliationSummary {
   mismatches: number;
   missing_in_sap: number;
   missing_in_kra: number;
+  missing_cu?: number;
 }

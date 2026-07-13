@@ -8,6 +8,7 @@ from app.domain.reconciliation_status import ReconciliationStatus
 # Starting at 1: 0 conventionally means "unspecified" in CASE expressions.
 STATUS_ORDER: tuple[ReconciliationStatus, ...] = (
     ReconciliationStatus.DUPLICATE_SOURCE_KEY,
+    ReconciliationStatus.MISSING_CU_NUMBER,
     ReconciliationStatus.MISSING_IN_SAP,
     ReconciliationStatus.MISSING_IN_KRA,
     ReconciliationStatus.MULTIPLE_MISMATCHES,
@@ -32,6 +33,7 @@ REMARK_MAP: dict[ReconciliationStatus, str] = {
     ReconciliationStatus.MULTIPLE_MISMATCHES: "Multiple Mismatches",
     ReconciliationStatus.MISSING_IN_SAP:      "Missing in SAP",
     ReconciliationStatus.MISSING_IN_KRA:      "Missing in KRA",
+    ReconciliationStatus.MISSING_CU_NUMBER:   "Missing CU Number",
     ReconciliationStatus.DUPLICATE_SOURCE_KEY: "Duplicate MatchKey detected (CU Number + VAT Group)",
 }
 

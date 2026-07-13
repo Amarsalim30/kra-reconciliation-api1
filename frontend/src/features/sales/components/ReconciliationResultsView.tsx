@@ -29,6 +29,12 @@ export function ReconciliationResultsView({
 }: ReconciliationResultsViewProps) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
@@ -59,7 +65,7 @@ export function ReconciliationResultsView({
           </button>
           <div className="h-4 w-px bg-slate-300"></div>
           <span className="text-sm font-medium text-slate-500">
-            Completed {new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {mounted ? `Completed ${new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : "Completed"}
           </span>
         </div>
         
