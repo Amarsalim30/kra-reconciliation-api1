@@ -8,22 +8,26 @@ from app.schemas.invoice import Invoice, CSVValidationErrorDetail, InvoiceUpload
 from app.services.normalization import normalize_invoice_data
 
 
+from app.models.settings import VatModule
 import re
 
-def resolve_filename_to_section(filename: str, mappings: dict) -> tuple[str | None, dict | None]:
+def resolve_filename_to_section(filename: str, mappings: dict, target_module: VatModule) -> tuple[str | None, dict | None]:
     """
-    Given a filename and the mappings dictionary (from system settings),
-    finds the first active section whose regex pattern matches the filename.
+    Given a filename, mappings dictionary, and a target module (sales/purchases),
+    finds the first active section whose regex pattern matches the filename and belongs to target_module.
     Returns (section_id, section_config_dict) if matched, else (None, None).
     """
     filename_upper = filename.upper()
+    target_module_str = target_module.value if hasattr(target_module, "value") else target_module
+    
     for sec_id, config in mappings.items():
         # Legacy fallback
         if isinstance(config, str):
             config = {
                 "identifier": sec_id,
+                "module": "sales" if sec_id == "SEC_B" else "purchases",
                 "display_name": f"Section {sec_id.split('_')[-1]}",
-                "filename_regex": f"(?i).*sec[_-]?{sec_id.split('_')[-1].lower()}.*",
+                "filename_regex": f"(?i).*sec[_-]?b_with_vat_pin.*" if sec_id == "SEC_B" else f"(?i).*sec[_-]?{sec_id.split('_')[-1].lower()}.*",
                 "vat_group": config,
                 "required": sec_id in ("SEC_B", "SEC_F"),
                 "column_mapping": {
@@ -45,6 +49,11 @@ def resolve_filename_to_section(filename: str, mappings: dict) -> tuple[str | No
         if not config.get("active", True):
             continue
 
+        # Check module matching
+        config_module = config.get("module")
+        if config_module != target_module_str:
+            continue
+
         regex_pattern = config.get("filename_regex")
         if not regex_pattern:
             continue
@@ -60,11 +69,16 @@ def resolve_filename_to_section(filename: str, mappings: dict) -> tuple[str | No
     for sec_id, config in mappings.items():
         if isinstance(config, str):
             if sec_id.upper() in filename_upper:
-                # Synthesize fallback config
+                inferred_module = "sales" if sec_id == "SEC_B" else "purchases"
+                if inferred_module != target_module_str:
+                    continue
+                if sec_id == "SEC_B" and ("WITHOUT_PIN" in filename_upper or "WITHOUT_VAT_PIN" in filename_upper):
+                    continue
                 return sec_id, {
                     "identifier": sec_id,
+                    "module": inferred_module,
                     "display_name": f"Section {sec_id.split('_')[-1]}",
-                    "filename_regex": f"(?i).*sec[_-]?{sec_id.split('_')[-1].lower()}.*",
+                    "filename_regex": f"(?i).*sec[_-]?b_with_vat_pin.*" if sec_id == "SEC_B" else f"(?i).*sec[_-]?{sec_id.split('_')[-1].lower()}.*",
                     "vat_group": config,
                     "required": sec_id in ("SEC_B", "SEC_F"),
                     "column_mapping": {
@@ -82,8 +96,12 @@ def resolve_filename_to_section(filename: str, mappings: dict) -> tuple[str | No
                     "active": True
                 }
         elif isinstance(config, dict) and config.get("active", True):
-            if sec_id.upper() in filename_upper:
-                return sec_id, config
+            config_module = config.get("module")
+            if config_module == target_module_str:
+                if sec_id.upper() in filename_upper:
+                    if sec_id == "SEC_B" and ("WITHOUT_PIN" in filename_upper or "WITHOUT_VAT_PIN" in filename_upper):
+                        continue
+                    return sec_id, config
 
     return None, None
 

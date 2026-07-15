@@ -150,8 +150,9 @@ class SAPClient:
         params = {"$filter": filter_str}
 
         # Try optimizing with $select if supported. Falling back if query returns HTTP 400.
-        select_str = "FederalTaxID,CardName,DocNum,DocDate,U_CUINV,DocumentLines,DocumentSubType"
+        select_str = "FederalTaxID,CardName,DocNum,DocDate,U_CUINV,NumAtCard,U_CUSerial,EDocNum,PaymentReference,DocumentLines,DocumentSubType"
         params_with_select = {**params, "$select": select_str}
+
 
         url = f"{self.base_url}/{endpoint_name}"
         next_url = url
@@ -211,3 +212,31 @@ class SAPClient:
                     next_url = f"{self.base_url}/{next_link}"
             else:
                 next_url = None
+
+    def get_recent_documents(self, endpoint_name: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Fetches a list of recent documents from SAP Service Layer for preview mapping.
+        """
+        self._ensure_session()
+        url = f"{self.base_url}/{endpoint_name}"
+        params = {
+            "$top": limit,
+            "$orderby": "DocDate desc, DocNum desc",
+            "$select": "DocEntry,DocNum,CardName,DocDate"
+        }
+        response = self._execute_request_with_retry("GET", url, params=params, cookies=self.cookies)
+        if response.status_code != 200:
+            raise SAPQueryError(f"Failed to fetch recent documents from SAP (HTTP {response.status_code}): {response.text}")
+        return response.json().get("value", [])
+
+    def get_document_by_entry(self, endpoint_name: str, doc_entry: int) -> Dict[str, Any]:
+        """
+        Fetches a single raw document by DocEntry from SAP Service Layer for preview mapping.
+        """
+        self._ensure_session()
+        url = f"{self.base_url}/{endpoint_name}({doc_entry})"
+        response = self._execute_request_with_retry("GET", url, cookies=self.cookies)
+        if response.status_code != 200:
+            raise SAPQueryError(f"Failed to fetch document {doc_entry} from SAP (HTTP {response.status_code}): {response.text}")
+        return response.json()
+

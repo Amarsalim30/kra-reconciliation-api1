@@ -5,6 +5,7 @@ import { SettingsComposite } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import { SAPConnectionCard } from "@/features/settings/SAPConnectionCard";
 import { SystemSettingsCard } from "@/features/settings/SystemSettingsCard";
+import { SAPFieldMappingCard } from "@/features/settings/SAPFieldMappingCard";
 import { VATMappingEditor } from "@/features/settings/VATMappingEditor";
 import { AuditLogDrawer } from "@/features/settings/AuditLogDrawer";
 import {
@@ -16,13 +17,15 @@ import {
   AlertCircle,
   ShieldCheck,
   RefreshCw,
+  FileCode,
 } from "lucide-react";
+
 
 export default function SettingsPage() {
   const [data, setData] = useState<SettingsComposite | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"sap" | "system" | "vat" | "audit">("sap");
+  const [activeTab, setActiveTab] = useState<"sap" | "system" | "sap_field_mapping" | "vat" | "audit">("sap");
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -134,6 +137,18 @@ export default function SettingsPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab("sap_field_mapping")}
+          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
+            activeTab === "sap_field_mapping"
+              ? "border-amber-600 text-amber-600 bg-amber-50/50"
+              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+          }`}
+        >
+          <FileCode className="w-4 h-4" />
+          SAP Field Mapping
+        </button>
+
+        <button
           onClick={() => setActiveTab("audit")}
           className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
             activeTab === "audit"
@@ -167,6 +182,13 @@ export default function SettingsPage() {
           <VATMappingEditor
             connectionId={data.sap_connection?.id || null}
             mappings={data.vat_mappings}
+            onSaved={loadSettings}
+          />
+        )}
+
+        {activeTab === "sap_field_mapping" && (
+          <SAPFieldMappingCard
+            settingsVersion={data.system_settings.version}
             onSaved={loadSettings}
           />
         )}

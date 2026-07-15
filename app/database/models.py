@@ -12,6 +12,7 @@ from app.models.settings import (
     VATMapping,
     SettingAuditLog,
 )
+from app.models.sap_field_mapping import SAPFieldMapping
 
 __all__ = [
     "Base",
@@ -24,4 +25,6 @@ __all__ = [
     "SystemSetting",
     "VATMapping",
     "SettingAuditLog",
+    "SAPFieldMapping",
 ]
+

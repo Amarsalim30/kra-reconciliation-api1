@@ -7,6 +7,7 @@ from app.api.v1.sales import router as sales_router
 from app.api.v1.sessions import router as sessions_router
 from app.api.v1.settings import router as settings_router
 from app.api.v1.templates import router as templates_router
+from app.api.v1.sap_field_mappings import router as sap_field_mappings_router
 
 router = APIRouter()
 router.include_router(auth_router)
@@ -16,3 +17,5 @@ router.include_router(reconciliation_router)
 router.include_router(sessions_router)
 router.include_router(templates_router)
 router.include_router(settings_router)
+router.include_router(sap_field_mappings_router)
+

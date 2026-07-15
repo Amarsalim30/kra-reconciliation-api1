@@ -15,6 +15,12 @@ from app.models.settings import (
     VatRateCategory,
 )
 from app.models.user import User
+from app.models.sap_field_mapping import (
+    SAPFieldMapping,
+    InternalField,
+    SourceType,
+    TransformationType,
+)
 
 __all__ = [
     "User",
@@ -30,4 +36,9 @@ __all__ = [
     "BaseAmountPolicy",
     "UnmappedVatPolicy",
     "VatModule",
+    "SAPFieldMapping",
+    "InternalField",
+    "SourceType",
+    "TransformationType",
 ]
+

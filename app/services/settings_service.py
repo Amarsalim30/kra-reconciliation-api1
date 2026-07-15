@@ -57,8 +57,9 @@ class SettingsService:
         default_mappings = {
             "SEC_B": {
                 "identifier": "SEC_B",
+                "module": "sales",
                 "display_name": "Section B - Standard Rated Sales",
-                "filename_regex": "(?i).*sec[_-]?b.*",
+                "filename_regex": "(?i).*sec[_-]?b_with_vat_pin.*",
                 "vat_group": "16",
                 "required": True,
                 "column_mapping": {
@@ -77,6 +78,7 @@ class SettingsService:
             },
             "SEC_F": {
                 "identifier": "SEC_F",
+                "module": "purchases",
                 "display_name": "Section F - Standard Rated Purchases",
                 "filename_regex": "(?i).*sec[_-]?f.*",
                 "vat_group": "16",
@@ -97,6 +99,7 @@ class SettingsService:
             },
             "SEC_G": {
                 "identifier": "SEC_G",
+                "module": "purchases",
                 "display_name": "Section G - Zero Rated Purchases",
                 "filename_regex": "(?i).*sec[_-]?g.*",
                 "vat_group": "0",
@@ -117,6 +120,7 @@ class SettingsService:
             },
             "SEC_H": {
                 "identifier": "SEC_H",
+                "module": "purchases",
                 "display_name": "Section H - Standard Rated Purchases (8%)",
                 "filename_regex": "(?i).*sec[_-]?h.*",
                 "vat_group": "8",
@@ -137,6 +141,7 @@ class SettingsService:
             },
             "SEC_I": {
                 "identifier": "SEC_I",
+                "module": "purchases",
                 "display_name": "Section I - Standard Rated Purchases (8% Reduced)",
                 "filename_regex": "(?i).*sec[_-]?i.*",
                 "vat_group": "8",
@@ -174,7 +179,7 @@ class SettingsService:
             db.commit()
             db.refresh(setting)
         else:
-            # Upgrade legacy string mappings if present
+            # Upgrade legacy string mappings if present, or add missing module fields
             needs_update = False
             if not setting.kra_section_mappings:
                 setting.kra_section_mappings = default_mappings
@@ -184,11 +189,46 @@ class SettingsService:
                 if isinstance(first_val, str):
                     setting.kra_section_mappings = default_mappings
                     needs_update = True
+                elif any(isinstance(v, dict) and ("module" not in v or v.get("filename_regex") == "(?i).*sec[_-]?b.*") for v in setting.kra_section_mappings.values()):
+                    updated_mappings = {}
+                    for k, v in setting.kra_section_mappings.items():
+                        if isinstance(v, dict):
+                            new_v = dict(v)
+                            if "module" not in new_v:
+                                new_v["module"] = "sales" if k == "SEC_B" else "purchases"
+                            if new_v.get("filename_regex") == "(?i).*sec[_-]?b.*":
+                                new_v["filename_regex"] = "(?i).*sec[_-]?b_with_vat_pin.*"
+                            updated_mappings[k] = new_v
+                        else:
+                            updated_mappings[k] = default_mappings.get(k, v)
+                    setting.kra_section_mappings = updated_mappings
+                    needs_update = True
             
             if needs_update:
                 db.commit()
                 db.refresh(setting)
+
+        # Seed SAP Field Mappings if empty
+        from app.models.sap_field_mapping import SAPFieldMapping
+        if db.query(SAPFieldMapping).count() == 0:
+            from app.services.sap_mapper import DEFAULT_SAP_FIELD_MAPPINGS
+            for mapping in DEFAULT_SAP_FIELD_MAPPINGS:
+                db.add(SAPFieldMapping(
+                    module=mapping.module,
+                    internal_field=mapping.internal_field,
+                    source_type=mapping.source_type,
+                    priority=mapping.priority,
+                    sap_field=mapping.sap_field,
+                    transformation=mapping.transformation,
+                    transformation_value=mapping.transformation_value,
+                    validation_regex=mapping.validation_regex,
+                    is_enabled=mapping.is_enabled,
+                    description=mapping.description
+                ))
+            db.commit()
+
         return setting
+
 
     @staticmethod
     def get_active_connection(db: Session, system_setting: SystemSetting) -> Optional[SAPConnection]:

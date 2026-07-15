@@ -68,6 +68,7 @@ class KRAValidationRules(BaseModel):
 
 class KRASectionConfig(BaseModel):
     identifier: str = Field(..., description="Internal key (e.g. SEC_B)")
+    module: VatModule = Field(..., description="Reconciliation module (sales or purchases)")
     display_name: str = Field(..., description="Display name for UI")
     filename_regex: str = Field(..., description="Regex pattern to match filename")
     vat_group: str = Field(..., description="Mapped internal VAT group (e.g. 16)")

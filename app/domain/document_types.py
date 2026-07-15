@@ -28,6 +28,8 @@ class CanonicalReconciliationRow:
     pin: str                             # Informational metadata
     partner_name: str                    # Informational metadata
     provenance: IngestionProvenance      # Audit metadata (in-memory)
+    cu_serial: Optional[str] = ""        # Informational metadata
+
 
     def __post_init__(self):
         # Enforce mandatory fields

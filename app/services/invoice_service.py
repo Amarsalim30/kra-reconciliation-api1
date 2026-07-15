@@ -13,7 +13,8 @@ def get_invoices(
     to_date: date,
     reconciliation_type: ReconciliationType = ReconciliationType.SALES,
     sap_client: SAPClient = None,
-    reconciliation_session_id: str = "N/A"
+    reconciliation_session_id: str = "N/A",
+    sap_field_mappings: list = None
 ) -> list[Invoice]:
     """
     Fetches Invoices and Credit Notes (Sales or Purchases) page-by-page from SAP Service Layer, maps them
@@ -52,7 +53,8 @@ def get_invoices(
                         source_document_type=source_doc_type,
                         endpoint_name=endpoint_name,
                         reconciliation_type=reconciliation_type.value,
-                        reconciliation_session_id=reconciliation_session_id
+                        reconciliation_session_id=reconciliation_session_id,
+                        sap_field_mappings=sap_field_mappings
                     )
 
                     # 2. Construct Invoice objects
@@ -66,7 +68,8 @@ def get_invoices(
                             cu_number=row.cu_number,
                             vat_group=row.vat_group,
                             base_amount=row.base_amount,
-                            allow_negative=True # We now explicitly allow negative amounts
+                            allow_negative=True, # We now explicitly allow negative amounts
+                            cu_serial=row.cu_serial
                         )
                         # Build internal schema
                         invoice = Invoice(**normalized, source=InvoiceSource.SAP)
@@ -75,6 +78,7 @@ def get_invoices(
                         if from_date <= invoice.invoice_date <= to_date:
                             invoices.append(invoice)
                             total_flattened_lines += 1
+
                 except ValueError as ve:
                     logger.error(
                         f"[ReconciliationSession: {reconciliation_session_id}] Normalization failed for SAP record from document {raw_doc.get('DocNum')}: {ve}"

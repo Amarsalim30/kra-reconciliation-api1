@@ -34,6 +34,7 @@ export interface KRAValidationRules {
 
 export interface KRASectionConfig {
   identifier: string;
+  module: VatModule;
   display_name: string;
   filename_regex: string;
   vat_group: string;
@@ -102,3 +103,66 @@ export interface SettingAuditLog {
   reason?: string | null;
   created_at: string;
 }
+
+export type InternalField =
+  | "invoice_number"
+  | "partner_name"
+  | "invoice_date"
+  | "pin"
+  | "cu_number"
+  | "cu_serial"
+  | "base_amount"
+  | "vat_group";
+
+export type SourceType = "HEADER" | "LINE";
+
+export type TransformationType =
+  | "NONE"
+  | "BEFORE_SLASH"
+  | "AFTER_SLASH"
+  | "REGEX"
+  | "REGEX_REPLACE"
+  | "TRIM"
+  | "UPPERCASE"
+  | "LOWERCASE";
+
+export interface SAPFieldMapping {
+  id?: number;
+  module: VatModule;
+  internal_field: InternalField;
+  source_type: SourceType;
+  priority: number;
+  sap_field: string;
+  transformation: TransformationType;
+  transformation_value?: string | null;
+  validation_regex?: string | null;
+  description?: string | null;
+  is_enabled: boolean;
+}
+
+export interface DiagnosticItem {
+  priority: number;
+  sap_field: string;
+  status: "found" | "empty" | "failed_validation" | "disabled";
+  raw_value?: string | null;
+  transformed_value?: string | null;
+}
+
+export interface PreviewResultItem {
+  value?: string | null;
+  diagnostics: DiagnosticItem[];
+  warnings: string[];
+  errors: string[];
+}
+
+export interface PreviewResponse {
+  mapped_values: Record<InternalField, PreviewResultItem>;
+}
+
+export interface SampleDocumentShort {
+  docEntry: number;
+  docNum: number;
+  cardName: string;
+  docDate: string;
+}
+

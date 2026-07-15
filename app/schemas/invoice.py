@@ -20,9 +20,11 @@ class Invoice(BaseModel):
     invoice_number: str
     invoice_date: date
     cu_number: str
+    cu_serial: str = ""
     vat_group: str
     base_amount: Decimal
     source: InvoiceSource
+
 
     @field_serializer("base_amount")
     def serialize_base_amount(self, base_amount: Decimal) -> float:

@@ -9,6 +9,8 @@ from app.models.reconciliation_session import ReconciliationSession, SessionInvo
 from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType, InvoiceFetchResponse, InvoiceUploadResponse
 from app.services import invoice_service, kra_service
 from app.core.sap_client import SAPClient
+from app.models.sap_field_mapping import SAPFieldMapping, VatModule
+
 
 router = APIRouter(prefix="/sales", tags=["sales"])
 
@@ -45,11 +47,13 @@ def get_sales(
     db.commit()
 
     # 3. Fetch live SAP data
+    sap_field_mappings = db.query(SAPFieldMapping).filter(SAPFieldMapping.module == VatModule.SALES).all()
     invoices = invoice_service.get_invoices(
         from_date, to_date,
         reconciliation_type=ReconciliationType.SALES,
         sap_client=sap_client,
-        reconciliation_session_id=session.id
+        reconciliation_session_id=session.id,
+        sap_field_mappings=sap_field_mappings
     )
 
     # 4. Save loaded SAP invoices relationally
@@ -63,11 +67,13 @@ def get_sales(
             invoice_number=inv.invoice_number,
             invoice_date=inv.invoice_date,
             cu_number=inv.cu_number,
+            cu_serial=inv.cu_serial,
             vat_group=inv.vat_group,
             base_amount=inv.base_amount
         )
         for idx, inv in enumerate(invoices)
     ]
+
     db.add_all(db_invoices)
     db.commit()
 
@@ -104,15 +110,16 @@ def upload_sales_csv(
     from app.services.settings_service import SettingsService
     from app.schemas.invoice import CSVValidationErrorDetail
     from app.services.kra_service import resolve_filename_to_section
+    from app.models.settings import VatModule
     
     system_settings = SettingsService.get_or_create_system_settings(db)
     mappings = system_settings.kra_section_mappings or {}
     
-    # Identify expected required sections (active and required=True)
+    # Identify expected required sections (active, required=True, and belongs to Sales module)
     expected_required_sections = {
         sec_id for sec_id, config in mappings.items()
-        if (isinstance(config, str) and sec_id in ("SEC_B", "SEC_F")) or
-           (isinstance(config, dict) and config.get("active", True) and config.get("required", True))
+        if (isinstance(config, str) and sec_id == "SEC_B") or
+           (isinstance(config, dict) and config.get("active", True) and config.get("required", True) and config.get("module") == "sales")
     }
     matched_sections = set()
     
@@ -122,14 +129,14 @@ def upload_sales_csv(
     total_rows = 0
     parsed_count = 0
     filenames_processed = []
-
+ 
     for file in files:
         filename = file.filename or "unknown.csv"
         
-        matched_sec, sec_config = resolve_filename_to_section(filename, mappings)
+        matched_sec, sec_config = resolve_filename_to_section(filename, mappings, VatModule.SALES)
         
         if not matched_sec:
-            warnings.append(f"Skipped file '{filename}': Could not detect a valid KRA section identifier.")
+            warnings.append(f"Skipped file '{filename}': Could not detect a valid KRA section identifier for Sales.")
             continue
             
         matched_sections.add(matched_sec)

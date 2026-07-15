@@ -47,10 +47,13 @@ class SessionInvoice(Base):
     invoice_number: Mapped[str] = mapped_column(String(100), nullable=False)
     invoice_date: Mapped[date] = mapped_column(Date, nullable=False)
     cu_number: Mapped[str] = mapped_column(String(100), nullable=False)
+    cu_serial: Mapped[str | None] = mapped_column(String(100), nullable=True)
     vat_group: Mapped[str] = mapped_column(String(50), nullable=False)
     base_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
 
+
     session: Mapped["ReconciliationSession"] = relationship("ReconciliationSession", back_populates="invoices")
+
 
     __table_args__ = (
         UniqueConstraint("session_id", "source", "row_number", name="uq_session_invoice_row"),

@@ -50,7 +50,8 @@ def normalize_invoice_data(
     cu_number: str | None,
     vat_group: str | int | float | None,
     base_amount: str | float | Decimal | None,
-    allow_negative: bool = False
+    allow_negative: bool = False,
+    cu_serial: str | None = None
 ) -> dict:
     """
     Normalizes raw invoice fields and returns a dictionary matching the Invoice structure.
@@ -119,6 +120,8 @@ def normalize_invoice_data(
     if not allow_negative and norm_amount <= 0:
         raise ValueError(f"Invalid Base Amount '{base_amount}'. Must be greater than zero.")
 
+    norm_cu_serial = "" if cu_serial is None else str(cu_serial).strip()
+
     return {
         "pin": norm_pin,
         "partner_name": norm_partner_name,
@@ -126,6 +129,8 @@ def normalize_invoice_data(
         "invoice_date": norm_date,
         "cu_number": norm_cu,
         "vat_group": norm_vat,
-        "base_amount": norm_amount
+        "base_amount": norm_amount,
+        "cu_serial": norm_cu_serial
     }
+
 

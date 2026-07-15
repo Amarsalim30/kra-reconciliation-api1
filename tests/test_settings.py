@@ -144,3 +144,42 @@ def test_get_and_update_settings(client: TestClient, db_session):
     assert audit_res.status_code == 200
     logs = audit_res.json()
     assert len(logs) >= 3
+
+
+def test_resolve_filename_to_section_module_boundaries(client: TestClient, db_session):
+    from app.services.kra_service import resolve_filename_to_section
+    from app.services.settings_service import SettingsService
+    from app.models.settings import VatModule
+
+    system_settings = SettingsService.get_or_create_system_settings(db_session)
+    mappings = system_settings.kra_section_mappings or {}
+
+    # Test Sales resolution:
+    # 1. SEC_B_WITH_VAT_PIN1.CSV should resolve to SEC_B
+    sec_id, config = resolve_filename_to_section("SEC_B_WITH_VAT_PIN1.CSV", mappings, VatModule.SALES)
+    assert sec_id == "SEC_B"
+    assert config["module"] == "sales"
+
+    # 2. SEC_B_WITH_VAT_PIN1.CSV should NOT resolve in Purchases module
+    sec_id, config = resolve_filename_to_section("SEC_B_WITH_VAT_PIN1.CSV", mappings, VatModule.PURCHASES)
+    assert sec_id is None
+
+    # 3. SEC_B_WITHOUT_PIN_AND_NON-VAT_PIN1.CSV should NOT resolve to anything (excluded by regex)
+    sec_id, config = resolve_filename_to_section("SEC_B_WITHOUT_PIN_AND_NON-VAT_PIN1.CSV", mappings, VatModule.SALES)
+    assert sec_id is None
+
+    # Test Purchases resolution:
+    # 4. SEC_F_WITH_VAT_PIN1.CSV should resolve to SEC_F
+    sec_id, config = resolve_filename_to_section("SEC_F_WITH_VAT_PIN1.CSV", mappings, VatModule.PURCHASES)
+    assert sec_id == "SEC_F"
+    assert config["module"] == "purchases"
+
+    # 5. SEC_F_WITH_VAT_PIN1.CSV should NOT resolve in Sales module
+    sec_id, config = resolve_filename_to_section("SEC_F_WITH_VAT_PIN1.CSV", mappings, VatModule.SALES)
+    assert sec_id is None
+
+    # 6. SEC_G_WITH_VAT_PIN1.CSV should resolve to SEC_G
+    sec_id, config = resolve_filename_to_section("SEC_G_WITH_VAT_PIN1.CSV", mappings, VatModule.PURCHASES)
+    assert sec_id == "SEC_G"
+    assert config["module"] == "purchases"
+

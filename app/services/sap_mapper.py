@@ -1,13 +1,186 @@
 import datetime
 import logging
 from decimal import Decimal, InvalidOperation
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
 from app.core.config import get_settings, BaseAmountPolicy
 from app.core.exceptions import SAPQueryError
 from app.services.vat_normalizer import vat_normalizer
 from app.domain.document_types import CanonicalReconciliationRow, IngestionProvenance
+from app.models.sap_field_mapping import (
+    SAPFieldMapping,
+    VatModule,
+    InternalField,
+    SourceType,
+    TransformationType,
+)
+from app.services.sap_field_extractor import extract_and_validate_field
 
 logger = logging.getLogger(__name__)
+
+
+# Standard default mapping rows used when database settings are unavailable
+DEFAULT_SAP_FIELD_MAPPINGS = [
+    # Sales
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.INVOICE_NUMBER,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="DocNum",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.PARTNER_NAME,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="CardName",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.INVOICE_DATE,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="DocDate",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.PIN,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="FederalTaxID",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.CU_NUMBER,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="U_CUINV",
+        transformation=TransformationType.NONE,
+        validation_regex="^(KRA[A-Z0-9]{11,17}/\\d+|\\d{15,25})$",
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.CU_NUMBER,
+        source_type=SourceType.HEADER,
+        priority=2,
+        sap_field="NumAtCard",
+        transformation=TransformationType.NONE,
+        validation_regex="^(KRA[A-Z0-9]{11,17}/\\d+|\\d{15,25})$",
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.BASE_AMOUNT,
+        source_type=SourceType.LINE,
+        priority=1,
+        sap_field="LineTotal",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.SALES,
+        internal_field=InternalField.VAT_GROUP,
+        source_type=SourceType.LINE,
+        priority=1,
+        sap_field="VatGroup",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    # Purchases
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.INVOICE_NUMBER,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="DocNum",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.PARTNER_NAME,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="CardName",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.INVOICE_DATE,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="DocDate",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.PIN,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="FederalTaxID",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.CU_NUMBER,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="NumAtCard",
+        transformation=TransformationType.NONE,
+        validation_regex="^(KRA[A-Z0-9]{11,17}/\\d+|\\d{15,25})$",
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.CU_NUMBER,
+        source_type=SourceType.HEADER,
+        priority=2,
+        sap_field="U_CUINV",
+        transformation=TransformationType.NONE,
+        validation_regex="^(KRA[A-Z0-9]{11,17}/\\d+|\\d{15,25})$",
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.CU_SERIAL,
+        source_type=SourceType.HEADER,
+        priority=1,
+        sap_field="U_CUSerial",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.BASE_AMOUNT,
+        source_type=SourceType.LINE,
+        priority=1,
+        sap_field="LineTotal",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+    SAPFieldMapping(
+        module=VatModule.PURCHASES,
+        internal_field=InternalField.VAT_GROUP,
+        source_type=SourceType.LINE,
+        priority=1,
+        sap_field="VatGroup",
+        transformation=TransformationType.NONE,
+        is_enabled=True,
+    ),
+]
 
 
 def parse_sap_date(date_val: Any) -> datetime.date:
@@ -37,47 +210,77 @@ def map_sap_document_to_canonical_rows(
     source_document_type: str,
     endpoint_name: str,
     reconciliation_type: str = "sales",
-    reconciliation_session_id: str = "N/A"
+    reconciliation_session_id: str = "N/A",
+    sap_field_mappings: Optional[List[SAPFieldMapping]] = None
 ) -> List[CanonicalReconciliationRow]:
     """
     Flattens a raw SAP document and maps it to a list of CanonicalReconciliationRow objects.
-    Applies configurable base amount policies, aggregates by VAT group, applies sign normalization,
-    and warns on missing/invalid fields.
+    Uses configurable mappings for field extraction, transformations, and regex validation.
     """
     settings = get_settings()
     policy = settings.sap_base_amount_policy
 
-    # Extract header fields
-    invoice_number_raw = raw_document.get("DocNum")
-    if invoice_number_raw is None:
+    # Fall back to default mappings if none provided
+    if not sap_field_mappings:
+        sap_field_mappings = DEFAULT_SAP_FIELD_MAPPINGS
+
+    module_name = VatModule.SALES if reconciliation_type == "sales" else VatModule.PURCHASES
+
+    # 1. Extract Invoice Number
+    inv_num_result = extract_and_validate_field(
+        raw_document, None, InternalField.INVOICE_NUMBER, sap_field_mappings,
+        reconciliation_session_id, source_document_type, "unknown"
+    )
+    if not inv_num_result.value:
         raise SAPQueryError(f"SAP {source_document_type} is missing required field: DocNum")
-    invoice_number = str(invoice_number_raw).strip()
+    invoice_number = inv_num_result.value
 
-    partner_name_raw = raw_document.get("CardName")
-    partner_name = str(partner_name_raw).strip() if partner_name_raw is not None else ""
+    # 2. Extract Partner Name
+    partner_name_result = extract_and_validate_field(
+        raw_document, None, InternalField.PARTNER_NAME, sap_field_mappings,
+        reconciliation_session_id, source_document_type, invoice_number
+    )
+    partner_name = partner_name_result.value or ""
 
-    doc_date_raw = raw_document.get("DocDate")
-    if doc_date_raw is None:
+    # 3. Extract Invoice Date
+    date_result = extract_and_validate_field(
+        raw_document, None, InternalField.INVOICE_DATE, sap_field_mappings,
+        reconciliation_session_id, source_document_type, invoice_number
+    )
+    if not date_result.value:
         raise SAPQueryError(f"SAP {source_document_type} {invoice_number} is missing required field: DocDate")
 
     try:
-        invoice_date = parse_sap_date(doc_date_raw)
+        invoice_date = parse_sap_date(date_result.value)
     except ValueError as exc:
         raise SAPQueryError(f"SAP {source_document_type} {invoice_number} has invalid DocDate: {exc}")
 
-    # Fallbacks and warnings for PIN
-    raw_pin = raw_document.get("FederalTaxID")
-    if not raw_pin:
-        pin = ""
+    # 4. Extract PIN
+    pin_result = extract_and_validate_field(
+        raw_document, None, InternalField.PIN, sap_field_mappings,
+        reconciliation_session_id, source_document_type, invoice_number
+    )
+    pin = pin_result.value or ""
+    if not pin:
         logger.warning(
             f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} has missing FederalTaxID; using empty string."
         )
-    else:
-        pin = str(raw_pin).strip()
 
-    # CU Number (Relaxed validation, allows empty/missing)
-    raw_cu = raw_document.get("U_CUINV")
-    cu_number = str(raw_cu).strip().lstrip("|").strip() if raw_cu else ""
+    # 5. Extract CU Number
+    cu_result = extract_and_validate_field(
+        raw_document, None, InternalField.CU_NUMBER, sap_field_mappings,
+        reconciliation_session_id, source_document_type, invoice_number
+    )
+    cu_number = cu_result.value or ""
+
+    # 6. Extract CU Serial (Purchases only)
+    cu_serial = ""
+    if module_name == VatModule.PURCHASES:
+        cu_serial_result = extract_and_validate_field(
+            raw_document, None, InternalField.CU_SERIAL, sap_field_mappings,
+            reconciliation_session_id, source_document_type, invoice_number
+        )
+        cu_serial = cu_serial_result.value or ""
 
     document_lines = raw_document.get("DocumentLines", [])
     if not document_lines:
@@ -86,7 +289,7 @@ def map_sap_document_to_canonical_rows(
         )
         return []
 
-    # Determine exact document type (differentiate Debit Memos from standard Invoices)
+    # Determine exact document type
     actual_document_type = source_document_type
     subtype = raw_document.get("DocumentSubType")
     if source_document_type == "Invoice" and subtype == "bod_DebitMemo":
@@ -94,36 +297,38 @@ def map_sap_document_to_canonical_rows(
 
     valid_lines = []
     for line_idx, line in enumerate(document_lines):
-        # 1. VAT Group
-        vat_group = line.get("VatGroup")
-        if vat_group is None:
+        # Extract VAT Group
+        vat_result = extract_and_validate_field(
+            raw_document, line, InternalField.VAT_GROUP, sap_field_mappings,
+            reconciliation_session_id, source_document_type, invoice_number
+        )
+        if not vat_result.value:
             raise SAPQueryError(
                 f"SAP {source_document_type} {invoice_number} line {line_idx} is missing required field: VatGroup"
             )
-        vat_group_str = str(vat_group).strip()
-        if not vat_group_str:
-            raise SAPQueryError(
-                f"SAP {source_document_type} {invoice_number} line {line_idx} has empty VatGroup"
-            )
+        vat_group_str = vat_result.value
 
-        # Normalize SAP VAT code to canonical percentage string
+        # Normalize SAP VAT code
         vat_group_str = vat_normalizer.normalize("sap", reconciliation_type, vat_group_str)
 
-        # 2. Base Amount (LineTotal)
-        line_total_raw = line.get("LineTotal")
-        if line_total_raw is None:
+        # Extract Base Amount
+        amount_result = extract_and_validate_field(
+            raw_document, line, InternalField.BASE_AMOUNT, sap_field_mappings,
+            reconciliation_session_id, source_document_type, invoice_number
+        )
+        if not amount_result.value:
             raise SAPQueryError(
                 f"SAP {source_document_type} {invoice_number} line {line_idx} is missing required field: LineTotal"
             )
 
         try:
-            base_amount = Decimal(str(line_total_raw).strip())
+            base_amount = Decimal(amount_result.value)
         except (InvalidOperation, ValueError, TypeError) as exc:
             raise SAPQueryError(
                 f"SAP {source_document_type} {invoice_number} line {line_idx} has invalid LineTotal: {exc}"
             )
 
-        # 3. Base Amount Policy Check
+        # Base Amount Policy Check
         if base_amount <= 0:
             if policy == BaseAmountPolicy.SKIP:
                 logger.warning(
@@ -137,7 +342,6 @@ def map_sap_document_to_canonical_rows(
                 raise SAPQueryError(
                     f"SAP {source_document_type} {invoice_number} line {line_idx} rejected: Base Amount ({base_amount}) <= 0."
                 )
-            # Under ALLOW, we proceed and include the record
 
         valid_lines.append((vat_group_str, base_amount))
 
@@ -149,7 +353,6 @@ def map_sap_document_to_canonical_rows(
     # Create canonical reconciliation rows
     canonical_rows = []
     for vat_group_str, total_amount in grouped_totals.items():
-        # Sign normalization: +abs for Invoices/DebitNotes, -abs for CreditNotes
         if actual_document_type in ("Invoice", "DebitNote"):
             normalized_amount = abs(total_amount)
         elif actual_document_type == "CreditNote":
@@ -178,6 +381,7 @@ def map_sap_document_to_canonical_rows(
             invoice_number=invoice_number,
             invoice_date=invoice_date,
             cu_number=cu_number,
+            cu_serial=cu_serial,
             vat_group=vat_group_str,
             base_amount=normalized_amount.quantize(Decimal("0.01")),
             provenance=provenance
@@ -185,5 +389,3 @@ def map_sap_document_to_canonical_rows(
         canonical_rows.append(row)
 
     return canonical_rows
-
-

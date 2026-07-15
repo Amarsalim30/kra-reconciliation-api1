@@ -110,6 +110,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
     const newId = `SEC_CUSTOM_${Date.now()}`;
     const newSection: KRASectionConfig = {
       identifier: newId,
+      module: "purchases",
       display_name: "New Custom Section",
       filename_regex: `(?i).*sec[_-]?custom.*`,
       vat_group: "16",
@@ -412,12 +413,19 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                         <FileCode className="w-4 h-4 text-slate-600" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-bold text-slate-900">
                             {mapping.display_name || id}
                           </span>
                           <span className="text-[10px] font-mono bg-slate-200/80 text-slate-600 px-1.5 py-0.5 rounded">
                             {id}
+                          </span>
+                          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                            mapping.module === "sales" 
+                              ? "bg-blue-50 border border-blue-200 text-blue-700" 
+                              : "bg-purple-50 border border-purple-200 text-purple-700"
+                          }`}>
+                            {mapping.module === "sales" ? "Sales" : "Purchases"}
                           </span>
                           {mapping.required && (
                             <span className="text-[9px] font-semibold bg-rose-50 border border-rose-200 text-rose-700 px-1.5 py-0.5 rounded">
@@ -486,7 +494,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-2 border-t border-slate-200/60 bg-white rounded-b-xl space-y-4">
                       {/* Basic configuration fields */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="space-y-1">
                           <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                             Display Name
@@ -525,6 +533,21 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                             placeholder="e.g. 16"
                             className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                           />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Reconciliation Module
+                          </label>
+                          <select
+                            value={mapping.module}
+                            onChange={(e) => updateSectionField(id, "module", e.target.value)}
+                            disabled={isBuiltIn}
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 disabled:bg-slate-100 disabled:text-slate-500"
+                          >
+                            <option value="sales">Sales</option>
+                            <option value="purchases">Purchases</option>
+                          </select>
                         </div>
                       </div>
 
