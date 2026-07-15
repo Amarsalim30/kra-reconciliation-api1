@@ -309,7 +309,7 @@ def test_compare_flow_success(client, auth_headers):
         b"P051393568M,Autoports Freight Terminals Limited,IN1080,02/03/2026,|0190439340000000455,16,1118894.84\n"
         b"P051137818X,GRAIN INDUSTRIES LIMITED,IN1081,11/03/2026,|0190439340000000456,16,3977701.88\n"
     )
-    files = {"file": ("SEC_B.csv", csv_content, "text/csv")}
+    files = [("files", ("SEC_B.csv", csv_content, "text/csv"))]
     upload_res = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert upload_res.status_code == 200
 

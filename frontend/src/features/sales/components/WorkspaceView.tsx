@@ -37,6 +37,7 @@ interface WorkspaceViewProps {
   kraPagination: PaginationData<Invoice>;
   workflowStep: WorkflowStep;
   readyToCompare: boolean;
+  warnings?: string[];
 }
 
 const formatVatGroup = (vat?: string) => {
@@ -70,7 +71,8 @@ export function WorkspaceView({
   sapPagination,
   kraPagination,
   workflowStep,
-  readyToCompare
+  readyToCompare,
+  warnings = []
 }: WorkspaceViewProps) {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
@@ -108,10 +110,10 @@ export function WorkspaceView({
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">KRA Data</label>
           <div className="flex items-center gap-3">
-            <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileUpload} disabled={uiState.sap.status !== AsyncStatus.Loaded || uiState.kra.status === AsyncStatus.Loading} className="hidden" id="csv-upload" />
+            <input type="file" accept=".csv" multiple ref={fileInputRef} onChange={handleFileUpload} disabled={uiState.sap.status !== AsyncStatus.Loaded || uiState.kra.status === AsyncStatus.Loading} className="hidden" id="csv-upload" />
             <label htmlFor="csv-upload" className={`px-5 py-2 rounded-md font-medium text-sm border transition-colors flex items-center gap-2 cursor-pointer h-[38px] ${uiState.sap.status !== AsyncStatus.Loaded ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}`}>
               {uiState.kra.status === AsyncStatus.Loading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uiState.kra.status === AsyncStatus.Loaded ? "Upload New CSV" : "Upload CSV"}
+              {uiState.kra.status === AsyncStatus.Loaded ? "Upload New CSVs" : "Upload CSVs"}
             </label>
             <button 
               onClick={handleDownloadTemplate} 
@@ -189,6 +191,19 @@ export function WorkspaceView({
               <span className="text-xs text-slate-500 font-medium">{kraPagination.totalItems} records</span>
             )}
           </div>
+          {warnings && warnings.length > 0 && (
+            <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 text-amber-800 text-sm flex flex-col gap-1 shrink-0 animate-fade-in">
+              <div className="flex items-center gap-1.5 font-semibold">
+                <AlertTriangle className="w-4 h-4 text-amber-600 animate-pulse" />
+                Upload Warnings
+              </div>
+              <ul className="list-disc pl-5 text-xs text-amber-700 space-y-0.5 max-h-24 overflow-y-auto">
+                {warnings.map((warn, i) => (
+                  <li key={i}>{warn}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="flex-1 overflow-hidden relative">
             <DataTable 
               data={kraPagination.items} 
@@ -197,7 +212,7 @@ export function WorkspaceView({
               emptyState={
                 <div className="flex flex-col items-center gap-3">
                   <FileSpreadsheet className="w-12 h-12 text-slate-300" strokeWidth={1.5} />
-                  <div className="text-slate-500 text-sm">No CSV uploaded. Upload a KRA CSV to begin.</div>
+                  <div className="text-slate-500 text-sm">No CSVs uploaded. Upload KRA CSV files to begin.</div>
                 </div>
               }
               errorState={

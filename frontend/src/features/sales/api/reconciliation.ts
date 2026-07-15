@@ -25,6 +25,7 @@ export interface InvoiceUploadResponse {
   errors_count: number;
   errors: CSVValidationErrorDetail[];
   invoices: Invoice[];
+  warnings?: string[];
 }
 
 export interface ReconciliationResponse {
@@ -48,10 +49,12 @@ export async function fetchInvoicesPreview(
 export async function uploadInvoicesCSV(
   type: "sales" | "purchases",
   sessionId: string,
-  file: File
+  files: File[]
 ): Promise<InvoiceUploadResponse> {
   const formData = new FormData();
-  formData.append("file", file);
+  files.forEach(file => {
+    formData.append("files", file);
+  });
 
   const res = await fetchWithAuth(`/${type}/upload?session_id=${sessionId}`, {
     method: "POST",

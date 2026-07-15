@@ -9,7 +9,14 @@ from app.main import app
 from app.models.user import User
 from app.core.security import hash_password
 
+import os
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_settings_db.db"
+if os.path.exists("./test_settings_db.db"):
+    try:
+        os.remove("./test_settings_db.db")
+    except Exception:
+        pass
+
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -64,8 +71,14 @@ def test_get_and_update_settings(client: TestClient, db_session):
     assert "system_settings" in data
     assert data["system_settings"]["amount_tolerance"] == "10.00"
 
-    # 2. Update System Settings
+    # 2. Update System Settings (including KRA section mappings)
     sys_settings = data["system_settings"]
+    kra_mappings = sys_settings.get("kra_section_mappings") or {}
+    
+    # Modify one of the KRA Section mappings to test update persistence
+    if "SEC_B" in kra_mappings:
+        kra_mappings["SEC_B"]["display_name"] = "Modified SEC_B Sales CSV"
+
     sys_update_payload = {
         "amount_tolerance": "15.50",
         "base_amount_policy": "treat_as_zero",
@@ -74,14 +87,16 @@ def test_get_and_update_settings(client: TestClient, db_session):
         "include_credit_notes": True,
         "include_debit_notes": True,
         "skip_cancelled": True,
+        "kra_section_mappings": kra_mappings,
         "version": sys_settings["version"],
-        "reason": "Test tolerance update to 15.50",
+        "reason": "Test tolerance update to 15.50 and KRA mapping change",
     }
     update_res = client.put("/api/v1/settings/system-settings", json=sys_update_payload, headers=headers)
     assert update_res.status_code == 200
     updated_sys = update_res.json()
     assert updated_sys["amount_tolerance"] == "15.50"
     assert updated_sys["base_amount_policy"] == "treat_as_zero"
+    assert updated_sys["kra_section_mappings"]["SEC_B"]["display_name"] == "Modified SEC_B Sales CSV"
     assert updated_sys["version"] == sys_settings["version"] + 1
 
     # 3. Update SAP Connection

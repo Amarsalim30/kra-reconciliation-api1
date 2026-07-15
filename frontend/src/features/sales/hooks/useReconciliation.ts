@@ -86,14 +86,15 @@ export function useReconciliation(type: "sales" | "purchases") {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
     if (!sessionId) {
       setError("Please load SAP data first to create a session.");
       return;
     }
 
-    setFileName(file.name);
+    const fileNamesStr = files.map(f => f.name).join(", ");
+    setFileName(fileNamesStr);
     setLoadingKra(true);
     setError(null);
     setSummary(null);
@@ -101,7 +102,7 @@ export function useReconciliation(type: "sales" | "purchases") {
     resultsPagination.reset();
 
     try {
-      const data = await uploadInvoicesCSV(type, sessionId, file);
+      const data = await uploadInvoicesCSV(type, sessionId, files);
       setCurrentView("preview");
       
       // Seed Page 1 of KRA preview directly

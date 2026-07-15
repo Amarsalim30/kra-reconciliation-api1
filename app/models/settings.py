@@ -89,6 +89,7 @@ class SystemSetting(Base):
     include_credit_notes = Column(Boolean, nullable=False, default=True)
     include_debit_notes = Column(Boolean, nullable=False, default=True)
     skip_cancelled = Column(Boolean, nullable=False, default=True)
+    kra_section_mappings = Column(JSON, nullable=False, default=dict)
 
     version = Column(Integer, nullable=False, default=1)
     updated_at = Column(

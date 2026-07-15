@@ -21,7 +21,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
     uiState, summary, globalError, handleLoadSap, handleFileUpload, 
     handleCompare: triggerCompare,
     sapPagination, kraPagination, resultsPagination,
-    workflowStep, sessionStatus, readyToCompare, sessionId
+    workflowStep, sessionStatus, readyToCompare, sessionId, warnings
   } = useWorkspace(type);
 
   // We wrap handleCompare to also handle navigation to the Results view
@@ -83,6 +83,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
           kraPagination={kraPagination}
           workflowStep={workflowStep}
           readyToCompare={readyToCompare}
+          warnings={warnings}
         />
       ) : (
         <>

@@ -54,6 +54,108 @@ class SettingsService:
     @staticmethod
     def get_or_create_system_settings(db: Session) -> SystemSetting:
         setting = db.query(SystemSetting).first()
+        default_mappings = {
+            "SEC_B": {
+                "identifier": "SEC_B",
+                "display_name": "Section B - Standard Rated Sales",
+                "filename_regex": "(?i).*sec[_-]?b.*",
+                "vat_group": "16",
+                "required": True,
+                "column_mapping": {
+                    "pin": 0,
+                    "partner_name": 1,
+                    "invoice_number": 2,
+                    "invoice_date": 3,
+                    "cu_number": 4,
+                    "base_amount": 6
+                },
+                "validation_rules": {
+                    "pin_required": True,
+                    "allow_negative_amounts": False
+                },
+                "active": True
+            },
+            "SEC_F": {
+                "identifier": "SEC_F",
+                "display_name": "Section F - Standard Rated Purchases",
+                "filename_regex": "(?i).*sec[_-]?f.*",
+                "vat_group": "16",
+                "required": True,
+                "column_mapping": {
+                    "pin": 1,
+                    "partner_name": 2,
+                    "invoice_number": 4,
+                    "invoice_date": 3,
+                    "cu_number": 4,
+                    "base_amount": 7
+                },
+                "validation_rules": {
+                    "pin_required": True,
+                    "allow_negative_amounts": False
+                },
+                "active": True
+            },
+            "SEC_G": {
+                "identifier": "SEC_G",
+                "display_name": "Section G - Zero Rated Purchases",
+                "filename_regex": "(?i).*sec[_-]?g.*",
+                "vat_group": "0",
+                "required": False,
+                "column_mapping": {
+                    "pin": 1,
+                    "partner_name": 2,
+                    "invoice_number": 4,
+                    "invoice_date": 3,
+                    "cu_number": 4,
+                    "base_amount": 7
+                },
+                "validation_rules": {
+                    "pin_required": True,
+                    "allow_negative_amounts": False
+                },
+                "active": True
+            },
+            "SEC_H": {
+                "identifier": "SEC_H",
+                "display_name": "Section H - Standard Rated Purchases (8%)",
+                "filename_regex": "(?i).*sec[_-]?h.*",
+                "vat_group": "8",
+                "required": False,
+                "column_mapping": {
+                    "pin": 1,
+                    "partner_name": 2,
+                    "invoice_number": 4,
+                    "invoice_date": 3,
+                    "cu_number": 4,
+                    "base_amount": 8
+                },
+                "validation_rules": {
+                    "pin_required": True,
+                    "allow_negative_amounts": False
+                },
+                "active": True
+            },
+            "SEC_I": {
+                "identifier": "SEC_I",
+                "display_name": "Section I - Standard Rated Purchases (8% Reduced)",
+                "filename_regex": "(?i).*sec[_-]?i.*",
+                "vat_group": "8",
+                "required": False,
+                "column_mapping": {
+                    "pin": 1,
+                    "partner_name": 2,
+                    "invoice_number": 4,
+                    "invoice_date": 3,
+                    "cu_number": 4,
+                    "base_amount": 7
+                },
+                "validation_rules": {
+                    "pin_required": True,
+                    "allow_negative_amounts": False
+                },
+                "active": True
+            }
+        }
         if not setting:
             env_config = get_settings()
             setting = SystemSetting(
@@ -65,11 +167,27 @@ class SettingsService:
                 include_credit_notes=True,
                 include_debit_notes=True,
                 skip_cancelled=True,
+                kra_section_mappings=default_mappings,
                 version=1,
             )
             db.add(setting)
             db.commit()
             db.refresh(setting)
+        else:
+            # Upgrade legacy string mappings if present
+            needs_update = False
+            if not setting.kra_section_mappings:
+                setting.kra_section_mappings = default_mappings
+                needs_update = True
+            else:
+                first_val = next(iter(setting.kra_section_mappings.values()), None)
+                if isinstance(first_val, str):
+                    setting.kra_section_mappings = default_mappings
+                    needs_update = True
+            
+            if needs_update:
+                db.commit()
+                db.refresh(setting)
         return setting
 
     @staticmethod
@@ -166,6 +284,7 @@ class SettingsService:
             include_credit_notes=system_setting.include_credit_notes,
             include_debit_notes=system_setting.include_debit_notes,
             skip_cancelled=system_setting.skip_cancelled,
+            kra_section_mappings=system_setting.kra_section_mappings,
             version=system_setting.version,
             updated_at=system_setting.updated_at,
             warning=warning,
@@ -305,6 +424,7 @@ class SettingsService:
             "include_credit_notes",
             "include_debit_notes",
             "skip_cancelled",
+            "kra_section_mappings",
         ]
 
         for field_name in fields_to_check:
@@ -335,6 +455,7 @@ class SettingsService:
             include_credit_notes=system_setting.include_credit_notes,
             include_debit_notes=system_setting.include_debit_notes,
             skip_cancelled=system_setting.skip_cancelled,
+            kra_section_mappings=system_setting.kra_section_mappings,
             version=system_setting.version,
             updated_at=system_setting.updated_at,
             warning=warning,

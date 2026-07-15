@@ -132,7 +132,7 @@ def test_upload_purchases_success(client: TestClient, auth_headers, db_session):
     response = client.post(
         f"/api/v1/purchases/upload?session_id={session.id}",
         headers=auth_headers,
-        files={"file": ("purchases.csv", csv_content, "text/csv")}
+        files=[("files", ("SEC_B_purchases.csv", csv_content, "text/csv"))]
     )
     assert response.status_code == 200
     data = response.json()
@@ -172,7 +172,7 @@ def test_upload_purchases_cross_session_validation_error(client: TestClient, aut
     response = client.post(
         f"/api/v1/purchases/upload?session_id={session.id}",
         headers=auth_headers,
-        files={"file": ("purchases.csv", csv_content, "text/csv")}
+        files=[("files", ("SEC_B_purchases.csv", csv_content, "text/csv"))]
     )
     assert response.status_code == 400
     assert "Active session type is not for Purchases reconciliation" in response.json()["detail"]
@@ -191,7 +191,7 @@ def test_upload_purchases_cross_session_validation_error(client: TestClient, aut
     response2 = client.post(
         f"/api/v1/sales/upload?session_id={purchases_session.id}",
         headers=auth_headers,
-        files={"file": ("sales.csv", csv_content, "text/csv")}
+        files=[("files", ("SEC_B_sales.csv", csv_content, "text/csv"))]
     )
     assert response2.status_code == 400
     assert "Active session type is not for Sales reconciliation" in response2.json()["detail"]

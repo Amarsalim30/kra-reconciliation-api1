@@ -214,7 +214,7 @@ def test_get_sales_success(client, auth_headers):
 
 
 def test_upload_sales_unauthenticated(client):
-    files = {"file": ("test.csv", b"some-csv-data", "text/csv")}
+    files = [("files", ("SEC_B.csv", b"some-csv-data", "text/csv"))]
     response = client.post("/api/v1/sales/upload?session_id=dummy-id", files=files)
     assert response.status_code == 401
 
@@ -228,7 +228,7 @@ def test_upload_sales_success(client, auth_headers):
         b"Pin Number,Customer Name,Invoice Number,Invoice Date,CU Number,VAT Group,Base Amount\n"
         b"P051393568M,Autoports Freight Terminals Limited,IN1080,02/03/2026,|0190439340000000455,16,1118894.84\n"
     )
-    files = {"file": ("SEC_B.csv", content, "text/csv")}
+    files = [("files", ("SEC_B.csv", content, "text/csv"))]
     response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 200
     data = response.json()
@@ -247,7 +247,7 @@ def test_upload_sales_invalid_file_extension(client, auth_headers):
     get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
-    files = {"file": ("SEC_B.txt", b"some-text", "text/plain")}
+    files = [("files", ("SEC_B.txt", b"some-text", "text/plain"))]
     response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 400
     assert "Only CSV files are allowed" in response.json()["detail"]
@@ -257,7 +257,7 @@ def test_upload_sales_empty_file(client, auth_headers):
     get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
-    files = {"file": ("SEC_B.csv", b"", "text/csv")}
+    files = [("files", ("SEC_B.csv", b"", "text/csv"))]
     response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 400
     assert "Uploaded file is empty" in response.json()["detail"]

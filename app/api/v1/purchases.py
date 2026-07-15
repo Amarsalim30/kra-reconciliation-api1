@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, Query, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, Query, UploadFile, HTTPException, status, File
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_active_session, get_sap_client
@@ -83,13 +83,13 @@ def get_purchases(
 
 @router.post("/upload", response_model=InvoiceUploadResponse)
 def upload_purchases_csv(
-    file: UploadFile,
+    files: list[UploadFile] = File(...),
     session_id: str = Query(..., description="Active reconciliation session ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a KRA CSV file containing purchase invoices. Normalizes and appends records to the active session.
+    Upload multiple KRA CSV files containing purchase invoices. Normalizes and appends records to the active session.
     """
     # 1. Validate active session using the dependency logic (checks expiry & user ownership)
     session = get_active_session(session_id=session_id, db=db, current_user=current_user)
@@ -101,11 +101,68 @@ def upload_purchases_csv(
             detail="Active session type is not for Purchases reconciliation."
         )
 
-    # 3. Parse and normalize KRA CSV
-    upload_res = kra_service.parse_kra_csv(file)
+    from app.services.settings_service import SettingsService
+    from app.schemas.invoice import CSVValidationErrorDetail
+    from app.services.kra_service import resolve_filename_to_section
+    
+    system_settings = SettingsService.get_or_create_system_settings(db)
+    mappings = system_settings.kra_section_mappings or {}
+    
+    # Identify expected required sections (active and required=True)
+    expected_required_sections = {
+        sec_id for sec_id, config in mappings.items()
+        if (isinstance(config, str) and sec_id in ("SEC_B", "SEC_F")) or
+           (isinstance(config, dict) and config.get("active", True) and config.get("required", True))
+    }
+    matched_sections = set()
+    
+    invoices = []
+    errors = []
+    warnings = []
+    total_rows = 0
+    parsed_count = 0
+    filenames_processed = []
+
+    for file in files:
+        filename = file.filename or "unknown.csv"
+        
+        matched_sec, sec_config = resolve_filename_to_section(filename, mappings)
+        
+        if not matched_sec:
+            warnings.append(f"Skipped file '{filename}': Could not detect a valid KRA section identifier.")
+            continue
+            
+        matched_sections.add(matched_sec)
+        filenames_processed.append(filename)
+        
+        try:
+            res = kra_service.parse_kra_csv(file, section_config=sec_config)
+            total_rows += res.rows
+            parsed_count += res.parsed
+            invoices.extend(res.invoices)
+            for err in res.errors:
+                err.message = f"[{filename}] {err.message}"
+                errors.append(err)
+        except HTTPException:
+            raise
+        except Exception as e:
+            errors.append(CSVValidationErrorDetail(
+                row=1,
+                column=None,
+                message=f"[{filename}] Failed to parse: {str(e)}"
+            ))
+
+    # Check for missing expected required sections
+    missing_sections = expected_required_sections - matched_sections
+    for sec in missing_sections:
+        display_name = sec
+        config = mappings.get(sec)
+        if isinstance(config, dict) and "display_name" in config:
+            display_name = config["display_name"]
+        warnings.append(f"Warning: Required section '{display_name}' was not found in the uploaded files.")
 
     # 4. Save KRA invoices to DB under the session only if there are successfully parsed invoices
-    if upload_res.parsed > 0:
+    if parsed_count > 0:
         # Clear any previously uploaded KRA invoices for this session (resets state)
         db.query(SessionInvoice).filter(
             SessionInvoice.session_id == session.id,
@@ -129,12 +186,18 @@ def upload_purchases_csv(
                 vat_group=inv.vat_group,
                 base_amount=inv.base_amount
             )
-            for idx, inv in enumerate(upload_res.invoices)
+            for idx, inv in enumerate(invoices)
         ]
         db.add_all(db_invoices)
         db.commit()
 
-    # Make sure session_id is returned
-    upload_res.session_id = session.id
-    upload_res.invoices = upload_res.invoices[:100]
-    return upload_res
+    return InvoiceUploadResponse(
+        session_id=session.id,
+        filename=", ".join(filenames_processed) if filenames_processed else "None",
+        rows=total_rows,
+        parsed=parsed_count,
+        errors_count=len(errors),
+        errors=errors,
+        invoices=invoices[:100],
+        warnings=warnings
+    )

@@ -28,6 +28,7 @@ export function useWorkspace(type: "sales" | "purchases") {
 
   const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   // Paginated Fetchers
   const fetchSapPage = useCallback((page: number, limit: number) => {
@@ -66,6 +67,7 @@ export function useWorkspace(type: "sales" | "purchases") {
       comparison: { status: AsyncStatus.Idle }
     }));
     setGlobalError(null);
+    setWarnings([]);
     setSummary(null);
     sapPagination.reset();
     kraPagination.reset();
@@ -90,29 +92,35 @@ export function useWorkspace(type: "sales" | "purchases") {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
     if (!sessionId) {
       setGlobalError("Please load SAP data first to create a session.");
       return;
     }
 
-    setFileName(file.name);
+    const fileNamesStr = files.map(f => f.name).join(", ");
+    setFileName(fileNamesStr);
     setUiState(prev => ({
       ...prev,
       kra: { status: AsyncStatus.Loading },
       comparison: { status: AsyncStatus.Idle }
     }));
     setGlobalError(null);
+    setWarnings([]);
     setSummary(null);
     kraPagination.reset();
     resultsPagination.reset();
 
     try {
-      const data = await uploadInvoicesCSV(type, sessionId, file);
+      const data = await uploadInvoicesCSV(type, sessionId, files);
       
       const totalPages = Math.ceil(data.parsed / 100);
       kraPagination.reset(data.invoices, data.parsed, totalPages);
+      
+      if (data.warnings && data.warnings.length > 0) {
+        setWarnings(data.warnings);
+      }
       
       setUiState(prev => ({ ...prev, kra: { status: AsyncStatus.Loaded } }));
     } catch (err: unknown) {
@@ -160,6 +168,7 @@ export function useWorkspace(type: "sales" | "purchases") {
     setFromDate("");
     setToDate("");
     setGlobalError(null);
+    setWarnings([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -187,6 +196,7 @@ export function useWorkspace(type: "sales" | "purchases") {
     summary,
     globalError,
     setGlobalError,
+    warnings,
     handleLoadSap,
     handleFileUpload,
     handleCompare,

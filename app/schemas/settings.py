@@ -53,6 +53,29 @@ class SAPConnectionResponse(SAPConnectionBase):
         from_attributes = True
 
 
+class KRAColumnMapping(BaseModel):
+    pin: int = Field(default=0, description="Column index of PIN Number")
+    partner_name: int = Field(default=1, description="Column index of Partner Name")
+    invoice_number: int = Field(default=2, description="Column index of Invoice Number")
+    invoice_date: int = Field(default=3, description="Column index of Invoice Date")
+    cu_number: int = Field(default=4, description="Column index of CU Number")
+    base_amount: int = Field(default=6, description="Column index of Base Amount")
+    vat_group: Optional[int] = Field(default=None, description="Column index of VAT Group (if read from CSV)")
+
+class KRAValidationRules(BaseModel):
+    pin_required: bool = Field(default=True, description="Whether PIN is required")
+    allow_negative_amounts: bool = Field(default=False, description="Whether negative amounts are allowed")
+
+class KRASectionConfig(BaseModel):
+    identifier: str = Field(..., description="Internal key (e.g. SEC_B)")
+    display_name: str = Field(..., description="Display name for UI")
+    filename_regex: str = Field(..., description="Regex pattern to match filename")
+    vat_group: str = Field(..., description="Mapped internal VAT group (e.g. 16)")
+    required: bool = Field(default=True, description="Whether this section is required in the upload")
+    column_mapping: KRAColumnMapping = Field(default_factory=KRAColumnMapping)
+    validation_rules: KRAValidationRules = Field(default_factory=KRAValidationRules)
+    active: bool = Field(default=True, description="Whether this section is enabled")
+
 class SystemSettingsBase(BaseModel):
     amount_tolerance: Decimal = Field(default=Decimal("10.00"), ge=Decimal("0.00"), description="Amount tolerance in KES")
     base_amount_policy: BaseAmountPolicy = Field(default=BaseAmountPolicy.SKIP)
@@ -61,6 +84,7 @@ class SystemSettingsBase(BaseModel):
     include_credit_notes: bool = Field(default=True)
     include_debit_notes: bool = Field(default=True)
     skip_cancelled: bool = Field(default=True)
+    kra_section_mappings: Dict[str, Any] = Field(default_factory=dict)
 
 
 class SystemSettingsUpdate(SystemSettingsBase):

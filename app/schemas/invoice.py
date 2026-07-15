@@ -64,6 +64,7 @@ class InvoiceUploadResponse(BaseModel):
     errors_count: int
     errors: list[CSVValidationErrorDetail]
     invoices: list[Invoice]
+    warnings: list[str] = []
 
 
 class PaginatedInvoicesResponse(BaseModel):

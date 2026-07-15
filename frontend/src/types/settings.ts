@@ -17,6 +17,32 @@ export interface SAPConnection {
   updated_at: string;
 }
 
+export interface KRAColumnMapping {
+  pin: number;
+  partner_name: number;
+  invoice_number: number;
+  invoice_date: number;
+  cu_number: number;
+  base_amount: number;
+  vat_group?: number | null;
+}
+
+export interface KRAValidationRules {
+  pin_required: boolean;
+  allow_negative_amounts: boolean;
+}
+
+export interface KRASectionConfig {
+  identifier: string;
+  display_name: string;
+  filename_regex: string;
+  vat_group: string;
+  required: boolean;
+  column_mapping: KRAColumnMapping;
+  validation_rules: KRAValidationRules;
+  active: boolean;
+}
+
 export interface SystemSettings {
   id: number;
   active_connection_id: number | null;
@@ -27,6 +53,7 @@ export interface SystemSettings {
   include_credit_notes: boolean;
   include_debit_notes: boolean;
   skip_cancelled: boolean;
+  kra_section_mappings: Record<string, KRASectionConfig>;
   version: number;
   updated_at: string;
   warning?: string | null;
