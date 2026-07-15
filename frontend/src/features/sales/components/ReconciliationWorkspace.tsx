@@ -17,7 +17,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
   const [navState, setNavState] = useState<WorkspaceNavigationState>("workspace");
 
   const {
-    fromDate, setFromDate, toDate, setToDate, fileInputRef,
+    fromDate, setFromDate, toDate, setToDate, fileStatuses, fileInputRef,
     uiState, summary, globalError, handleLoadSap, handleFileUpload, 
     handleCompare: triggerCompare,
     sapPagination, kraPagination, resultsPagination,
@@ -74,6 +74,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
           setFromDate={setFromDate}
           toDate={toDate}
           setToDate={setToDate}
+          fileStatuses={fileStatuses}
           fileInputRef={fileInputRef}
           uiState={uiState}
           handleLoadSap={handleLoadSap}

@@ -28,6 +28,7 @@ interface WorkspaceViewProps {
   setFromDate: (v: string) => void;
   toDate: string;
   setToDate: (v: string) => void;
+  fileStatuses: FileUploadStatus[];
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   uiState: WorkspaceUIState;
   handleLoadSap: () => void;
@@ -62,6 +63,7 @@ export function WorkspaceView({
   setFromDate, 
   toDate, 
   setToDate, 
+  fileStatuses,
   fileInputRef,
   uiState,
   handleLoadSap,
@@ -108,10 +110,10 @@ export function WorkspaceView({
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">KRA Data</label>
           <div className="flex items-center gap-3">
-            <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileUpload} disabled={uiState.sap.status !== AsyncStatus.Loaded || uiState.kra.status === AsyncStatus.Loading} className="hidden" id="csv-upload" />
+            <input type="file" multiple accept=".csv" ref={fileInputRef} onChange={handleFileUpload} disabled={uiState.sap.status !== AsyncStatus.Loaded || uiState.kra.status === AsyncStatus.Loading} className="hidden" id="csv-upload" />
             <label htmlFor="csv-upload" className={`px-5 py-2 rounded-md font-medium text-sm border transition-colors flex items-center gap-2 cursor-pointer h-[38px] ${uiState.sap.status !== AsyncStatus.Loaded ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}`}>
               {uiState.kra.status === AsyncStatus.Loading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uiState.kra.status === AsyncStatus.Loaded ? "Upload New CSV" : "Upload CSV"}
+              {uiState.kra.status === AsyncStatus.Loaded ? "Upload More CSVs" : "Upload Files"}
             </label>
             <button 
               onClick={handleDownloadTemplate} 
@@ -122,6 +124,19 @@ export function WorkspaceView({
               Template
             </button>
           </div>
+          {fileStatuses.length > 0 && (
+            <div className="flex flex-col gap-1 mt-2 text-xs text-slate-600 max-h-32 overflow-y-auto w-full max-w-sm">
+              {fileStatuses.map((f, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-slate-50 border border-slate-100 px-2 py-1 rounded">
+                  <span className="truncate flex-1 font-mono">{f.filename}</span>
+                  <span className="ml-2 font-semibold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {f.parsed} parsed
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

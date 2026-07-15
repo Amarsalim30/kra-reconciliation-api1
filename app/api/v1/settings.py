@@ -16,6 +16,8 @@ from app.schemas.settings import (
     TestConnectionResponse,
     VATMappingItem,
     VATMappingsUpdatePayload,
+    KRAVATMappingItem,
+    KRAVATMappingsUpdatePayload,
 )
 from app.services.settings_service import SettingsConflictError, SettingsService
 
@@ -90,6 +92,24 @@ def update_vat_mappings(
     """
     try:
         return SettingsService.save_vat_mappings(db, payload, current_user)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
+@router.put("/kra-vat-mappings", response_model=List[KRAVATMappingItem])
+def update_kra_vat_mappings(
+    payload: KRAVATMappingsUpdatePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Update KRA CSV Section Prefix to VAT rate mappings.
+    """
+    try:
+        return SettingsService.save_kra_vat_mappings(db, payload, current_user)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

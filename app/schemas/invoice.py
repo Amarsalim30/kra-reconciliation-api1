@@ -66,6 +66,20 @@ class InvoiceUploadResponse(BaseModel):
     invoices: list[Invoice]
 
 
+class FileUploadStatus(BaseModel):
+    filename: str
+    rows: int
+    parsed: int
+    errors_count: int
+    errors: list[CSVValidationErrorDetail]
+
+
+class MultipleInvoiceUploadResponse(BaseModel):
+    session_id: str = ""
+    files: list[FileUploadStatus]
+    invoices: list[Invoice]
+
+
 class PaginatedInvoicesResponse(BaseModel):
     total: int
     page: int

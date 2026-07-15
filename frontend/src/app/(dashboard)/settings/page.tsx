@@ -6,6 +6,7 @@ import { fetchWithAuth } from "@/lib/api";
 import { SAPConnectionCard } from "@/features/settings/SAPConnectionCard";
 import { SystemSettingsCard } from "@/features/settings/SystemSettingsCard";
 import { VATMappingEditor } from "@/features/settings/VATMappingEditor";
+import { KRAVATMappingEditor } from "@/features/settings/KRAVATMappingEditor";
 import { AuditLogDrawer } from "@/features/settings/AuditLogDrawer";
 import {
   Server,
@@ -164,11 +165,17 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "vat" && (
-          <VATMappingEditor
-            connectionId={data.sap_connection?.id || null}
-            mappings={data.vat_mappings}
-            onSaved={loadSettings}
-          />
+          <div className="space-y-6">
+            <VATMappingEditor
+              connectionId={data.sap_connection?.id || 0}
+              mappings={data.vat_mappings}
+              onSaved={loadSettings}
+            />
+            <KRAVATMappingEditor
+              mappings={data.kra_vat_mappings}
+              onSaved={loadSettings}
+            />
+          </div>
         )}
 
         {activeTab === "audit" && <AuditLogDrawer />}

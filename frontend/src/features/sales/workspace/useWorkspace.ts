@@ -6,7 +6,8 @@ import {
   uploadInvoicesCSV,
   compareInvoices,
   fetchInvoicesPage,
-  fetchReconciliationResultsPage
+  fetchReconciliationResultsPage,
+  FileUploadStatus
 } from "../api/reconciliation";
 import { AsyncStatus, WorkspaceUIState } from "./types";
 import { getWorkflowStep, getSessionStatus, isReadyToCompare, getMetrics } from "./selectors";
@@ -14,7 +15,7 @@ import { getWorkflowStep, getSessionStatus, isReadyToCompare, getMetrics } from 
 export function useWorkspace(type: "sales" | "purchases") {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [fileStatuses, setFileStatuses] = useState<FileUploadStatus[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -90,14 +91,13 @@ export function useWorkspace(type: "sales" | "purchases") {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     if (!sessionId) {
       setGlobalError("Please load SAP data first to create a session.");
       return;
     }
 
-    setFileName(file.name);
     setUiState(prev => ({
       ...prev,
       kra: { status: AsyncStatus.Loading },
@@ -105,20 +105,22 @@ export function useWorkspace(type: "sales" | "purchases") {
     }));
     setGlobalError(null);
     setSummary(null);
+    setFileStatuses([]);
     kraPagination.reset();
     resultsPagination.reset();
 
     try {
-      const data = await uploadInvoicesCSV(type, sessionId, file);
+      const data = await uploadInvoicesCSV(type, sessionId, files);
+      setFileStatuses(data.files);
       
-      const totalPages = Math.ceil(data.parsed / 100);
-      kraPagination.reset(data.invoices, data.parsed, totalPages);
+      const totalParsed = data.files.reduce((sum, f) => sum + f.parsed, 0);
+      const totalPages = Math.ceil(totalParsed / 100);
+      kraPagination.reset(data.invoices, totalParsed, totalPages);
       
       setUiState(prev => ({ ...prev, kra: { status: AsyncStatus.Loaded } }));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred uploading CSV.";
       setUiState(prev => ({ ...prev, kra: { status: AsyncStatus.Error, error: errorMessage } }));
-      setFileName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -156,7 +158,7 @@ export function useWorkspace(type: "sales" | "purchases") {
     sapPagination.reset();
     kraPagination.reset();
     resultsPagination.reset();
-    setFileName("");
+    setFileStatuses([]);
     setFromDate("");
     setToDate("");
     setGlobalError(null);
@@ -177,10 +179,10 @@ export function useWorkspace(type: "sales" | "purchases") {
 
   return {
     fromDate,
-    setFromDate,
     toDate,
+    setFromDate,
     setToDate,
-    fileName,
+    fileStatuses,
     fileInputRef,
     sessionId,
     uiState,

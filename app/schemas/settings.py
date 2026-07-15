@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from app.models.settings import (
     BaseAmountPolicy,
@@ -64,6 +64,29 @@ class SystemSettingsBase(BaseModel):
     skip_cancelled: bool = Field(default=True)
     purchase_cu_source: PurchaseCUField = Field(default=PurchaseCUField.KRA)
 
+    kra_csv_pin_column: int = Field(default=0, ge=0)
+    kra_csv_partner_name_column: int = Field(default=1, ge=0)
+    kra_csv_invoice_number_column: int = Field(default=2, ge=0)
+    kra_csv_invoice_date_column: int = Field(default=3, ge=0)
+    kra_csv_cu_number_column: int = Field(default=4, ge=0)
+    kra_csv_vat_group_column: int = Field(default=5, ge=0)
+    kra_csv_base_amount_column: int = Field(default=6, ge=0)
+
+    @model_validator(mode="after")
+    def _check_kra_columns_unique(self) -> "SystemSettingsBase":
+        columns = [
+            self.kra_csv_pin_column,
+            self.kra_csv_partner_name_column,
+            self.kra_csv_invoice_number_column,
+            self.kra_csv_invoice_date_column,
+            self.kra_csv_cu_number_column,
+            self.kra_csv_vat_group_column,
+            self.kra_csv_base_amount_column,
+        ]
+        if len(set(columns)) != len(columns):
+            raise ValueError("KRA CSV column indexes must be unique; two or more fields map to the same column.")
+        return self
+
 
 class SystemSettingsUpdate(SystemSettingsBase):
     version: int = Field(..., description="Current system settings version for optimistic locking")
@@ -100,10 +123,25 @@ class VATMappingsUpdatePayload(BaseModel):
     reason: Optional[str] = None
 
 
+class KRAVATMappingItem(BaseModel):
+    id: Optional[int] = None
+    section_prefix: str = Field(..., min_length=1, max_length=50)
+    canonical_value: VatRateCategory
+
+    class Config:
+        from_attributes = True
+
+
+class KRAVATMappingsUpdatePayload(BaseModel):
+    mappings: List[KRAVATMappingItem]
+    reason: Optional[str] = None
+
+
 class SettingsCompositeResponse(BaseModel):
     sap_connection: Optional[SAPConnectionResponse] = None
     system_settings: SystemSettingsResponse
     vat_mappings: List[VATMappingItem]
+    kra_vat_mappings: List[KRAVATMappingItem] = Field(default_factory=list)
     is_using_env_fallback: bool = False
 
 

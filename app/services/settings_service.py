@@ -13,6 +13,7 @@ from app.models.settings import (
     SystemSetting,
     UnmappedVatPolicy,
     VATMapping,
+    KRAVATMapping,
     VatModule,
     VatRateCategory,
 )
@@ -29,6 +30,8 @@ from app.schemas.settings import (
     TestConnectionResponse,
     VATMappingItem,
     VATMappingsUpdatePayload,
+    KRAVATMappingItem,
+    KRAVATMappingsUpdatePayload,
 )
 
 
@@ -65,6 +68,14 @@ class SettingsService:
                 include_credit_notes=True,
                 include_debit_notes=True,
                 skip_cancelled=True,
+                purchase_cu_source="U_CUINV",
+                kra_csv_pin_column=0,
+                kra_csv_partner_name_column=1,
+                kra_csv_invoice_number_column=2,
+                kra_csv_invoice_date_column=3,
+                kra_csv_cu_number_column=4,
+                kra_csv_vat_group_column=5,
+                kra_csv_base_amount_column=6,
                 version=1,
             )
             db.add(setting)
@@ -151,6 +162,10 @@ class SettingsService:
                     updated_at=system_setting.updated_at,
                 )
 
+        # KRA VAT Mappings
+        raw_kra_mappings = db.query(KRAVATMapping).all()
+        kra_vat_mappings_items = [KRAVATMappingItem.model_validate(m) for m in raw_kra_mappings]
+
         # Tolerance warning check
         warning = None
         if system_setting.amount_tolerance > Decimal("1000.00"):
@@ -166,6 +181,14 @@ class SettingsService:
             include_credit_notes=system_setting.include_credit_notes,
             include_debit_notes=system_setting.include_debit_notes,
             skip_cancelled=system_setting.skip_cancelled,
+            purchase_cu_source=system_setting.purchase_cu_source,
+            kra_csv_pin_column=system_setting.kra_csv_pin_column,
+            kra_csv_partner_name_column=system_setting.kra_csv_partner_name_column,
+            kra_csv_invoice_number_column=system_setting.kra_csv_invoice_number_column,
+            kra_csv_invoice_date_column=system_setting.kra_csv_invoice_date_column,
+            kra_csv_cu_number_column=system_setting.kra_csv_cu_number_column,
+            kra_csv_vat_group_column=system_setting.kra_csv_vat_group_column,
+            kra_csv_base_amount_column=system_setting.kra_csv_base_amount_column,
             version=system_setting.version,
             updated_at=system_setting.updated_at,
             warning=warning,
@@ -175,6 +198,7 @@ class SettingsService:
             sap_connection=sap_conn_resp,
             system_settings=sys_resp,
             vat_mappings=vat_mappings_items,
+            kra_vat_mappings=kra_vat_mappings_items,
             is_using_env_fallback=env_fallback,
         )
 
@@ -306,6 +330,13 @@ class SettingsService:
             "include_debit_notes",
             "skip_cancelled",
             "purchase_cu_source",
+            "kra_csv_pin_column",
+            "kra_csv_partner_name_column",
+            "kra_csv_invoice_number_column",
+            "kra_csv_invoice_date_column",
+            "kra_csv_cu_number_column",
+            "kra_csv_vat_group_column",
+            "kra_csv_base_amount_column",
         ]
 
         for field_name in fields_to_check:
@@ -336,6 +367,14 @@ class SettingsService:
             include_credit_notes=system_setting.include_credit_notes,
             include_debit_notes=system_setting.include_debit_notes,
             skip_cancelled=system_setting.skip_cancelled,
+            purchase_cu_source=system_setting.purchase_cu_source,
+            kra_csv_pin_column=system_setting.kra_csv_pin_column,
+            kra_csv_partner_name_column=system_setting.kra_csv_partner_name_column,
+            kra_csv_invoice_number_column=system_setting.kra_csv_invoice_number_column,
+            kra_csv_invoice_date_column=system_setting.kra_csv_invoice_date_column,
+            kra_csv_cu_number_column=system_setting.kra_csv_cu_number_column,
+            kra_csv_vat_group_column=system_setting.kra_csv_vat_group_column,
+            kra_csv_base_amount_column=system_setting.kra_csv_base_amount_column,
             version=system_setting.version,
             updated_at=system_setting.updated_at,
             warning=warning,
@@ -414,6 +453,60 @@ class SettingsService:
 
         updated = db.query(VATMapping).filter(VATMapping.connection_id == conn_id).all()
         return [VATMappingItem.model_validate(m) for m in updated]
+    @classmethod
+    def save_kra_vat_mappings(
+        cls, db: Session, payload: KRAVATMappingsUpdatePayload, current_user: Optional[User] = None
+    ) -> List[KRAVATMappingItem]:
+        existing_db_mappings = {
+            m.section_prefix.strip().upper(): m
+            for m in db.query(KRAVATMapping).all()
+        }
+
+        changes = {}
+        user_id = current_user.id if current_user else None
+        user_email = current_user.email if current_user else "system"
+
+        submitted_keys = set()
+        for item in payload.mappings:
+            prefix = item.section_prefix.strip().upper()
+            if prefix in submitted_keys:
+                raise ValueError(f"Duplicate KRA VAT section prefix '{prefix}'.")
+            submitted_keys.add(prefix)
+
+            if prefix in existing_db_mappings:
+                db_item = existing_db_mappings[prefix]
+                if db_item.canonical_value != item.canonical_value:
+                    changes[f"KRA_VAT:{prefix}"] = {
+                        "old": str(db_item.canonical_value),
+                        "new": str(item.canonical_value),
+                    }
+                    db_item.canonical_value = item.canonical_value
+            else:
+                new_mapping = KRAVATMapping(
+                    section_prefix=prefix,
+                    canonical_value=item.canonical_value,
+                )
+                db.add(new_mapping)
+                changes[f"KRA_VAT:{prefix}"] = {
+                    "old": None,
+                    "new": str(item.canonical_value),
+                }
+
+        # Check for deleted custom mappings
+        for prefix, db_item in existing_db_mappings.items():
+            if prefix not in submitted_keys:
+                changes[f"KRA_VAT:{prefix}"] = {
+                    "old": str(db_item.canonical_value),
+                    "new": "DELETED",
+                }
+                db.delete(db_item)
+
+        if changes:
+            db.commit()
+            cls.record_audit_log(db, user_id, user_email, "update_kra_vat_mappings", changes, payload.reason)
+
+        updated = db.query(KRAVATMapping).all()
+        return [KRAVATMappingItem.model_validate(m) for m in updated]
 
     @classmethod
     def test_sap_connection(cls, db: Session, req: TestConnectionRequest) -> TestConnectionResponse:

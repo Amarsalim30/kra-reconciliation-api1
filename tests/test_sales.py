@@ -141,7 +141,7 @@ def test_invoice_service_date_range_filtering():
 
 # --- CSV Ingestion Tests ---
 
-def test_parse_kra_csv_mock_class():
+def test_parse_kra_csv_mock_class(db_session):
     class MockUploadFile:
         def __init__(self, filename, content):
             self.filename = filename
@@ -155,7 +155,7 @@ def test_parse_kra_csv_mock_class():
     )
     mock_file = MockUploadFile("SEC_B.csv", content)
     
-    response = kra_service.parse_kra_csv(mock_file)
+    response = kra_service.parse_kra_csv(mock_file, db_session)
     assert response.filename == "SEC_B.csv"
     assert response.rows == 2
     assert response.parsed == 2
@@ -165,7 +165,7 @@ def test_parse_kra_csv_mock_class():
     assert response.invoices[0].cu_number == "0190439340000000455"
 
 
-def test_parse_kra_csv_aggregate_errors():
+def test_parse_kra_csv_aggregate_errors(db_session):
     class MockUploadFile:
         def __init__(self, filename, content):
             self.filename = filename
@@ -180,7 +180,7 @@ def test_parse_kra_csv_aggregate_errors():
     )
     mock_file = MockUploadFile("SEC_B_errors.csv", content)
     
-    response = kra_service.parse_kra_csv(mock_file)
+    response = kra_service.parse_kra_csv(mock_file, db_session)
     assert response.rows == 3
     assert response.parsed == 1
     assert response.errors_count == 2
@@ -214,7 +214,7 @@ def test_get_sales_success(client, auth_headers):
 
 
 def test_upload_sales_unauthenticated(client):
-    files = {"file": ("test.csv", b"some-csv-data", "text/csv")}
+    files = [("files", ("test.csv", b"some-csv-data", "text/csv"))]
     response = client.post("/api/v1/sales/upload?session_id=dummy-id", files=files)
     assert response.status_code == 401
 
@@ -228,15 +228,16 @@ def test_upload_sales_success(client, auth_headers):
         b"Pin Number,Customer Name,Invoice Number,Invoice Date,CU Number,VAT Group,Base Amount\n"
         b"P051393568M,Autoports Freight Terminals Limited,IN1080,02/03/2026,|0190439340000000455,16,1118894.84\n"
     )
-    files = {"file": ("SEC_B.csv", content, "text/csv")}
+    files = [("files", ("SEC_B.csv", content, "text/csv"))]
     response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 200
     data = response.json()
     assert data["session_id"] == session_id
-    assert data["filename"] == "SEC_B.csv"
-    assert data["rows"] == 1
-    assert data["parsed"] == 1
-    assert data["errors_count"] == 0
+    assert len(data["files"]) == 1
+    assert data["files"][0]["filename"] == "SEC_B.csv"
+    assert data["files"][0]["rows"] == 1
+    assert data["files"][0]["parsed"] == 1
+    assert data["files"][0]["errors_count"] == 0
     assert len(data["invoices"]) == 1
     assert data["invoices"][0]["invoice_number"] == "IN1080"
     assert data["invoices"][0]["cu_number"] == "0190439340000000455"
@@ -247,7 +248,7 @@ def test_upload_sales_invalid_file_extension(client, auth_headers):
     get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
-    files = {"file": ("SEC_B.txt", b"some-text", "text/plain")}
+    files = [("files", ("SEC_B.txt", b"some-text", "text/plain"))]
     response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 400
     assert "Only CSV files are allowed" in response.json()["detail"]
@@ -257,7 +258,7 @@ def test_upload_sales_empty_file(client, auth_headers):
     get_res = client.get("/api/v1/sales?from=2026-03-01&to=2026-03-30", headers=auth_headers)
     session_id = get_res.json()["session_id"]
 
-    files = {"file": ("SEC_B.csv", b"", "text/csv")}
+    files = [("files", ("SEC_B.csv", b"", "text/csv"))]
     response = client.post(f"/api/v1/sales/upload?session_id={session_id}", headers=auth_headers, files=files)
     assert response.status_code == 400
     assert "Uploaded file is empty" in response.json()["detail"]

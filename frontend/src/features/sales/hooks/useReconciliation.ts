@@ -6,13 +6,14 @@ import {
   uploadInvoicesCSV,
   compareInvoices,
   fetchInvoicesPage,
-  fetchReconciliationResultsPage
+  fetchReconciliationResultsPage,
+  FileUploadStatus
 } from "../api/reconciliation";
 
 export function useReconciliation(type: "sales" | "purchases") {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [fileStatuses, setFileStatuses] = useState<FileUploadStatus[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -86,34 +87,35 @@ export function useReconciliation(type: "sales" | "purchases") {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     if (!sessionId) {
       setError("Please load SAP data first to create a session.");
       return;
     }
 
-    setFileName(file.name);
     setLoadingKra(true);
     setError(null);
     setSummary(null);
+    setFileStatuses([]);
     kraPagination.reset();
     resultsPagination.reset();
 
     try {
-      const data = await uploadInvoicesCSV(type, sessionId, file);
+      const data = await uploadInvoicesCSV(type, sessionId, files);
+      setFileStatuses(data.files);
       setCurrentView("preview");
       
       // Seed Page 1 of KRA preview directly
-      const totalPages = Math.ceil(data.parsed / 100);
-      kraPagination.reset(data.invoices, data.parsed, totalPages);
+      const totalParsed = data.files.reduce((sum, f) => sum + f.parsed, 0);
+      const totalPages = Math.ceil(totalParsed / 100);
+      kraPagination.reset(data.invoices, totalParsed, totalPages);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("An unknown error occurred");
       }
-      setFileName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } finally {
       setLoadingKra(false);
@@ -146,10 +148,10 @@ export function useReconciliation(type: "sales" | "purchases") {
     setSessionId(null);
     setCurrentView("preview");
     setSummary(null);
+    setFileStatuses([]);
     sapPagination.reset();
     kraPagination.reset();
     resultsPagination.reset();
-    setFileName("");
     setFromDate("");
     setToDate("");
     setError(null);
@@ -158,10 +160,10 @@ export function useReconciliation(type: "sales" | "purchases") {
 
   return {
     fromDate,
-    setFromDate,
     toDate,
+    setFromDate,
     setToDate,
-    fileName,
+    fileStatuses,
     fileInputRef,
     sessionId,
     currentView,

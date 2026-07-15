@@ -6,7 +6,7 @@ from app.core.dependencies import get_current_user, get_active_session, get_sap_
 from app.database.database import get_db
 from app.models.user import User
 from app.models.reconciliation_session import ReconciliationSession, SessionInvoice
-from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType, InvoiceFetchResponse, InvoiceUploadResponse
+from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType, InvoiceFetchResponse, MultipleInvoiceUploadResponse
 from app.services import invoice_service, kra_service
 from app.services.settings_service import SettingsService
 from app.core.sap_client import SAPClient
@@ -84,15 +84,15 @@ def get_purchases(
     )
 
 
-@router.post("/upload", response_model=InvoiceUploadResponse)
+@router.post("/upload", response_model=MultipleInvoiceUploadResponse)
 def upload_purchases_csv(
-    file: UploadFile,
+    files: list[UploadFile],
     session_id: str = Query(..., description="Active reconciliation session ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a KRA CSV file containing purchase invoices. Normalizes and appends records to the active session.
+    Upload multiple KRA CSV files containing purchase invoices. Normalizes and appends records to the active session.
     """
     # 1. Validate active session using the dependency logic (checks expiry & user ownership)
     session = get_active_session(session_id=session_id, db=db, current_user=current_user)
@@ -104,11 +104,11 @@ def upload_purchases_csv(
             detail="Active session type is not for Purchases reconciliation."
         )
 
-    # 3. Parse and normalize KRA CSV
-    upload_res = kra_service.parse_kra_csv(file)
+    # 3. Parse and normalize KRA CSV files
+    all_invoices, file_statuses = kra_service.parse_multiple_kra_csvs(files, db)
 
     # 4. Save KRA invoices to DB under the session only if there are successfully parsed invoices
-    if upload_res.parsed > 0:
+    if len(all_invoices) > 0:
         # Clear any previously uploaded KRA invoices for this session (resets state)
         db.query(SessionInvoice).filter(
             SessionInvoice.session_id == session.id,
@@ -132,12 +132,13 @@ def upload_purchases_csv(
                 vat_group=inv.vat_group,
                 base_amount=inv.base_amount
             )
-            for idx, inv in enumerate(upload_res.invoices)
+            for idx, inv in enumerate(all_invoices)
         ]
         db.add_all(db_invoices)
         db.commit()
 
-    # Make sure session_id is returned
-    upload_res.session_id = session.id
-    upload_res.invoices = upload_res.invoices[:100]
-    return upload_res
+    return MultipleInvoiceUploadResponse(
+        session_id=session.id,
+        files=file_statuses,
+        invoices=all_invoices[:100]
+    )

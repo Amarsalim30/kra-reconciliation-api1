@@ -31,6 +31,13 @@ export interface SystemSettings {
   include_debit_notes: boolean;
   skip_cancelled: boolean;
   purchase_cu_source: PurchaseCUField;
+  kra_csv_pin_column: number;
+  kra_csv_partner_name_column: number;
+  kra_csv_invoice_number_column: number;
+  kra_csv_invoice_date_column: number;
+  kra_csv_cu_number_column: number;
+  kra_csv_vat_group_column: number;
+  kra_csv_base_amount_column: number;
   version: number;
   updated_at: string;
   warning?: string | null;
@@ -45,10 +52,17 @@ export interface VATMappingItem {
   is_builtin: boolean;
 }
 
+export interface KRAVATMappingItem {
+  id?: number;
+  section_prefix: string;
+  canonical_value: VatRateCategory;
+}
+
 export interface SettingsComposite {
   sap_connection: SAPConnection | null;
   system_settings: SystemSettings;
   vat_mappings: VATMappingItem[];
+  kra_vat_mappings: KRAVATMappingItem[];
   is_using_env_fallback: boolean;
 }
 

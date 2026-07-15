@@ -37,6 +37,16 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   const [purchaseCuSource, setPurchaseCuSource] = useState<PurchaseCUField>(
     settings.purchase_cu_source
   );
+  
+  // KRA CSV Mapping Fields
+  const [kraPinCol, setKraPinCol] = useState(settings.kra_csv_pin_column);
+  const [kraPartnerCol, setKraPartnerCol] = useState(settings.kra_csv_partner_name_column);
+  const [kraInvNoCol, setKraInvNoCol] = useState(settings.kra_csv_invoice_number_column);
+  const [kraDateCol, setKraDateCol] = useState(settings.kra_csv_invoice_date_column);
+  const [kraCuCol, setKraCuCol] = useState(settings.kra_csv_cu_number_column);
+  const [kraVatCol, setKraVatCol] = useState(settings.kra_csv_vat_group_column);
+  const [kraBaseCol, setKraBaseCol] = useState(settings.kra_csv_base_amount_column);
+
   const [reason, setReason] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -62,6 +72,13 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
         include_debit_notes: includeDebitNotes,
         skip_cancelled: skipCancelled,
         purchase_cu_source: purchaseCuSource,
+        kra_csv_pin_column: kraPinCol,
+        kra_csv_partner_name_column: kraPartnerCol,
+        kra_csv_invoice_number_column: kraInvNoCol,
+        kra_csv_invoice_date_column: kraDateCol,
+        kra_csv_cu_number_column: kraCuCol,
+        kra_csv_vat_group_column: kraVatCol,
+        kra_csv_base_amount_column: kraBaseCol,
         version: settings.version,
         reason: reason.trim() || undefined,
       };
@@ -282,6 +299,43 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                 </span>
               </div>
             </label>
+          </div>
+        </div>
+
+        {/* KRA CSV Column Mapping */}
+        <div className="space-y-3 pt-3 border-t border-slate-100">
+          <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            KRA CSV Column Indexes (0-based)
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">PIN Number</label>
+              <input type="number" min={0} value={kraPinCol} onChange={(e) => setKraPinCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Partner Name</label>
+              <input type="number" min={0} value={kraPartnerCol} onChange={(e) => setKraPartnerCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Invoice Number</label>
+              <input type="number" min={0} value={kraInvNoCol} onChange={(e) => setKraInvNoCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Invoice Date</label>
+              <input type="number" min={0} value={kraDateCol} onChange={(e) => setKraDateCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">CU Number</label>
+              <input type="number" min={0} value={kraCuCol} onChange={(e) => setKraCuCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">VAT Group</label>
+              <input type="number" min={0} value={kraVatCol} onChange={(e) => setKraVatCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Base Amount</label>
+              <input type="number" min={0} value={kraBaseCol} onChange={(e) => setKraBaseCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+            </div>
           </div>
         </div>
 

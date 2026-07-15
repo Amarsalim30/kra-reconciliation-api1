@@ -17,13 +17,17 @@ export interface CSVValidationErrorDetail {
   message: string;
 }
 
-export interface InvoiceUploadResponse {
-  session_id: string;
+export interface FileUploadStatus {
   filename: string;
   rows: number;
   parsed: number;
   errors_count: number;
   errors: CSVValidationErrorDetail[];
+}
+
+export interface MultipleInvoiceUploadResponse {
+  session_id: string;
+  files: FileUploadStatus[];
   invoices: Invoice[];
 }
 
@@ -48,10 +52,10 @@ export async function fetchInvoicesPreview(
 export async function uploadInvoicesCSV(
   type: "sales" | "purchases",
   sessionId: string,
-  file: File
-): Promise<InvoiceUploadResponse> {
+  files: File[]
+): Promise<MultipleInvoiceUploadResponse> {
   const formData = new FormData();
-  formData.append("file", file);
+  files.forEach(file => formData.append("files", file));
 
   const res = await fetchWithAuth(`/${type}/upload?session_id=${sessionId}`, {
     method: "POST",

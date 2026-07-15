@@ -1,14 +1,21 @@
 import csv
 import io
 from fastapi import UploadFile, HTTPException, status
-
+from sqlalchemy.orm import Session
 from app.core.config import get_settings
-from app.core.csv_aliases import FIELD_ALIASES
-from app.schemas.invoice import Invoice, CSVValidationErrorDetail, InvoiceUploadResponse, InvoiceSource
+from app.models.settings import KRAVATMapping
+from app.schemas.invoice import (
+    Invoice,
+    CSVValidationErrorDetail,
+    FileUploadStatus,
+    InvoiceUploadResponse,
+    InvoiceSource,
+)
 from app.services.normalization import normalize_invoice_data
+from app.services.settings_service import SettingsService
 
 
-def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
+def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
     """
     Parses a KRA CSV file, performs schema and type normalization,
     and returns a response detailing successful parses and aggregated validation errors.
@@ -69,53 +76,25 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
 
     headers = [h.strip() for h in raw_headers]
 
-    # Check for duplicate headers
-    seen_headers = set()
-    duplicate_headers = []
-    for h in headers:
-        if h:
-            h_lower = h.lower()
-            if h_lower in seen_headers:
-                duplicate_headers.append(h)
-            seen_headers.add(h_lower)
+    # Map headers dynamically using DB settings
+    system_setting = SettingsService.get_or_create_system_settings(db)
+    field_to_index = {
+        "pin": system_setting.kra_csv_pin_column,
+        "partner_name": system_setting.kra_csv_partner_name_column,
+        "invoice_number": system_setting.kra_csv_invoice_number_column,
+        "invoice_date": system_setting.kra_csv_invoice_date_column,
+        "cu_number": system_setting.kra_csv_cu_number_column,
+        "vat_group": system_setting.kra_csv_vat_group_column,
+        "base_amount": system_setting.kra_csv_base_amount_column,
+    }
 
-    if duplicate_headers:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"CSV file contains duplicate headers: {', '.join(duplicate_headers)}"
-        )
-
-    # Map headers dynamically using FIELD_ALIASES (case-insensitive and trimmed)
-    field_to_index = {}
-    for idx, h in enumerate(headers):
-        if not h:
-            continue
-        h_norm = h.strip().lower()
-        for field, aliases in FIELD_ALIASES.items():
-            if any(alias.strip().lower() == h_norm for alias in aliases):
-                if field not in field_to_index:
-                    field_to_index[field] = idx
-                break
-
-    # Check that all required schema fields are mapped
-    required_fields = ["pin", "partner_name", "invoice_number", "invoice_date", "cu_number", "vat_group", "base_amount"]
-    missing_fields = [f for f in required_fields if f not in field_to_index]
-    if missing_fields:
-        # Map user-friendly names for missing columns error message
-        friendly_names = {
-            "pin": "PIN Number",
-            "partner_name": "Partner/Customer/Supplier Name",
-            "invoice_number": "Invoice Number",
-            "invoice_date": "Invoice Date",
-            "cu_number": "CU Number",
-            "vat_group": "VAT Group",
-            "base_amount": "Base Amount"
-        }
-        missing_friendly = [friendly_names.get(f, f) for f in missing_fields]
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing required columns in CSV: {', '.join(missing_friendly)}"
-        )
+    # VAT Section Mapping via filename prefix
+    file_vat_rate = None
+    all_vat_mappings = db.query(KRAVATMapping).all()
+    for mapping in all_vat_mappings:
+        if filename.upper().startswith(mapping.section_prefix.upper()):
+            file_vat_rate = mapping.canonical_value.value
+            break
 
     invoices: list[Invoice] = []
     errors: list[CSVValidationErrorDetail] = []
@@ -129,23 +108,17 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
         row_values = {}
         row_error_occurred = False
 
-        for field in required_fields:
+        for field in field_to_index.keys():
             idx = field_to_index[field]
             if idx < len(row):
                 row_values[field] = row[idx]
             else:
-                errors.append(CSVValidationErrorDetail(
-                    row=row_idx,
-                    column=headers[idx] if idx < len(headers) else field,
-                    message=f"Missing column value for {field}"
-                ))
-                row_error_occurred = True
-
-        if row_error_occurred:
-            continue
-
-        if row_error_occurred:
-            continue
+                # Missing column index in the row
+                row_values[field] = ""
+                
+        # Override VAT Group if derived from filename
+        if file_vat_rate:
+            row_values["vat_group"] = file_vat_rate
 
         try:
             normalized = normalize_invoice_data(
@@ -164,20 +137,27 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
             msg = str(ve)
             msg_lower = msg.lower()
             col_name = None
+            
+            def safe_header(field_key):
+                idx = field_to_index.get(field_key)
+                if idx is not None and idx < len(headers):
+                    return headers[idx]
+                return field_key
+
             if "pin" in msg_lower:
-                col_name = headers[field_to_index["pin"]]
+                col_name = safe_header("pin")
             elif "customer name" in msg_lower or "partner name" in msg_lower:
-                col_name = headers[field_to_index["partner_name"]]
+                col_name = safe_header("partner_name")
             elif "invoice number" in msg_lower:
-                col_name = headers[field_to_index["invoice_number"]]
+                col_name = safe_header("invoice_number")
             elif "date" in msg_lower:
-                col_name = headers[field_to_index["invoice_date"]]
+                col_name = safe_header("invoice_date")
             elif "cu number" in msg_lower:
-                col_name = headers[field_to_index["cu_number"]]
+                col_name = safe_header("cu_number")
             elif "vat group" in msg_lower:
-                col_name = headers[field_to_index["vat_group"]]
+                col_name = safe_header("vat_group")
             elif "base amount" in msg_lower:
-                col_name = headers[field_to_index["base_amount"]]
+                col_name = safe_header("base_amount")
 
             errors.append(CSVValidationErrorDetail(
                 row=row_idx,
@@ -193,3 +173,24 @@ def parse_kra_csv(file: UploadFile) -> InvoiceUploadResponse:
         errors=errors,
         invoices=invoices
     )
+
+
+def parse_multiple_kra_csvs(
+    files: list[UploadFile], db: Session
+) -> tuple[list[Invoice], list[FileUploadStatus]]:
+    """Parse multiple KRA CSV uploads, returning the combined invoices and per-file status."""
+    all_invoices: list[Invoice] = []
+    file_statuses: list[FileUploadStatus] = []
+    for file in files:
+        upload_res = parse_kra_csv(file, db)
+        all_invoices.extend(upload_res.invoices)
+        file_statuses.append(
+            FileUploadStatus(
+                filename=upload_res.filename,
+                rows=upload_res.rows,
+                parsed=upload_res.parsed,
+                errors_count=upload_res.errors_count,
+                errors=upload_res.errors,
+            )
+        )
+    return all_invoices, file_statuses
