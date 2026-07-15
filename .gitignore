@@ -1,11 +1,90 @@
-# Python-generated files
+# ---------------------------------------------------------------------------
+# Secrets & credentials (NEVER commit these)
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.crt
+secrets/
+credentials/
+*.sqlite
+*.sqlite3
+
+# Databases (local/dev data, not for deployment)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
 __pycache__/
 *.py[oc]
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
 *.py[cod]
+.ipynb_checkpoints/
 
 # Virtual environments
 .venv
+venv/
+env/
+
+# Test / type caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Node / frontend (also covered by frontend/.gitignore)
+# ---------------------------------------------------------------------------
+node_modules/
+.next/
+out/
+coverage/
+
+# ---------------------------------------------------------------------------
+# Editor & OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------------
+# Internal tooling / agent state (not part of the deployed app)
+# ---------------------------------------------------------------------------
+.codegraph/
+.opencode/
+UI-UX/
+
+# ---------------------------------------------------------------------------
+# Scratch / analysis / planning artifacts (root level only; not for deployment)
+# ---------------------------------------------------------------------------
+/Directory.txt
+/plan*.md
+/implementation_plan*.md
+/task.md
+/# KRA Reconciliation API*.md
+/check_*.py
+/fix_db_flags.py
+/test_*.py
+
+# ---------------------------------------------------------------------------
+# Keep these (explicit exceptions)
+# ---------------------------------------------------------------------------
+!.env.example
+!.gitignore
+!docs/
