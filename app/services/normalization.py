@@ -67,6 +67,8 @@ def normalize_invoice_data(
     if invoice_number is None:
         raise ValueError("Invoice Number is required")
     norm_invoice_number = str(invoice_number).strip()
+    while norm_invoice_number.startswith('|'):
+        norm_invoice_number = norm_invoice_number.lstrip('|').strip()
     if not norm_invoice_number:
         raise ValueError("Invoice Number cannot be empty")
 

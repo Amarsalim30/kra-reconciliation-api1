@@ -100,9 +100,9 @@ class SettingsService:
             "SEC_G": {
                 "identifier": "SEC_G",
                 "module": "purchases",
-                "display_name": "Section G - Zero Rated Purchases",
+                "display_name": "Section G - Other Rated Purchases (8%)",
                 "filename_regex": "(?i).*sec[_-]?g.*",
-                "vat_group": "0",
+                "vat_group": "8",
                 "required": False,
                 "column_mapping": {
                     "pin": 1,
@@ -121,9 +121,9 @@ class SettingsService:
             "SEC_H": {
                 "identifier": "SEC_H",
                 "module": "purchases",
-                "display_name": "Section H - Standard Rated Purchases (8%)",
+                "display_name": "Section H - Zero Rated Purchases",
                 "filename_regex": "(?i).*sec[_-]?h.*",
-                "vat_group": "8",
+                "vat_group": "0",
                 "required": False,
                 "column_mapping": {
                     "pin": 1,
@@ -142,9 +142,9 @@ class SettingsService:
             "SEC_I": {
                 "identifier": "SEC_I",
                 "module": "purchases",
-                "display_name": "Section I - Standard Rated Purchases (8% Reduced)",
+                "display_name": "Section I - Exempt Purchases",
                 "filename_regex": "(?i).*sec[_-]?i.*",
-                "vat_group": "8",
+                "vat_group": "Exempt",
                 "required": False,
                 "column_mapping": {
                     "pin": 1,
