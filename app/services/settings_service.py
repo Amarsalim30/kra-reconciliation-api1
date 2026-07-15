@@ -305,6 +305,7 @@ class SettingsService:
             "include_credit_notes",
             "include_debit_notes",
             "skip_cancelled",
+            "purchase_cu_source",
         ]
 
         for field_name in fields_to_check:

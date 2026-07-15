@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.reconciliation_session import ReconciliationSession, SessionInvoice
 from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType, InvoiceFetchResponse, InvoiceUploadResponse
 from app.services import invoice_service, kra_service
+from app.services.settings_service import SettingsService
 from app.core.sap_client import SAPClient
 
 router = APIRouter(prefix="/sales", tags=["sales"])
@@ -45,11 +46,13 @@ def get_sales(
     db.commit()
 
     # 3. Fetch live SAP data
+    system_setting = SettingsService.get_or_create_system_settings(db)
     invoices = invoice_service.get_invoices(
         from_date, to_date,
         reconciliation_type=ReconciliationType.SALES,
         sap_client=sap_client,
-        reconciliation_session_id=session.id
+        reconciliation_session_id=session.id,
+        purchase_cu_source=system_setting.purchase_cu_source,
     )
 
     # 4. Save loaded SAP invoices relationally

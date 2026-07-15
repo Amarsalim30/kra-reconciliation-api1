@@ -43,6 +43,19 @@ class VatModule(str, Enum):
     PURCHASES = "purchases"
 
 
+class PurchaseCUField(str, Enum):
+    """SAP field that holds the Control Unit (CU) number on Purchase Invoices.
+
+    Values are the exact SAP field names; the UI displays business-friendly labels.
+    """
+
+    KRA = "U_CUINV"
+    NUM_AT_CARD = "NumAtCard"
+    COMMENTS = "Comments"
+    JOURNAL_MEMO = "JournalMemo"
+    INVOICE_NUMBER = "Reference1"
+
+
 class SAPConnection(Base):
     __tablename__ = "sap_connections"
 
@@ -89,6 +102,13 @@ class SystemSetting(Base):
     include_credit_notes = Column(Boolean, nullable=False, default=True)
     include_debit_notes = Column(Boolean, nullable=False, default=True)
     skip_cancelled = Column(Boolean, nullable=False, default=True)
+
+    purchase_cu_source = Column(
+        String(50),
+        nullable=False,
+        default="U_CUINV",
+        comment="SAP field holding the CU number on Purchase Invoices (e.g. U_CUINV, NumAtCard, Comments, JournalMemo, Reference1)",
+    )
 
     version = Column(Integer, nullable=False, default=1)
     updated_at = Column(

@@ -123,6 +123,43 @@ def test_sap_mapper_line_aggregation():
     assert records[0].cu_number == "0190439340000000134"
 
 
+def test_sap_mapper_purchase_cu_source_alternate_field():
+    # When purchase_cu_source points at a different SAP field, that field is used for cu_number.
+    raw_invoice = {
+        "DocNum": 900,
+        "CardName": "Acme Ltd",
+        "FederalTaxID": "P99999",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "U_CUINV": "SHOULD_BE_IGNORED",
+        "NumAtCard": "VEND-INV-123",
+        "DocumentLines": [{"VatGroup": "O1", "LineTotal": 100.00}]
+    }
+
+    records = map_sap_document_to_canonical_rows(
+        raw_invoice, "Invoice", "Invoices", purchase_cu_source="NumAtCard"
+    )
+    assert len(records) == 1
+    assert records[0].cu_number == "VEND-INV-123"
+
+
+def test_sap_mapper_purchase_cu_source_comments_field():
+    raw_invoice = {
+        "DocNum": 901,
+        "CardName": "Acme Ltd",
+        "FederalTaxID": "P99999",
+        "DocDate": "2026-03-02T00:00:00Z",
+        "Comments": "CU: 0190439340000000999",
+        "DocumentLines": [{"VatGroup": "O1", "LineTotal": 100.00}]
+    }
+
+    records = map_sap_document_to_canonical_rows(
+        raw_invoice, "Invoice", "Invoices", purchase_cu_source="Comments"
+    )
+    assert len(records) == 1
+    assert records[0].cu_number == "CU: 0190439340000000999"
+
+
+
 def test_sap_mapper_aggregation_boundaries():
     # Test that aggregation never combines lines from different SAP invoices even if they share CU and VAT.
     invoice_a = {

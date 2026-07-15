@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BaseAmountPolicy, SystemSettings, UnmappedVatPolicy } from "@/types/settings";
+import { BaseAmountPolicy, PurchaseCUField, SystemSettings, UnmappedVatPolicy } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import {
   Sliders,
@@ -34,6 +34,9 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   const [includeCreditNotes, setIncludeCreditNotes] = useState(settings.include_credit_notes);
   const [includeDebitNotes, setIncludeDebitNotes] = useState(settings.include_debit_notes);
   const [skipCancelled, setSkipCancelled] = useState(settings.skip_cancelled);
+  const [purchaseCuSource, setPurchaseCuSource] = useState<PurchaseCUField>(
+    settings.purchase_cu_source
+  );
   const [reason, setReason] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -58,6 +61,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
         include_credit_notes: includeCreditNotes,
         include_debit_notes: includeDebitNotes,
         skip_cancelled: skipCancelled,
+        purchase_cu_source: purchaseCuSource,
         version: settings.version,
         reason: reason.trim() || undefined,
       };
@@ -180,16 +184,37 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
               <FileCheck className="w-3.5 h-3.5 text-slate-500" />
               Unmapped VAT Tax Code Policy
             </label>
-            <select
-              value={unmappedVatPolicy}
-              onChange={(e) => setUnmappedVatPolicy(e.target.value as UnmappedVatPolicy)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
-            >
-              <option value="needs_review">Mark for Audit Review (NEEDS_REVIEW)</option>
-              <option value="reject_invoice">Reject Specific Invoice Immediately</option>
-            </select>
+              <select
+                value={unmappedVatPolicy}
+                onChange={(e) => setUnmappedVatPolicy(e.target.value as UnmappedVatPolicy)}
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+              >
+                <option value="needs_review">Mark for Audit Review (NEEDS_REVIEW)</option>
+                <option value="reject_invoice">Reject Specific Invoice Immediately</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-slate-500" />
+                Purchase CU Number Source
+              </label>
+              <select
+                value={purchaseCuSource}
+                onChange={(e) => setPurchaseCuSource(e.target.value as PurchaseCUField)}
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+              >
+                <option value="U_CUINV">KRA (U_CUINV)</option>
+                <option value="NumAtCard">Vendor Reference (NumAtCard)</option>
+                <option value="Comments">Comments</option>
+                <option value="JournalMemo">Journal Memo (JournalMemo)</option>
+                <option value="Reference1">Invoice Number (Reference1)</option>
+              </select>
+              <span className="text-[11px] text-slate-500 block">
+                SAP field that stores the Control Unit number on Purchase Invoices.
+              </span>
+            </div>
           </div>
-        </div>
 
         {/* Ingestion Flags */}
         <div className="space-y-3 pt-3 border-t border-slate-100">

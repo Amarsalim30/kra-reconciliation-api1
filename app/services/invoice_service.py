@@ -13,7 +13,8 @@ def get_invoices(
     to_date: date,
     reconciliation_type: ReconciliationType = ReconciliationType.SALES,
     sap_client: SAPClient = None,
-    reconciliation_session_id: str = "N/A"
+    reconciliation_session_id: str = "N/A",
+    purchase_cu_source: str = "U_CUINV",
 ) -> list[Invoice]:
     """
     Fetches Invoices and Credit Notes (Sales or Purchases) page-by-page from SAP Service Layer, maps them
@@ -34,12 +35,16 @@ def get_invoices(
     else:
         endpoints = [("PurchaseInvoices", "Invoice"), ("PurchaseCreditNotes", "CreditNote")]
 
+    # The CU source is only configurable for purchases; sales always use U_CUINV.
+    cu_field = purchase_cu_source if reconciliation_type == ReconciliationType.PURCHASES else "U_CUINV"
+
     for endpoint_name, source_doc_type in endpoints:
         raw_pages = sap_client.get_documents_pages(
             from_date.isoformat(),
             to_date.isoformat(),
             endpoint_name=endpoint_name,
-            reconciliation_session_id=reconciliation_session_id
+            reconciliation_session_id=reconciliation_session_id,
+            cu_field=cu_field,
         )
 
         for raw_page in raw_pages:
@@ -52,7 +57,8 @@ def get_invoices(
                         source_document_type=source_doc_type,
                         endpoint_name=endpoint_name,
                         reconciliation_type=reconciliation_type.value,
-                        reconciliation_session_id=reconciliation_session_id
+                        reconciliation_session_id=reconciliation_session_id,
+                        purchase_cu_source=cu_field,
                     )
 
                     # 2. Construct Invoice objects

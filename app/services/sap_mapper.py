@@ -32,12 +32,23 @@ def parse_sap_date(date_val: Any) -> datetime.date:
         raise ValueError(f"Invalid SAP DocDate format: '{date_val}'")
 
 
+def extract_cu_number(raw_document: Dict[str, Any], cu_field: str) -> str:
+    """
+    Extracts the CU (Control Unit) number from a raw SAP document using the configured
+    SAP field name. Strips surrounding whitespace and a leading pipe '|' (SAP UDF convention).
+    Centralizing this makes future field-specific tweaks a one-function change.
+    """
+    value = raw_document.get(cu_field)
+    return str(value).strip().lstrip("|").strip() if value else ""
+
+
 def map_sap_document_to_canonical_rows(
     raw_document: Dict[str, Any],
     source_document_type: str,
     endpoint_name: str,
     reconciliation_type: str = "sales",
-    reconciliation_session_id: str = "N/A"
+    reconciliation_session_id: str = "N/A",
+    purchase_cu_source: str = "U_CUINV"
 ) -> List[CanonicalReconciliationRow]:
     """
     Flattens a raw SAP document and maps it to a list of CanonicalReconciliationRow objects.
@@ -76,8 +87,9 @@ def map_sap_document_to_canonical_rows(
         pin = str(raw_pin).strip()
 
     # CU Number (Relaxed validation, allows empty/missing)
-    raw_cu = raw_document.get("U_CUINV")
-    cu_number = str(raw_cu).strip().lstrip("|").strip() if raw_cu else ""
+    # For purchases, the source SAP field is configurable (purchase_cu_source);
+    # for sales the caller passes "U_CUINV" (the standard field).
+    cu_number = extract_cu_number(raw_document, purchase_cu_source)
 
     document_lines = raw_document.get("DocumentLines", [])
     if not document_lines:

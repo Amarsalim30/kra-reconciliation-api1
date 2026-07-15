@@ -135,7 +135,12 @@ class SAPClient:
         raise SAPConnectionError(f"SAP Service Layer returned transient error after {attempts} attempts.")
 
     def get_documents_pages(
-        self, from_date: str, to_date: str, endpoint_name: str, reconciliation_session_id: str = "N/A"
+        self,
+        from_date: str,
+        to_date: str,
+        endpoint_name: str,
+        reconciliation_session_id: str = "N/A",
+        cu_field: str = "U_CUINV",
     ) -> Generator[List[Dict[str, Any]], None, None]:
         """
         Fetches SAP documents (Invoices or Credit Notes) page-by-page from Service Layer filtered by date range.
@@ -150,7 +155,9 @@ class SAPClient:
         params = {"$filter": filter_str}
 
         # Try optimizing with $select if supported. Falling back if query returns HTTP 400.
-        select_str = "FederalTaxID,CardName,DocNum,DocDate,U_CUINV,DocumentLines,DocumentSubType"
+        # cu_field is the configured SAP field holding the CU number (U_CUINV for sales,
+        # configurable for purchases) so we only fetch what we need.
+        select_str = f"FederalTaxID,CardName,DocNum,DocDate,{cu_field},DocumentLines,DocumentSubType"
         params_with_select = {**params, "$select": select_str}
 
         url = f"{self.base_url}/{endpoint_name}"
