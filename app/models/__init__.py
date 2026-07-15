@@ -5,14 +5,13 @@ from app.models.reconciliation_session import (
 )
 from app.models.refresh_token import RefreshToken
 from app.models.settings import (
-    BaseAmountPolicy,
     SAPConnection,
     SettingAuditLog,
     SystemSetting,
-    UnmappedVatPolicy,
-    VATMapping,
-    VatModule,
-    VatRateCategory,
+    VATBucket,
+    KRASection,
+    KRASectionAllowedVat,
+    SAPVatMapping,
 )
 from app.models.user import User
 from app.models.sap_field_mapping import (
@@ -30,15 +29,13 @@ __all__ = [
     "SessionReconciliationResult",
     "SAPConnection",
     "SystemSetting",
-    "VATMapping",
+    "VATBucket",
+    "KRASection",
+    "KRASectionAllowedVat",
+    "SAPVatMapping",
     "SettingAuditLog",
-    "VatRateCategory",
-    "BaseAmountPolicy",
-    "UnmappedVatPolicy",
-    "VatModule",
     "SAPFieldMapping",
     "InternalField",
     "SourceType",
     "TransformationType",
 ]
-

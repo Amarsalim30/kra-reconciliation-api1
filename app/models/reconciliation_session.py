@@ -26,6 +26,12 @@ class ReconciliationSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     last_accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+    snapshot_operational: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    snapshot_configuration_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    snapshot_sap_connection_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    snapshot_application_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    snapshot_tax_mappings_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     invoices: Mapped[list["SessionInvoice"]] = relationship(
         "SessionInvoice", back_populates="session", cascade="all, delete-orphan"
     )

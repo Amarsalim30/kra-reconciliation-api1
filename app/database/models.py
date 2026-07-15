@@ -9,7 +9,10 @@ from app.models.reconciliation_session import (
 from app.models.settings import (
     SAPConnection,
     SystemSetting,
-    VATMapping,
+    VATBucket,
+    KRASection,
+    KRASectionAllowedVat,
+    SAPVatMapping,
     SettingAuditLog,
 )
 from app.models.sap_field_mapping import SAPFieldMapping
@@ -23,8 +26,10 @@ __all__ = [
     "SessionReconciliationResult",
     "SAPConnection",
     "SystemSetting",
-    "VATMapping",
+    "VATBucket",
+    "KRASection",
+    "KRASectionAllowedVat",
+    "SAPVatMapping",
     "SettingAuditLog",
     "SAPFieldMapping",
 ]
-

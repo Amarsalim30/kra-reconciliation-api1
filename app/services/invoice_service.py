@@ -14,12 +14,17 @@ def get_invoices(
     reconciliation_type: ReconciliationType = ReconciliationType.SALES,
     sap_client: SAPClient = None,
     reconciliation_session_id: str = "N/A",
-    sap_field_mappings: list = None
+    sap_field_mappings: list = None,
+    db = None
 ) -> list[Invoice]:
     """
     Fetches Invoices and Credit Notes (Sales or Purchases) page-by-page from SAP Service Layer, maps them
     to CanonicalReconciliationRows, and returns a flattened list of Invoice objects.
     """
+    if db is not None:
+        from app.services.vat_normalizer import vat_normalizer
+        vat_normalizer.load_from_db(db)
+
     if sap_client is None:
         sap_client = SAPClient()
 

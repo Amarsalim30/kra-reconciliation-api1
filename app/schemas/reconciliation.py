@@ -1,9 +1,17 @@
+from decimal import Decimal
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.schemas.invoice import Invoice
 
 # Re-exported from domain for backward compatibility — import from here or from domain directly
 from app.domain.reconciliation_status import ReconciliationStatus  # noqa: F401
+
+
+class ReconciliationConfig(BaseModel):
+    amount_tolerance: Decimal = Field(default=Decimal("10.00"), ge=Decimal("0.00"))
+    date_tolerance: int = Field(default=3, ge=0)
+    partner_similarity_threshold: float = Field(default=0.85, ge=0.50, le=1.00)
+
 
 class DifferenceField(str, Enum):
     BASE_AMOUNT = "base_amount"

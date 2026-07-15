@@ -109,11 +109,9 @@ def upload_purchases_csv(
 
     from app.services.settings_service import SettingsService
     from app.schemas.invoice import CSVValidationErrorDetail
-    from app.services.kra_service import resolve_filename_to_section
-    from app.models.settings import VatModule
+    from app.services.kra_service import resolve_filename_to_section, VatModule
     
-    system_settings = SettingsService.get_or_create_system_settings(db)
-    mappings = system_settings.kra_section_mappings or {}
+    mappings = SettingsService.get_kra_section_mappings(db)
     
     # Identify expected required sections (active, required=True, and belongs to Purchases module)
     expected_required_sections = {

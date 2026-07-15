@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  AlertTriangle,
   Loader2,
   Save,
 } from "lucide-react";
@@ -48,7 +47,7 @@ export function SAPConnectionCard({
     setTestResult(null);
     setErrorMessage(null);
     try {
-      const res = await fetchWithAuth("/settings/test-sap", {
+      const res = await fetchWithAuth("/settings/connection/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -62,7 +61,7 @@ export function SAPConnectionCard({
       const data: TestConnectionResponse = await res.json();
       setTestResult(data);
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to initiate SAP diagnostic test.");
+      setErrorMessage(err.message || "Failed to run SAP connection diagnostics.");
     } finally {
       setTesting(false);
     }
@@ -87,7 +86,7 @@ export function SAPConnectionCard({
         payload.password = password;
       }
 
-      const res = await fetchWithAuth("/settings/sap-connection", {
+      const res = await fetchWithAuth("/settings/connection", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -95,7 +94,7 @@ export function SAPConnectionCard({
 
       if (res.status === 409) {
         const errData = await res.json();
-        throw new Error(errData.detail || "Optimistic lock error: Remote settings have been updated by another user. Reload required.");
+        throw new Error(errData.detail || "Optimistic lock error: Remote settings updated by another administrator.");
       }
 
       if (!res.ok) {
@@ -114,7 +113,7 @@ export function SAPConnectionCard({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden transition-all">
       {/* Header Banner */}
       <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -123,7 +122,7 @@ export function SAPConnectionCard({
           </div>
           <div>
             <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
-              SAP Business One Infrastructure Connection
+              SAP Infrastructure Connection
               {isEnvFallback && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30">
                   Fallback Active (.env)
@@ -273,20 +272,20 @@ export function SAPConnectionCard({
             ) : (
               <Activity className="w-4 h-4 text-slate-600" />
             )}
-            Run Diagnostics Test
+            Run Connection Diagnostics
           </button>
 
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-xs transition-colors flex items-center gap-2"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            Save Infrastructure Settings
+            Save Connection Parameters
           </button>
         </div>
       </form>

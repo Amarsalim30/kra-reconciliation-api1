@@ -1,12 +1,10 @@
 from datetime import datetime, timezone
-from enum import Enum
 from typing import Any, Optional
 
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     Integer,
     Numeric,
@@ -18,29 +16,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
-
-
-class VatRateCategory(str, Enum):
-    VAT_16 = "VAT_16"
-    VAT_8 = "VAT_8"
-    ZERO_RATED = "ZERO_RATED"
-    EXEMPT = "EXEMPT"
-
-
-class BaseAmountPolicy(str, Enum):
-    SKIP = "skip"
-    REJECT_SESSION = "reject_session"
-    TREAT_AS_ZERO = "treat_as_zero"
-
-
-class UnmappedVatPolicy(str, Enum):
-    REJECT_INVOICE = "reject_invoice"
-    NEEDS_REVIEW = "needs_review"
-
-
-class VatModule(str, Enum):
-    SALES = "sales"
-    PURCHASES = "purchases"
 
 
 class SAPConnection(Base):
@@ -55,6 +30,8 @@ class SAPConnection(Base):
     verify_ssl = Column(Boolean, nullable=False, default=True)
     is_active = Column(Boolean, nullable=False, default=True)
     version = Column(Integer, nullable=False, default=1)
+    last_tested_at = Column(DateTime, nullable=True)
+    last_status = Column(String(50), nullable=True, default="UNKNOWN")
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -64,7 +41,7 @@ class SAPConnection(Base):
     )
     updated_by_id = Column(Integer, nullable=True)
 
-    vat_mappings = relationship("VATMapping", back_populates="connection", cascade="all, delete-orphan")
+    vat_mappings = relationship("SAPVatMapping", back_populates="connection", cascade="all, delete-orphan")
 
 
 class SystemSetting(Base):
@@ -74,22 +51,8 @@ class SystemSetting(Base):
     active_connection_id = Column(Integer, ForeignKey("sap_connections.id", ondelete="SET NULL"), nullable=True)
 
     amount_tolerance = Column(Numeric(10, 2), nullable=False, default=10.00)
-    base_amount_policy = Column(
-        SQLEnum(BaseAmountPolicy, native_enum=False, length=50),
-        nullable=False,
-        default=BaseAmountPolicy.SKIP,
-    )
-    unmapped_vat_policy = Column(
-        SQLEnum(UnmappedVatPolicy, native_enum=False, length=50),
-        nullable=False,
-        default=UnmappedVatPolicy.NEEDS_REVIEW,
-    )
-
-    ignore_missing_cu = Column(Boolean, nullable=False, default=False)
-    include_credit_notes = Column(Boolean, nullable=False, default=True)
-    include_debit_notes = Column(Boolean, nullable=False, default=True)
-    skip_cancelled = Column(Boolean, nullable=False, default=True)
-    kra_section_mappings = Column(JSON, nullable=False, default=dict)
+    date_tolerance = Column(Integer, nullable=False, default=3)
+    partner_similarity_threshold = Column(Numeric(3, 2), nullable=False, default=0.85)
 
     version = Column(Integer, nullable=False, default=1)
     updated_at = Column(
@@ -103,29 +66,58 @@ class SystemSetting(Base):
     active_connection = relationship("SAPConnection", foreign_keys=[active_connection_id])
 
 
-class VATMapping(Base):
-    __tablename__ = "vat_mappings"
+class VATBucket(Base):
+    __tablename__ = "vat_buckets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), nullable=False, unique=True, index=True)
+    display_name = Column(String(100), nullable=False)
+    percentage = Column(Numeric(4, 2), nullable=True)
+    category = Column(String(50), nullable=False)
+
+
+class KRASection(Base):
+    __tablename__ = "kra_sections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    section_code = Column(String(50), nullable=False, unique=True, index=True)
+    display_name = Column(String(100), nullable=False)
+    description = Column(String(255), nullable=True)
+    expected_vat_bucket_id = Column(Integer, ForeignKey("vat_buckets.id", ondelete="RESTRICT"), nullable=False)
+    enabled = Column(Boolean, nullable=False, default=True)
+    sort_order = Column(Integer, nullable=False, default=0)
+
+    expected_vat_bucket = relationship("VATBucket", foreign_keys=[expected_vat_bucket_id])
+    allowed_vat_links = relationship("KRASectionAllowedVat", back_populates="section", cascade="all, delete-orphan")
+
+
+class KRASectionAllowedVat(Base):
+    __tablename__ = "kra_section_allowed_vat"
+
+    id = Column(Integer, primary_key=True, index=True)
+    section_id = Column(Integer, ForeignKey("kra_sections.id", ondelete="CASCADE"), nullable=False)
+    vat_bucket_id = Column(Integer, ForeignKey("vat_buckets.id", ondelete="CASCADE"), nullable=False)
+
+    section = relationship("KRASection", back_populates="allowed_vat_links")
+    vat_bucket = relationship("VATBucket")
+
+
+class SAPVatMapping(Base):
+    __tablename__ = "sap_vat_mappings"
     __table_args__ = (
-        UniqueConstraint("connection_id", "module", "sap_code", name="uq_connection_module_sap_code"),
+        UniqueConstraint("connection_id", "module", "sap_code", name="uq_sap_vat_mapping_code"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
     connection_id = Column(Integer, ForeignKey("sap_connections.id", ondelete="CASCADE"), nullable=False)
-    module = Column(SQLEnum(VatModule, native_enum=False, length=20), nullable=False)
+    module = Column(String(20), nullable=False)
     sap_code = Column(String(50), nullable=False)
     description = Column(String(200), nullable=False, default="")
-    canonical_value = Column(SQLEnum(VatRateCategory, native_enum=False, length=50), nullable=False)
+    vat_bucket_id = Column(Integer, ForeignKey("vat_buckets.id", ondelete="RESTRICT"), nullable=False)
     is_builtin = Column(Boolean, nullable=False, default=False)
-    is_system_generated = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
-        DateTime,
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
 
     connection = relationship("SAPConnection", back_populates="vat_mappings")
+    vat_bucket = relationship("VATBucket")
 
 
 class SettingAuditLog(Base):
@@ -134,6 +126,12 @@ class SettingAuditLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=True)
     user_email = Column(String(255), nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    entity = Column(String(50), nullable=True)
+    entity_id = Column(String(50), nullable=True)
+    field = Column(String(50), nullable=True)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
     action = Column(String(100), nullable=False)
     changes_json = Column(JSON, nullable=False)
     reason = Column(Text, nullable=True)

@@ -1,6 +1,3 @@
-export type VatRateCategory = "VAT_16" | "VAT_8" | "ZERO_RATED" | "EXEMPT";
-export type BaseAmountPolicy = "skip" | "reject_session" | "treat_as_zero";
-export type UnmappedVatPolicy = "reject_invoice" | "needs_review";
 export type VatModule = "sales" | "purchases";
 
 export interface SAPConnection {
@@ -13,67 +10,90 @@ export interface SAPConnection {
   verify_ssl: boolean;
   is_active: boolean;
   version: number;
+  last_tested_at?: string | null;
+  last_status?: string | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface KRAColumnMapping {
-  pin: number;
-  partner_name: number;
-  invoice_number: number;
-  invoice_date: number;
-  cu_number: number;
-  base_amount: number;
-  vat_group?: number | null;
-}
-
-export interface KRAValidationRules {
-  pin_required: boolean;
-  allow_negative_amounts: boolean;
-}
-
-export interface KRASectionConfig {
-  identifier: string;
-  module: VatModule;
-  display_name: string;
-  filename_regex: string;
-  vat_group: string;
-  required: boolean;
-  column_mapping: KRAColumnMapping;
-  validation_rules: KRAValidationRules;
-  active: boolean;
 }
 
 export interface SystemSettings {
   id: number;
   active_connection_id: number | null;
   amount_tolerance: string;
-  base_amount_policy: BaseAmountPolicy;
-  unmapped_vat_policy: UnmappedVatPolicy;
-  ignore_missing_cu: boolean;
-  include_credit_notes: boolean;
-  include_debit_notes: boolean;
-  skip_cancelled: boolean;
-  kra_section_mappings: Record<string, KRASectionConfig>;
+  date_tolerance: number;
+  partner_similarity_threshold: number;
   version: number;
   updated_at: string;
   warning?: string | null;
 }
 
-export interface VATMappingItem {
+export interface VATBucket {
+  id: number;
+  code: string;
+  display_name: string;
+  percentage?: number | string | null;
+  category: string;
+}
+
+export interface KRASection {
+  id: number;
+  section_code: string;
+  display_name: string;
+  description?: string | null;
+  expected_vat_bucket_code: string;
+  allowed_vat_bucket_codes: string[];
+  enabled: boolean;
+  sort_order: number;
+}
+
+export interface SAPVatMappingItem {
   id?: number;
-  module: VatModule;
+  module: string;
   sap_code: string;
   description: string;
-  canonical_value: VatRateCategory;
+  vat_bucket_code: str;
   is_builtin: boolean;
+}
+
+export interface TaxConfiguration {
+  vat_buckets: VATBucket[];
+  kra_sections: KRASection[];
+  vat_mappings: SAPVatMappingItem[];
+  coverage: {
+    total: number;
+    purchases: number;
+    sales: number;
+    unmapped: number;
+  };
 }
 
 export interface SettingsComposite {
   sap_connection: SAPConnection | null;
   system_settings: SystemSettings;
-  vat_mappings: VATMappingItem[];
+  tax_configuration: TaxConfiguration;
   is_using_env_fallback: boolean;
+}
+
+export interface DiagnosticCheck {
+  name: string;
+  status: "PASS" | "WARN" | "FAIL";
+  severity: "CRITICAL" | "WARNING" | "INFO";
+  category: "SAP" | "TAX" | "SYSTEM";
+  is_blocking: boolean;
+  message: string;
+  recommendation?: string | null;
+}
+
+export interface DiagnosticsReport {
+  readiness: "Ready" | "Warning" | "Blocked";
+  checks: DiagnosticCheck[];
+  coverage: {
+    total_mapped: number;
+    purchases_mapped: number;
+    sales_mapped: number;
+    unmapped: number;
+    duplicates: number;
+  };
 }
 
 export interface StepResult {
@@ -96,12 +116,32 @@ export interface TestConnectionResponse {
 
 export interface SettingAuditLog {
   id: number;
-  user_id: number | null;
-  user_email: string | null;
+  user_id?: number | null;
+  user_email?: string | null;
+  ip_address?: string | null;
+  entity?: string | null;
+  entity_id?: string | null;
+  field?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
   action: string;
-  changes_json: Record<string, { old: any; new: any }>;
+  changes_json: Record<string, any>;
   reason?: string | null;
   created_at: string;
+}
+
+export interface ImportDiffItem {
+  entity: string;
+  key: str;
+  old?: string | null;
+  new?: string | null;
+}
+
+export interface ImportValidationSummary {
+  valid: boolean;
+  critical_errors?: string[];
+  warnings?: string[];
+  diffs: ImportDiffItem[];
 }
 
 export type InternalField =
@@ -139,30 +179,3 @@ export interface SAPFieldMapping {
   description?: string | null;
   is_enabled: boolean;
 }
-
-export interface DiagnosticItem {
-  priority: number;
-  sap_field: string;
-  status: "found" | "empty" | "failed_validation" | "disabled";
-  raw_value?: string | null;
-  transformed_value?: string | null;
-}
-
-export interface PreviewResultItem {
-  value?: string | null;
-  diagnostics: DiagnosticItem[];
-  warnings: string[];
-  errors: string[];
-}
-
-export interface PreviewResponse {
-  mapped_values: Record<InternalField, PreviewResultItem>;
-}
-
-export interface SampleDocumentShort {
-  docEntry: number;
-  docNum: number;
-  cardName: string;
-  docDate: string;
-}
-

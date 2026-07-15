@@ -13,7 +13,7 @@ export function AuditLogDrawer() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth("/settings/audit-logs?limit=50");
+      const res = await fetchWithAuth("/settings/audit?limit=50");
       if (res.ok) {
         const data: SettingAuditLog[] = await res.json();
         setLogs(data);

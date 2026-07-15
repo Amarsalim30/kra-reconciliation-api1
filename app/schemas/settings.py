@@ -1,14 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, HttpUrl, field_validator
-
-from app.models.settings import (
-    BaseAmountPolicy,
-    UnmappedVatPolicy,
-    VatModule,
-    VatRateCategory,
-)
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SAPConnectionBase(BaseModel):
@@ -39,6 +32,7 @@ class SAPConnectionUpdate(BaseModel):
     password: Optional[str] = None
     verify_ssl: Optional[bool] = None
     version: int = Field(..., description="Current connection version for optimistic locking")
+    reason: Optional[str] = Field(None, description="Reason for updating connection details")
 
 
 class SAPConnectionResponse(SAPConnectionBase):
@@ -46,51 +40,23 @@ class SAPConnectionResponse(SAPConnectionBase):
     password_set: bool = True
     is_active: bool
     version: int
+    last_tested_at: Optional[datetime] = None
+    last_status: Optional[str] = "UNKNOWN"
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-
-class KRAColumnMapping(BaseModel):
-    pin: int = Field(default=0, description="Column index of PIN Number")
-    partner_name: int = Field(default=1, description="Column index of Partner Name")
-    invoice_number: int = Field(default=2, description="Column index of Invoice Number")
-    invoice_date: int = Field(default=3, description="Column index of Invoice Date")
-    cu_number: int = Field(default=4, description="Column index of CU Number")
-    base_amount: int = Field(default=6, description="Column index of Base Amount")
-    vat_group: Optional[int] = Field(default=None, description="Column index of VAT Group (if read from CSV)")
-
-class KRAValidationRules(BaseModel):
-    pin_required: bool = Field(default=True, description="Whether PIN is required")
-    allow_negative_amounts: bool = Field(default=False, description="Whether negative amounts are allowed")
-
-class KRASectionConfig(BaseModel):
-    identifier: str = Field(..., description="Internal key (e.g. SEC_B)")
-    module: VatModule = Field(..., description="Reconciliation module (sales or purchases)")
-    display_name: str = Field(..., description="Display name for UI")
-    filename_regex: str = Field(..., description="Regex pattern to match filename")
-    vat_group: str = Field(..., description="Mapped internal VAT group (e.g. 16)")
-    required: bool = Field(default=True, description="Whether this section is required in the upload")
-    column_mapping: KRAColumnMapping = Field(default_factory=KRAColumnMapping)
-    validation_rules: KRAValidationRules = Field(default_factory=KRAValidationRules)
-    active: bool = Field(default=True, description="Whether this section is enabled")
 
 class SystemSettingsBase(BaseModel):
     amount_tolerance: Decimal = Field(default=Decimal("10.00"), ge=Decimal("0.00"), description="Amount tolerance in KES")
-    base_amount_policy: BaseAmountPolicy = Field(default=BaseAmountPolicy.SKIP)
-    unmapped_vat_policy: UnmappedVatPolicy = Field(default=UnmappedVatPolicy.NEEDS_REVIEW)
-    ignore_missing_cu: bool = Field(default=False)
-    include_credit_notes: bool = Field(default=True)
-    include_debit_notes: bool = Field(default=True)
-    skip_cancelled: bool = Field(default=True)
-    kra_section_mappings: Dict[str, Any] = Field(default_factory=dict)
+    date_tolerance: int = Field(default=3, ge=0, description="Invoice date tolerance in days")
+    partner_similarity_threshold: float = Field(default=0.85, ge=0.50, le=1.00, description="Partner similarity threshold (0.50-1.00)")
 
 
 class SystemSettingsUpdate(SystemSettingsBase):
     version: int = Field(..., description="Current system settings version for optimistic locking")
-    reason: Optional[str] = Field(None, description="Reason for updating operational settings")
+    reason: Optional[str] = Field(..., description="Reason for updating operational settings (mandatory)")
 
 
 class SystemSettingsResponse(SystemSettingsBase):
@@ -100,33 +66,60 @@ class SystemSettingsResponse(SystemSettingsBase):
     updated_at: datetime
     warning: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-class VATMappingItem(BaseModel):
+class VATBucketSchema(BaseModel):
+    id: int
+    code: str
+    display_name: str
+    percentage: Optional[Decimal] = None
+    category: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KRASectionSchema(BaseModel):
+    id: int
+    section_code: str
+    display_name: str
+    description: Optional[str] = None
+    expected_vat_bucket_code: str
+    allowed_vat_bucket_codes: List[str]
+    enabled: bool = True
+    sort_order: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SAPVatMappingItem(BaseModel):
     id: Optional[int] = None
-    module: VatModule
+    module: str = Field(..., description="purchases or sales")
     sap_code: str = Field(..., min_length=1, max_length=50)
     description: str = Field(default="", max_length=200)
-    canonical_value: VatRateCategory
+    vat_bucket_code: str = Field(..., description="Target VATBucket code (STANDARD, REDUCED, ZERO, EXEMPT)")
     is_builtin: bool = False
-    is_system_generated: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-class VATMappingsUpdatePayload(BaseModel):
+class TaxConfigurationResponse(BaseModel):
+    vat_buckets: List[VATBucketSchema]
+    kra_sections: List[KRASectionSchema]
+    vat_mappings: List[SAPVatMappingItem]
+    coverage: Dict[str, int]
+
+
+class TaxConfigurationUpdatePayload(BaseModel):
     connection_id: Optional[int] = None
-    mappings: List[VATMappingItem]
-    reason: Optional[str] = None
+    reason: str = Field(..., description="Reason for updating tax code mappings (mandatory)")
+    mappings: List[SAPVatMappingItem]
 
 
 class SettingsCompositeResponse(BaseModel):
     sap_connection: Optional[SAPConnectionResponse] = None
     system_settings: SystemSettingsResponse
-    vat_mappings: List[VATMappingItem]
+    tax_configuration: TaxConfigurationResponse
     is_using_env_fallback: bool = False
 
 
@@ -153,12 +146,38 @@ class TestConnectionResponse(BaseModel):
 
 class SettingAuditLogResponse(BaseModel):
     id: int
-    user_id: Optional[int]
-    user_email: Optional[str]
+    user_id: Optional[int] = None
+    user_email: Optional[str] = None
+    ip_address: Optional[str] = None
+    entity: Optional[str] = None
+    entity_id: Optional[str] = None
+    field: Optional[str] = None
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
     action: str
     changes_json: Dict[str, Any]
-    reason: Optional[str]
+    reason: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConfigExportPayload(BaseModel):
+    schema_version: int = 2
+    application: str = "KRA Reconciliation System"
+    exported_at: datetime
+    settings: Dict[str, Any]
+
+
+class ImportDiffItem(BaseModel):
+    entity: str
+    key: str
+    old: Optional[str] = None
+    new: Optional[str] = None
+
+
+class ImportValidationSummary(BaseModel):
+    valid: bool
+    critical_errors: List[str] = []
+    warnings: List[str] = []
+    diffs: List[ImportDiffItem] = []

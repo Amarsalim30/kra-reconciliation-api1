@@ -3,20 +3,12 @@ from typing import Dict, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.settings import VATMapping, VatModule, VatRateCategory
+from app.models.settings import SAPVatMapping, VATBucket
 
 
 class DocumentType(str, Enum):
     SALES = "sales"
     PURCHASES = "purchases"
-
-
-CANONICAL_RATE_DISPLAY_MAP = {
-    VatRateCategory.VAT_16: "16",
-    VatRateCategory.VAT_8: "8",
-    VatRateCategory.ZERO_RATED: "0",
-    VatRateCategory.EXEMPT: "EXEMPT",
-}
 
 
 class VatNormalizer:
@@ -45,11 +37,11 @@ class VatNormalizer:
 
     def load_from_db(self, db: Session, connection_id: Optional[int] = None) -> None:
         """
-        Dynamically reload mapping tables from active DB vat_mappings.
+        Dynamically reload mapping tables from active DB sap_vat_mappings.
         """
-        query = db.query(VATMapping)
+        query = db.query(SAPVatMapping)
         if connection_id:
-            query = query.filter(VATMapping.connection_id == connection_id)
+            query = query.filter(SAPVatMapping.connection_id == connection_id)
 
         mappings = query.all()
         if not mappings:
@@ -58,11 +50,18 @@ class VatNormalizer:
         db_input = {}
         db_output = {}
         for m in mappings:
-            display_val = CANONICAL_RATE_DISPLAY_MAP.get(m.canonical_value, "EXEMPT")
-            if m.module == VatModule.PURCHASES or m.module == "purchases":
-                db_input[m.sap_code.strip().upper()] = display_val
+            display_val = m.vat_bucket.code if m.vat_bucket else "EXEMPT"
+            if m.vat_bucket and m.vat_bucket.percentage is not None:
+                pct = m.vat_bucket.percentage
+                display_val = str(int(pct)) if (pct % 1 == 0) else str(pct)
+            elif m.vat_bucket and m.vat_bucket.code == "EXEMPT":
+                display_val = "EXEMPT"
+
+            code_upper = m.sap_code.strip().upper()
+            if m.module == "purchases":
+                db_input[code_upper] = display_val
             else:
-                db_output[m.sap_code.strip().upper()] = display_val
+                db_output[code_upper] = display_val
 
         if db_input:
             self._input = db_input

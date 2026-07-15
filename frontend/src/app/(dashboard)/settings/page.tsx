@@ -1,200 +1,233 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { SettingsComposite } from "@/types/settings";
+import Link from "next/link";
 import { fetchWithAuth } from "@/lib/api";
-import { SAPConnectionCard } from "@/features/settings/SAPConnectionCard";
-import { SystemSettingsCard } from "@/features/settings/SystemSettingsCard";
-import { SAPFieldMappingCard } from "@/features/settings/SAPFieldMappingCard";
-import { VATMappingEditor } from "@/features/settings/VATMappingEditor";
-import { AuditLogDrawer } from "@/features/settings/AuditLogDrawer";
+import { SettingsComposite, DiagnosticsReport } from "@/types/settings";
+import { SettingsLayout } from "@/features/settings/SettingsLayout";
 import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  Database,
+  Loader2,
+  RefreshCw,
   Server,
   Sliders,
   Tag,
-  History,
-  Loader2,
-  AlertCircle,
-  ShieldCheck,
-  RefreshCw,
-  FileCode,
+  XCircle,
 } from "lucide-react";
 
-
-export default function SettingsPage() {
-  const [data, setData] = useState<SettingsComposite | null>(null);
+export default function SettingsDashboardPage() {
+  const [composite, setComposite] = useState<SettingsComposite | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"sap" | "system" | "sap_field_mapping" | "vat" | "audit">("sap");
 
-  const loadSettings = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchWithAuth("/settings");
-      if (!res.ok) {
-        throw new Error("Failed to load enterprise settings parameters.");
+      const [compRes, diagRes] = await Promise.all([
+        fetchWithAuth("/settings"),
+        fetchWithAuth("/settings/diagnostics"),
+      ]);
+
+      if (!compRes.ok || !diagRes.ok) {
+        throw new Error("Failed to load settings composite or diagnostics.");
       }
-      const compositeData: SettingsComposite = await res.json();
-      setData(compositeData);
+
+      const compData = await compRes.json();
+      const diagData = await diagRes.json();
+
+      setComposite(compData);
+      setDiagnostics(diagData);
     } catch (err: any) {
-      setError(err.message || "Failed to retrieve configuration settings.");
+      setError(err.message || "Unable to reach settings endpoint.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+    loadData();
+  }, [loadData]);
 
-  if (loading && !data) {
+  if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="text-sm font-medium text-slate-600">Loading Enterprise Configuration...</span>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="p-6 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 space-y-4 max-w-2xl mx-auto my-8">
-        <div className="flex items-center gap-3">
-          <AlertCircle className="w-6 h-6 text-rose-600 shrink-0" />
-          <h3 className="font-semibold text-base">Configuration Loading Error</h3>
+      <SettingsLayout>
+        <div className="bg-white border border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center min-h-[300px] gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="text-sm font-medium text-slate-600">Loading System Doctor & Overview...</span>
         </div>
-        <p className="text-sm">{error || "Unable to reach settings endpoint."}</p>
-        <button
-          onClick={loadSettings}
-          className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors flex items-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Retry Connection
-        </button>
-      </div>
+      </SettingsLayout>
     );
   }
+
+  if (error || !composite || !diagnostics) {
+    return (
+      <SettingsLayout>
+        <div className="p-6 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 space-y-4">
+          <div className="flex items-center gap-3">
+            <XCircle className="w-6 h-6 text-rose-600 shrink-0" />
+            <h3 className="font-semibold text-base">Settings Unavailable</h3>
+          </div>
+          <p className="text-sm">{error || "Failed to retrieve system overview."}</p>
+          <button
+            onClick={loadData}
+            className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        </div>
+      </SettingsLayout>
+    );
+  }
+
+  const statusBadge = (readiness: string) => {
+    if (readiness === "Ready") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-semibold">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> System Ready
+        </span>
+      );
+    }
+    if (readiness === "Warning") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-xs font-semibold">
+          <AlertTriangle className="w-4 h-4 text-amber-600" /> Review Warnings
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-xs font-semibold">
+        <XCircle className="w-4 h-4 text-rose-600" /> Action Required
+      </span>
+    );
+  };
 
   return (
-    <div className="flex-1 max-w-7xl mx-auto w-full space-y-6 pb-12">
-      {/* Top Title Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
-            Enterprise Settings & Configuration
-            <ShieldCheck className="w-6 h-6 text-blue-600" />
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage SAP infrastructure endpoints, reconciliation amount tolerances, canonical VAT tax codes, and audit logs.
-          </p>
+    <SettingsLayout>
+      <div className="space-y-6">
+        {/* System Health Card */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-blue-600" />
+                System Doctor Readiness State
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Evaluates system connectivity, VAT code mappings, and matching thresholds.
+              </p>
+            </div>
+            {statusBadge(diagnostics.readiness)}
+          </div>
+
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+              <div className="text-xs font-medium text-slate-500">SAP Connection</div>
+              <div className="text-base font-bold text-slate-900 truncate">
+                {composite.sap_connection ? composite.sap_connection.name : "Environment Fallback"}
+              </div>
+              <div className="text-xs text-slate-400">
+                {composite.sap_connection ? composite.sap_connection.base_url : ".env configuration active"}
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+              <div className="text-xs font-medium text-slate-500">Tax Code Mapped Coverage</div>
+              <div className="text-base font-bold text-emerald-600">
+                {composite.tax_configuration.coverage.total} Mapped Codes
+              </div>
+              <div className="text-xs text-slate-400">
+                {composite.tax_configuration.coverage.purchases} Purchases / {composite.tax_configuration.coverage.sales} Sales
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+              <div className="text-xs font-medium text-slate-500">Amount Variance Tolerance</div>
+              <div className="text-base font-bold text-indigo-600">
+                KES {parseFloat(composite.system_settings.amount_tolerance).toFixed(2)}
+              </div>
+              <div className="text-xs text-slate-400">
+                Date tolerance: ±{composite.system_settings.date_tolerance} days
+              </div>
+            </div>
+          </div>
         </div>
 
-        {data.is_using_env_fallback && (
-          <div className="px-3.5 py-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs font-medium flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            Active Mode: Default Environment Fallback (.env)
+        {/* Diagnostic Checks Checklist */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-900">Health Diagnostics Checklist</h3>
+            <Link
+              href="/settings/diagnostics"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            >
+              View Full Report <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-        )}
+
+          <div className="divide-y divide-slate-100 border border-slate-100 rounded-lg overflow-hidden">
+            {diagnostics.checks.slice(0, 4).map((check, i) => (
+              <div key={i} className="p-3.5 flex items-start justify-between gap-4 bg-white hover:bg-slate-50">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium text-slate-800">{check.name}</div>
+                  <div className="text-xs text-slate-500">{check.message}</div>
+                </div>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
+                    check.status === "PASS"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : check.status === "WARN"
+                      ? "bg-amber-50 text-amber-700 border border-amber-200"
+                      : "bg-rose-50 text-rose-700 border border-rose-200"
+                  }`}
+                >
+                  {check.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Action Navigation Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link
+            href="/settings/connection"
+            className="p-5 bg-white border border-slate-200 rounded-xl shadow-xs hover:border-blue-500 hover:shadow-sm transition-all flex items-start gap-4"
+          >
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+              <Server className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-semibold text-slate-900 text-sm">SAP Connection Settings</h4>
+              <p className="text-xs text-slate-500">
+                Configure SAP Service Layer credentials, SSL verification, and test connectivity.
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/settings/tax"
+            className="p-5 bg-white border border-slate-200 rounded-xl shadow-xs hover:border-emerald-500 hover:shadow-sm transition-all flex items-start gap-4"
+          >
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-semibold text-slate-900 text-sm">Tax Master Data & Mappings</h4>
+              <p className="text-xs text-slate-500">
+                Map customer SAP tax codes to canonical KRA VAT buckets with coverage indicators.
+              </p>
+            </div>
+          </Link>
+        </div>
       </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
-        <button
-          onClick={() => setActiveTab("sap")}
-          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
-            activeTab === "sap"
-              ? "border-blue-600 text-blue-600 bg-blue-50/50"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <Server className="w-4 h-4" />
-          SAP Connection & Diagnostics
-        </button>
-
-        <button
-          onClick={() => setActiveTab("system")}
-          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
-            activeTab === "system"
-              ? "border-indigo-600 text-indigo-600 bg-indigo-50/50"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          Reconciliation Rules & Tolerances
-        </button>
-
-        <button
-          onClick={() => setActiveTab("vat")}
-          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
-            activeTab === "vat"
-              ? "border-emerald-600 text-emerald-600 bg-emerald-50/50"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <Tag className="w-4 h-4" />
-          VAT Code Normalizer
-        </button>
-
-        <button
-          onClick={() => setActiveTab("sap_field_mapping")}
-          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
-            activeTab === "sap_field_mapping"
-              ? "border-amber-600 text-amber-600 bg-amber-50/50"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <FileCode className="w-4 h-4" />
-          SAP Field Mapping
-        </button>
-
-        <button
-          onClick={() => setActiveTab("audit")}
-          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
-            activeTab === "audit"
-              ? "border-sky-600 text-sky-600 bg-sky-50/50"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <History className="w-4 h-4" />
-          Audit Change History
-        </button>
-      </div>
-
-      {/* Tab Panels */}
-      <div className="mt-6">
-        {activeTab === "sap" && (
-          <SAPConnectionCard
-            connection={data.sap_connection}
-            isEnvFallback={data.is_using_env_fallback}
-            onSaved={loadSettings}
-          />
-        )}
-
-        {activeTab === "system" && (
-          <SystemSettingsCard
-            settings={data.system_settings}
-            onSaved={loadSettings}
-          />
-        )}
-
-        {activeTab === "vat" && (
-          <VATMappingEditor
-            connectionId={data.sap_connection?.id || null}
-            mappings={data.vat_mappings}
-            onSaved={loadSettings}
-          />
-        )}
-
-        {activeTab === "sap_field_mapping" && (
-          <SAPFieldMappingCard
-            settingsVersion={data.system_settings.version}
-            onSaved={loadSettings}
-          />
-        )}
-
-        {activeTab === "audit" && <AuditLogDrawer />}
-      </div>
-    </div>
+    </SettingsLayout>
   );
 }

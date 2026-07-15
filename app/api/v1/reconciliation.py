@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import hashlib
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -16,8 +18,9 @@ from app.reporting.export_format import ExportFormat
 from app.reporting.exporter import build_export
 from app.reporting.registry import ExportStrategyRegistry
 from app.schemas.invoice import Invoice, InvoiceSource
-from app.schemas.reconciliation import ReconciliationCompareRequest, ReconciliationResponse
+from app.schemas.reconciliation import ReconciliationCompareRequest, ReconciliationResponse, ReconciliationConfig
 from app.services import reconciliation_service
+from app.services.settings_provider import get_settings_provider
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
 logger = logging.getLogger(__name__)
@@ -31,7 +34,7 @@ def compare_session_invoices(
 ):
     """
     Runs the reconciliation matching engine on the loaded SAP and KRA invoices for the active session.
-    Saves the calculated results to the session database, keeping it available for export/review.
+    Loads active operational and tax configuration, records structured snapshots onto the session model.
     """
     # 1. Validate active session
     session = get_active_session(session_id=body.session_id, db=db, current_user=current_user)
@@ -81,11 +84,26 @@ def compare_session_invoices(
              detail="KRA CSV upload is required before starting reconciliation comparison."
          )
 
-    # 4. Run reconciliation match algorithm inside single database transaction context
+    # 4. Fetch active configuration from SettingsProvider
+    provider = get_settings_provider(db)
+    op_config = provider.get_operational_config()
+    vat_mappings = provider.get_vat_mappings()
+
+    config = ReconciliationConfig(
+        amount_tolerance=op_config["amount_tolerance"],
+        date_tolerance=op_config["date_tolerance"],
+        partner_similarity_threshold=op_config["partner_similarity_threshold"]
+    )
+
+    config_hash = hashlib.sha256(
+        json.dumps({"op": op_config, "vat": vat_mappings}, sort_keys=True).encode()
+    ).hexdigest()
+
+    # 5. Run reconciliation match algorithm inside single database transaction context
     try:
-        summary, results = reconciliation_service.reconcile_invoices(sap_invoices, kra_invoices)
+        summary, results = reconciliation_service.reconcile_invoices(sap_invoices, kra_invoices, config=config)
         
-        # Clear any stale results for this session (if run again somehow)
+        # Clear any stale results for this session
         db.query(SessionReconciliationResult).filter(
             SessionReconciliationResult.session_id == session.id
         ).delete()
@@ -122,9 +140,13 @@ def compare_session_invoices(
         
         db.add_all(db_results)
         
-        # Persist comparison summary to session model
+        # Snapshot configuration state onto session model
         session.is_compared = True
         session.comparison_results = {"summary": summary.model_dump(mode="json")}
+        session.snapshot_operational = op_config
+        session.snapshot_configuration_hash = config_hash
+        session.snapshot_application_version = "1.0.0"
+        session.snapshot_tax_mappings_json = vat_mappings
         
         db.commit()
         

@@ -8,7 +8,13 @@ from app.schemas.invoice import Invoice, CSVValidationErrorDetail, InvoiceUpload
 from app.services.normalization import normalize_invoice_data
 
 
-from app.models.settings import VatModule
+from enum import Enum
+
+
+class VatModule(str, Enum):
+    SALES = "sales"
+    PURCHASES = "purchases"
+
 import re
 
 def resolve_filename_to_section(filename: str, mappings: dict, target_module: VatModule) -> tuple[str | None, dict | None]:

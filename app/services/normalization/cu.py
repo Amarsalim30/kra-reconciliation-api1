@@ -22,11 +22,17 @@ class PipeNormalizerRule:
             val = val.lstrip('|').strip()
         return val, val != value
 
+class UppercaseNormalizerRule:
+    def apply(self, value: str) -> tuple[str, bool]:
+        uppercased = value.upper()
+        return uppercased, uppercased != value
+
 # Register CU pipeline
 CU_PIPELINE: list[NormalizationRule] = [
     UnicodeNormalizerRule(),
     TrimNormalizerRule(),
     PipeNormalizerRule(),
+    UppercaseNormalizerRule(),
 ]
 
 def normalize_cu_number_with_diagnostics(cu_number: str | None) -> NormalizationDiagnostics:
@@ -57,6 +63,12 @@ def normalize_cu_number_with_diagnostics(cu_number: str | None) -> Normalization
     value, changed = rule3.apply(value)
     if changed:
         applied_rules.append("remove_leading_pipes")
+        
+    # 4. Uppercase Normalizer
+    rule4 = UppercaseNormalizerRule()
+    value, changed = rule4.apply(value)
+    if changed:
+        applied_rules.append("uppercase")
         
     return NormalizationDiagnostics(
         original=orig,

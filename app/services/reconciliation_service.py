@@ -11,11 +11,13 @@ from app.schemas.reconciliation import (
     Difference,
     ReconciliationResult,
     MismatchStats,
-    ReconciliationSummary
+    ReconciliationSummary,
+    ReconciliationConfig,
 )
 from app.domain.reconciliation_status import ReconciliationStatus
 from app.domain.reconciliation_constants import STATUS_PRIORITY
 from app.services.normalization import normalize_partner_name, normalize_pin
+
 
 def check_pin_matches(sap_inv: Invoice | None, kra_inv: Invoice | None) -> bool:
     """
@@ -30,12 +32,19 @@ def check_pin_matches(sap_inv: Invoice | None, kra_inv: Invoice | None) -> bool:
         return True
     return sap_pin == kra_pin
 
-def check_partner_name_matches(sap_inv: Invoice | None, kra_inv: Invoice | None) -> bool:
+
+def check_partner_name_matches(
+    sap_inv: Invoice | None, kra_inv: Invoice | None, threshold: float = 0.85
+) -> bool:
     """
-    Partner Name matches are advisory. If either is missing, they do not match.
+    Partner Name matches are advisory. Compares normalized partner names using threshold.
     """
     if not sap_inv or not kra_inv:
         return False
+        
+    from app.services.normalization import partner_names_match
+    if partner_names_match(sap_inv.partner_name, kra_inv.partner_name):
+        return True
         
     sap_norm = normalize_partner_name(sap_inv.partner_name)
     kra_norm = normalize_partner_name(kra_inv.partner_name)
@@ -44,7 +53,7 @@ def check_partner_name_matches(sap_inv: Invoice | None, kra_inv: Invoice | None)
         return True
         
     ratio = difflib.SequenceMatcher(None, sap_norm, kra_norm).ratio()
-    return ratio >= 0.85
+    return ratio >= threshold
 
 
 @dataclass(frozen=True)
@@ -70,25 +79,36 @@ class ReconciliationRecord:
 
     @property
     def cu_number(self) -> str:
-        return self.match_key.cu_number
+        return self.original_invoice.normalized_cu_number
 
     @property
     def vat_group(self) -> str:
-        return self.match_key.vat_group
+        return self.original_invoice.normalized_vat_group
 
 
 def reconcile_invoices(
     sap: list[Invoice],
     kra: list[Invoice],
-    amount_tolerance: Decimal = None
+    config: ReconciliationConfig = None,
+    amount_tolerance: Decimal | None = None,
 ) -> tuple[ReconciliationSummary, list[ReconciliationResult]]:
     """
     Executes the 4-phase reconciliation matching algorithm on SAP and KRA invoices.
-    Uses MatchKey and CuKey abstractions for ERP-agnostic, deterministic O(n) reconciliation.
+    Uses ReconciliationConfig for tolerance, date variance, and partner similarity threshold.
     """
-    if amount_tolerance is None:
-        from app.core.config import get_settings
-        amount_tolerance = get_settings().amount_tolerance
+    if config is None:
+        config = ReconciliationConfig()
+
+    if amount_tolerance is not None:
+        config = ReconciliationConfig(
+            amount_tolerance=amount_tolerance,
+            date_tolerance=config.date_tolerance,
+            partner_similarity_threshold=config.partner_similarity_threshold,
+        )
+
+    amount_tolerance = config.amount_tolerance
+    date_tolerance = config.date_tolerance
+    partner_similarity_threshold = config.partner_similarity_threshold
 
     results: list[ReconciliationResult] = []
 
@@ -136,7 +156,11 @@ def reconcile_invoices(
                     amount_match=False,
                     vat_match=False,
                     date_match=True,
-                    partner_name_matches=check_partner_name_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
+                    partner_name_matches=check_partner_name_matches(
+                        record.original_invoice if is_sap else None,
+                        record.original_invoice if not is_sap else None,
+                        threshold=partner_similarity_threshold
+                    ),
                     pin_matches=check_pin_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
                     differences=[
                         Difference(
@@ -167,8 +191,12 @@ def reconcile_invoices(
                         status=ReconciliationStatus.DUPLICATE_SOURCE_KEY,
                         amount_match=False,
                         vat_match=False,
-                        date_match=True,  # Date check removed, default to True
-                        partner_name_matches=check_partner_name_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
+                        date_match=True,
+                        partner_name_matches=check_partner_name_matches(
+                            record.original_invoice if is_sap else None,
+                            record.original_invoice if not is_sap else None,
+                            threshold=partner_similarity_threshold
+                        ),
                         pin_matches=check_pin_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
                         differences=[
                             Difference(
@@ -188,11 +216,16 @@ def reconcile_invoices(
         sap_rec, sap_idx = sap_index[match_key]
         kra_rec, kra_idx = kra_index[match_key]
         
-        # Enforce that amounts have compatible signs and are within tolerance
+        # Enforce amount match tolerance & compatible signs
         amount_match = (
             (sap_rec.base_amount * kra_rec.base_amount >= 0)
             and abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
         )
+
+        # Enforce date tolerance
+        date_match = True
+        if sap_rec.invoice_date and kra_rec.invoice_date:
+            date_match = abs((sap_rec.invoice_date - kra_rec.invoice_date).days) <= date_tolerance
         
         differences = []
         if not amount_match:
@@ -202,8 +235,20 @@ def reconcile_invoices(
                 sap_value=f"{sap_rec.base_amount:.2f}",
                 kra_value=f"{kra_rec.base_amount:.2f}"
             ))
+        if not date_match:
+            differences.append(Difference(
+                field=DifferenceField.INVOICE_DATE,
+                match=False,
+                sap_value=str(sap_rec.invoice_date),
+                kra_value=str(kra_rec.invoice_date)
+            ))
             
-        status = ReconciliationStatus.MATCH if amount_match else ReconciliationStatus.AMOUNT_MISMATCH
+        if amount_match and date_match:
+            status = ReconciliationStatus.MATCH
+        elif not amount_match and not date_match:
+            status = ReconciliationStatus.MULTIPLE_MISMATCHES
+        else:
+            status = ReconciliationStatus.AMOUNT_MISMATCH
         
         results.append(ReconciliationResult(
             cu_number=match_key.cu_number,
@@ -211,9 +256,9 @@ def reconcile_invoices(
             kra=kra_rec.original_invoice,
             status=status,
             amount_match=amount_match,
-            vat_match=True,  # MatchKey matched, so VAT group matches
-            date_match=True,
-            partner_name_matches=check_partner_name_matches(sap_rec.original_invoice, kra_rec.original_invoice),
+            vat_match=True,
+            date_match=date_match,
+            partner_name_matches=check_partner_name_matches(sap_rec.original_invoice, kra_rec.original_invoice, threshold=partner_similarity_threshold),
             pin_matches=check_pin_matches(sap_rec.original_invoice, kra_rec.original_invoice),
             differences=differences,
             sap_source_index=sap_idx,
@@ -221,11 +266,9 @@ def reconcile_invoices(
         ))
 
     # Phase 2: CU-Level VAT Resolution
-    # Retrieve unmatched record instances directly
     remaining_sap_records = [item for k, item in sap_index.items() if k not in intersection]
     remaining_kra_records = [item for k, item in kra_index.items() if k not in intersection]
     
-    # Group remaining unmatched records by their CuKey, excluding empty CU numbers from pairing
     sap_unmatched_by_cu = defaultdict(list)
     for record, idx in remaining_sap_records:
         if record.cu_number.strip() != "":
@@ -244,12 +287,14 @@ def reconcile_invoices(
             sap_rec, sap_idx = sap_unmatched_by_cu[cu_key][0]
             kra_rec, kra_idx = kra_unmatched_by_cu[cu_key][0]
             
-            # Compare base amounts (VAT groups differ) using tolerance and sign check
             amount_match = (
                 (sap_rec.base_amount * kra_rec.base_amount >= 0)
                 and abs(sap_rec.base_amount - kra_rec.base_amount) <= amount_tolerance
             )
-            
+            date_match = True
+            if sap_rec.invoice_date and kra_rec.invoice_date:
+                date_match = abs((sap_rec.invoice_date - kra_rec.invoice_date).days) <= date_tolerance
+
             differences = [
                 Difference(
                     field=DifferenceField.VAT_GROUP,
@@ -265,8 +310,15 @@ def reconcile_invoices(
                     sap_value=f"{sap_rec.base_amount:.2f}",
                     kra_value=f"{kra_rec.base_amount:.2f}"
                 ))
+            if not date_match:
+                differences.append(Difference(
+                    field=DifferenceField.INVOICE_DATE,
+                    match=False,
+                    sap_value=str(sap_rec.invoice_date),
+                    kra_value=str(kra_rec.invoice_date)
+                ))
                 
-            status = ReconciliationStatus.VAT_MISMATCH if amount_match else ReconciliationStatus.MULTIPLE_MISMATCHES
+            status = ReconciliationStatus.VAT_MISMATCH if (amount_match and date_match) else ReconciliationStatus.MULTIPLE_MISMATCHES
             
             results.append(ReconciliationResult(
                 cu_number=cu_key.cu_number,
@@ -275,8 +327,8 @@ def reconcile_invoices(
                 status=status,
                 amount_match=amount_match,
                 vat_match=False,
-                date_match=True,
-                partner_name_matches=check_partner_name_matches(sap_rec.original_invoice, kra_rec.original_invoice),
+                date_match=date_match,
+                partner_name_matches=check_partner_name_matches(sap_rec.original_invoice, kra_rec.original_invoice, threshold=partner_similarity_threshold),
                 pin_matches=check_pin_matches(sap_rec.original_invoice, kra_rec.original_invoice),
                 differences=differences,
                 sap_source_index=sap_idx,
@@ -357,6 +409,8 @@ def reconcile_invoices(
                 mismatch_stats.amount += 1
             if not r.vat_match:
                 mismatch_stats.vat += 1
+            if not r.date_match:
+                mismatch_stats.date += 1
 
     summary = ReconciliationSummary(
         total_sap=total_sap,
@@ -373,12 +427,6 @@ def reconcile_invoices(
         mismatch_stats=mismatch_stats
     )
 
-    # Sort results deterministically by:
-    # 1. status priority (severity)
-    # 2. CU number
-    # 3. VAT Group
-    # 4. SAP source index
-    # 5. KRA source index
     def get_sort_key(r: ReconciliationResult):
         vat_group = ""
         if r.sap:
