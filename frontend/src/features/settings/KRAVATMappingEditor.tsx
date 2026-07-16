@@ -9,10 +9,10 @@ import {
   Trash2,
   Tag,
   Loader2,
-  Info,
   CheckCircle2,
   ShieldAlert,
-  Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface KRAVATMappingEditorProps {
@@ -20,68 +20,17 @@ interface KRAVATMappingEditorProps {
   onSaved: () => void;
 }
 
-const DEFAULT_SCHEDULE_GUIDE = [
-  {
-    prefix: "SEC_B",
-    filePattern: "SEC_B_WITH_VAT_PIN1.csv",
-    title: "B – General Rated Supplies (Sales)",
-    rate: "16",
-    badgeColor: "bg-blue-100 text-blue-800 border-blue-200",
-    desc: "Standard 16% VAT rate on taxable sales supplies",
-  },
-  {
-    prefix: "SEC_F",
-    filePattern: "SEC_F_WITH_VAT_PIN1.csv",
-    title: "F – General Rated Purchases (Local)",
-    rate: "16",
-    badgeColor: "bg-blue-100 text-blue-800 border-blue-200",
-    desc: "Standard 16% input VAT rate on local purchases",
-  },
-  {
-    prefix: "SEC_G",
-    filePattern: "SEC_G_WITH_VAT_PIN1.csv",
-    title: "G – Other Rated Purchases",
-    rate: "8",
-    badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
-    desc: "8% reduced rate (fuel, oil & petroleum products)",
-  },
-  {
-    prefix: "SEC_H",
-    filePattern: "SEC_H_WITH_VAT_PIN1.csv",
-    title: "H – Zero-Rated Purchases",
-    rate: "0",
-    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    desc: "0% zero-rated schedule (not 8% or 16%)",
-  },
-  {
-    prefix: "SEC_I",
-    filePattern: "SEC_I_WITH_VAT_PIN1.csv",
-    title: "I – Exempt Purchases",
-    rate: "EXEMPT",
-    badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
-    desc: "Exempt supplies schedule (distinct tax-free schedule)",
-  },
+const SCHEDULE_GUIDE = [
+  { prefix: "SEC_B", file: "SEC_B_WITH_VAT_PIN1.csv", name: "B – General Rated Supplies (Sales)", rate: "16%" },
+  { prefix: "SEC_F", file: "SEC_F_WITH_VAT_PIN1.csv", name: "F – General Rated Purchases (local)", rate: "16%" },
+  { prefix: "SEC_G", file: "SEC_G_WITH_VAT_PIN1.csv", name: "G – Other Rated Purchases", rate: "8% (Petroleum)" },
+  { prefix: "SEC_H", file: "SEC_H_WITH_VAT_PIN1.csv", name: "H – Zero-Rated Purchases", rate: "0%" },
+  { prefix: "SEC_I", file: "SEC_I_WITH_VAT_PIN1.csv", name: "I – Exempt Purchases", rate: "Exempt" },
 ];
-
-function getRateBadge(rate: string) {
-  const normalized = rate.trim().toUpperCase();
-  if (normalized === "16") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 border border-blue-200">16% Standard</span>;
-  }
-  if (normalized === "8") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-200">8% Reduced</span>;
-  }
-  if (normalized === "0") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">0% Zero-Rated</span>;
-  }
-  if (normalized === "EXEMPT") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-purple-800 border border-purple-200">EXEMPT Tax-Free</span>;
-  }
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">{rate}%</span>;
-}
 
 export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAVATMappingEditorProps) {
   const [mappings, setMappings] = useState<KRAVATMappingItem[]>(initialMappings);
+  const [showGuide, setShowGuide] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -115,7 +64,6 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
     setError(null);
     setSuccess(false);
 
-    // Client side validation
     const prefixes = new Set();
     for (const m of mappings) {
       if (!m.section_prefix.trim()) {
@@ -164,197 +112,175 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 shrink-0">
-            <Tag className="w-5 h-5" />
+          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
+            <Tag className="w-5 h-5 text-slate-500" />
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">KRA Section VAT Mappings</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Enforce canonical VAT rate groups by matching KRA CSV filename prefixes during ingestion
+              Map CSV filename prefixes to canonical VAT rates for automated schedule classification
             </p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowGuide(!showGuide)}
+          className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 cursor-pointer"
+        >
+          {showGuide ? "Hide KRA Specs" : "View KRA Specs"}
+          {showGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
       </div>
 
       <datalist id="kra-vat-rates-list">
         <option value="16">16% (Standard Rate)</option>
-        <option value="12">12% (Policy Exception Rate)</option>
-        <option value="8">8% (Fuel & Petroleum Reduced Rate)</option>
+        <option value="8">8% (Petroleum / Fuel Rate)</option>
         <option value="0">0% (Zero Rated Schedule)</option>
         <option value="EXEMPT">Exempt (Tax Free Schedule)</option>
       </datalist>
 
-      <form onSubmit={handleSave} className="p-6 space-y-6">
+      <form onSubmit={handleSave} className="p-6 space-y-5">
+        {/* Collapsible Specs Reference */}
+        {showGuide && (
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-2">
+            <div className="font-semibold text-slate-800">KRA iTax Standard Schedule Reference</div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-slate-600">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase">
+                    <th className="py-1 pr-3">Filename Pattern</th>
+                    <th className="py-1 px-3">KRA Schedule</th>
+                    <th className="py-1 pl-3 text-right">Standard Rate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                  {SCHEDULE_GUIDE.map((s) => (
+                    <tr key={s.prefix}>
+                      <td className="py-1.5 pr-3 font-bold text-slate-800">{s.file}</td>
+                      <td className="py-1.5 px-3 font-sans text-slate-700">{s.name}</td>
+                      <td className="py-1.5 pl-3 text-right font-bold text-slate-900">{s.rate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {error && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            <div className="flex-1">{error}</div>
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+            <div>{error}</div>
           </div>
         )}
 
         {success && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div>KRA Section VAT mappings saved successfully!</div>
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>Mappings saved successfully.</div>
           </div>
         )}
 
-        {/* Enterprise Schedule Guide Table */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-slate-900 font-bold text-xs uppercase tracking-wider">
-              <Info className="w-4 h-4 text-blue-600 shrink-0" />
-              Official KRA iTax Schedule Reference Guide
-            </div>
-            <span className="text-[11px] font-medium text-slate-500">Standard Filing Patterns</span>
-          </div>
-
-          <div className="overflow-x-auto rounded-lg border border-slate-200/80 bg-white shadow-xs">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/90 border-b border-slate-200 font-semibold text-slate-700">
-                <tr>
-                  <th className="px-3.5 py-2.5">Filename Pattern</th>
-                  <th className="px-3.5 py-2.5">Schedule Section Name</th>
-                  <th className="px-3.5 py-2.5">Canonical VAT Group</th>
-                  <th className="px-3.5 py-2.5 text-right">Quick Action</th>
+        {/* Dynamic Mapping Rows Table */}
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Filename Prefix
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Canonical VAT Rate
+                </th>
+                <th className="w-16 px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {mappings.map((mapping, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/50">
+                  <td className="px-4 py-2.5">
+                    <input
+                      type="text"
+                      value={mapping.section_prefix}
+                      onChange={(e) => handleChange(idx, "section_prefix", e.target.value)}
+                      placeholder="e.g. SEC_B"
+                      className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white font-mono text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                    />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <input
+                      type="text"
+                      list="kra-vat-rates-list"
+                      value={mapping.canonical_rate}
+                      onChange={(e) => handleChange(idx, "canonical_rate", e.target.value)}
+                      placeholder="e.g. 16, 8, EXEMPT"
+                      className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                    />
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(idx)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                      title="Remove row"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {DEFAULT_SCHEDULE_GUIDE.map((guide) => {
-                  const alreadyMapped = mappings.some(
-                    (m) => m.section_prefix.trim().toUpperCase() === guide.prefix
-                  );
+              ))}
 
-                  return (
-                    <tr key={guide.prefix} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 text-[11px]">
-                        {guide.filePattern}
-                      </td>
-                      <td className="px-3.5 py-2.5 font-medium text-slate-800">
-                        {guide.title}
-                        <div className="text-[11px] text-slate-500 font-normal">{guide.desc}</div>
-                      </td>
-                      <td className="px-3.5 py-2.5">{getRateBadge(guide.rate)}</td>
-                      <td className="px-3.5 py-2.5 text-right">
-                        {!alreadyMapped ? (
-                          <button
-                            type="button"
-                            onClick={() => handleAdd(guide.prefix, guide.rate)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md font-semibold text-[11px] transition-colors cursor-pointer border border-blue-200"
-                          >
-                            <Sparkles className="w-3 h-3 text-blue-600" /> + Add Mapping
-                          </button>
-                        ) : (
-                          <span className="text-[11px] font-medium text-slate-400">Mapped</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              {mappings.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-slate-400 text-xs">
+                    No section prefix mappings defined. Click &quot;Add Mapping Row&quot; below.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Mapping Rows */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              Active Prefix Mappings ({mappings.length})
-            </h3>
-            <span className="text-[11px] text-slate-500">Prefix searches matching filenames on upload</span>
-          </div>
-
-          {mappings.map((mapping, idx) => (
-            <div
-              key={idx}
-              className="p-3 bg-slate-50/60 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between"
-            >
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-slate-600 uppercase">
-                    Filename Prefix
-                  </label>
-                  <input
-                    type="text"
-                    value={mapping.section_prefix}
-                    onChange={(e) => handleChange(idx, "section_prefix", e.target.value)}
-                    placeholder="e.g. SEC_B"
-                    className="w-full px-3.5 py-2 h-10 border border-slate-200 bg-white rounded-lg font-mono text-xs text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-slate-600 uppercase">
-                    Canonical VAT Rate
-                  </label>
-                  <input
-                    type="text"
-                    list="kra-vat-rates-list"
-                    value={mapping.canonical_rate}
-                    onChange={(e) => handleChange(idx, "canonical_rate", e.target.value)}
-                    placeholder="e.g. 16, 8, EXEMPT"
-                    className="w-full px-3.5 py-2 h-10 border border-slate-200 rounded-lg text-xs bg-white text-slate-900 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
-                <div className="shrink-0">{getRateBadge(mapping.canonical_rate)}</div>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(idx)}
-                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                  title="Remove mapping"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {mappings.length === 0 && (
-            <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-500 text-xs">
-              No custom prefix mappings defined. Use the schedule reference table above or click &quot;Add Prefix Mapping&quot; to configure canonical rules.
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-start">
+        <div className="flex justify-between items-center pt-1">
           <button
             type="button"
             onClick={() => handleAdd()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg border border-blue-200/80 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md border border-blue-200/80 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Add Custom Prefix Mapping
+            <Plus className="w-3.5 h-3.5" /> Add Mapping Row
           </button>
+
+          <div className="text-xs text-slate-400">
+            {mappings.length} prefix rule{mappings.length !== 1 ? "s" : ""} active
+          </div>
         </div>
 
-        {/* Audit Trail Note & Save Controls */}
-        <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
-          <div className="flex-1 space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              Audit Change Log Reason
+        {/* Audit Note & Save Button */}
+        <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+          <div className="flex-1 space-y-1">
+            <label className="text-[11px] font-semibold text-slate-600 uppercase">
+              Audit Note (Optional)
             </label>
             <input
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Standardized SEC_B and SEC_F canonical rates"
-              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              placeholder="Reason for changing VAT mapping rules"
+              className="w-full px-3 py-2 h-9 rounded-md border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:border-blue-500 placeholder:text-slate-400"
             />
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg font-semibold text-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0 h-9"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save KRA Section Mappings
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            Save Mappings
           </button>
         </div>
       </form>
