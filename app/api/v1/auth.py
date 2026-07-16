@@ -19,29 +19,30 @@ from app.services import auth_service, user_service
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=TokenResponse)
-def login(body: UserLogin, db: Session = Depends(get_db)):
-    user = user_service.authenticate_user(db, body.username, body.password)
+def _issue_tokens(db: Session, username: str, password: str) -> TokenResponse:
+    user = user_service.authenticate_user(db, username, password)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
-
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
-
     access_token = create_access_token(data={"sub": user.username})
     refresh_token = auth_service.create_refresh_token(db, user.id)
-
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
     )
+
+
+@router.post("/login", response_model=TokenResponse)
+def login(body: UserLogin, db: Session = Depends(get_db)):
+    return _issue_tokens(db, body.username, body.password)
 
 
 @router.post("/token", response_model=TokenResponse)
@@ -49,27 +50,7 @@ def token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    user = user_service.authenticate_user(db, form_data.username, form_data.password)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-        )
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
-        )
-
-    access_token = create_access_token(data={"sub": user.username})
-    refresh_token = auth_service.create_refresh_token(db, user.id)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-    )
+    return _issue_tokens(db, form_data.username, form_data.password)
 
 
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.database.database import get_db
 from app.models.user import User
+from app.models.reconciliation_session import ReconciliationSession
 from app.core.sap_client import SAPClient
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -80,8 +81,7 @@ def get_active_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> ReconciliationSession:
-    from datetime import datetime, timedelta
-    from app.models.reconciliation_session import ReconciliationSession
+    from datetime import datetime, timedelta, timezone
 
     session = db.query(ReconciliationSession).filter(
         ReconciliationSession.id == session_id,
@@ -96,7 +96,6 @@ def get_active_session(
         
     # Check if expired (> 30 min idle)
     # Using timezone-aware UTC comparison
-    from datetime import datetime, timedelta, timezone
     expiry_time = datetime.now(timezone.utc) - timedelta(minutes=30)
     
     last_accessed = session.last_accessed_at

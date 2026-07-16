@@ -1,15 +1,15 @@
-from datetime import date, datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, Query, UploadFile, HTTPException, status
-from sqlalchemy.orm import Session
+from datetime import date
+from fastapi import APIRouter, Depends, Query, UploadFile
 
-from app.core.dependencies import get_current_user, get_active_session, get_sap_client
-from app.database.database import get_db
-from app.models.user import User
-from app.models.reconciliation_session import ReconciliationSession, SessionInvoice
-from app.schemas.invoice import Invoice, InvoiceSource, ReconciliationType, InvoiceFetchResponse, MultipleInvoiceUploadResponse
-from app.services import invoice_service, kra_service
-from app.services.settings_service import SettingsService
+from app.api.v1._session_helpers import load_sap_invoices, upload_kra_csvs
+from app.core.dependencies import get_current_user, get_sap_client, get_db
 from app.core.sap_client import SAPClient
+from app.models.user import User
+from app.schemas.invoice import (
+    ReconciliationType,
+    InvoiceFetchResponse,
+    MultipleInvoiceUploadResponse,
+)
 
 router = APIRouter(prefix="/sales", tags=["sales"])
 
@@ -19,69 +19,14 @@ def get_sales(
     from_date: date = Query(..., alias="from", description="Start date (YYYY-MM-DD)"),
     to_date: date = Query(..., alias="to", description="End date (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    sap_client: SAPClient = Depends(get_sap_client)
-):
+    db=Depends(get_db),
+    sap_client: SAPClient = Depends(get_sap_client),
+) -> InvoiceFetchResponse:
     """
     Fetch sales invoices within a given date range. Currently returns normalized SAP data.
     Stores the loaded invoices in a database-backed session with ReconciliationType.SALES.
     """
-    # 1. Global Cleanup: Clear user's expired sessions (> 30 min idle)
-    expiry_time = datetime.now(timezone.utc) - timedelta(minutes=30)
-    db.query(ReconciliationSession).filter(
-        ReconciliationSession.user_id == current_user.id,
-        ReconciliationSession.last_accessed_at < expiry_time
-    ).delete()
-    db.commit()
-
-    # 2. Create a new ReconciliationSession first (gets id for log correlation)
-    session = ReconciliationSession(
-        user_id=current_user.id,
-        from_date=from_date,
-        to_date=to_date,
-        session_type=ReconciliationType.SALES,
-        is_compared=False
-    )
-    db.add(session)
-    db.commit()
-
-    # 3. Fetch live SAP data
-    system_setting = SettingsService.get_or_create_system_settings(db)
-    invoices = invoice_service.get_invoices(
-        from_date, to_date,
-        reconciliation_type=ReconciliationType.SALES,
-        sap_client=sap_client,
-        reconciliation_session_id=session.id,
-        purchase_cu_source=system_setting.purchase_cu_source,
-    )
-
-    # 4. Save loaded SAP invoices relationally
-    db_invoices = [
-        SessionInvoice(
-            session_id=session.id,
-            row_number=idx + 1,
-            source=inv.source,
-            pin=inv.pin,
-            partner_name=inv.partner_name,
-            invoice_number=inv.invoice_number,
-            invoice_date=inv.invoice_date,
-            cu_number=inv.cu_number,
-            vat_group=inv.vat_group,
-            base_amount=inv.base_amount
-        )
-        for idx, inv in enumerate(invoices)
-    ]
-    db.add_all(db_invoices)
-    db.commit()
-
-    return InvoiceFetchResponse(
-        session_id=session.id,
-        source="SAP",
-        count=len(invoices),
-        from_date=from_date,
-        to_date=to_date,
-        invoices=invoices[:100]
-    )
+    return load_sap_invoices(db, current_user, sap_client, ReconciliationType.SALES, from_date, to_date)
 
 
 @router.post("/upload", response_model=MultipleInvoiceUploadResponse)
@@ -89,56 +34,9 @@ def upload_sales_csv(
     files: list[UploadFile],
     session_id: str = Query(..., description="Active reconciliation session ID"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+    db=Depends(get_db),
+) -> MultipleInvoiceUploadResponse:
     """
     Upload multiple KRA CSV files containing sales invoices. Normalizes and appends records to the active session.
     """
-    # 1. Validate active session using the dependency logic (checks expiry & user ownership)
-    session = get_active_session(session_id=session_id, db=db, current_user=current_user)
-
-    # 2. Enforce session validation - must be SALES type
-    if session.session_type != ReconciliationType.SALES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Active session type is not for Sales reconciliation."
-        )
-
-    # 3. Parse and normalize KRA CSV files
-    all_invoices, file_statuses = kra_service.parse_multiple_kra_csvs(files, db)
-
-    # 4. Save KRA invoices to DB under the session only if there are successfully parsed invoices
-    if len(all_invoices) > 0:
-        # Clear any previously uploaded KRA invoices for this session (resets state)
-        db.query(SessionInvoice).filter(
-            SessionInvoice.session_id == session.id,
-            SessionInvoice.source == InvoiceSource.KRA
-        ).delete()
-
-        # Reset is_compared flag to prevent stale results
-        session.is_compared = False
-        session.comparison_results = None
-
-        db_invoices = [
-            SessionInvoice(
-                session_id=session.id,
-                row_number=idx + 1,
-                source=inv.source,
-                pin=inv.pin,
-                partner_name=inv.partner_name,
-                invoice_number=inv.invoice_number,
-                invoice_date=inv.invoice_date,
-                cu_number=inv.cu_number,
-                vat_group=inv.vat_group,
-                base_amount=inv.base_amount
-            )
-            for idx, inv in enumerate(all_invoices)
-        ]
-        db.add_all(db_invoices)
-        db.commit()
-
-    return MultipleInvoiceUploadResponse(
-        session_id=session.id,
-        files=file_statuses,
-        invoices=all_invoices[:100]
-    )
+    return upload_kra_csvs(db, current_user, ReconciliationType.SALES, files, session_id)

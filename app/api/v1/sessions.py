@@ -1,6 +1,4 @@
 import math
-from datetime import date
-from decimal import Decimal
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -110,10 +108,10 @@ def get_session_reconciliation_results(
                 pin=r.sap_pin or "",
                 partner_name=r.sap_partner_name or "",
                 invoice_number=r.sap_invoice_number or "",
-                invoice_date=r.sap_invoice_date or date.today(),
+                invoice_date=r.sap_invoice_date,
                 cu_number=r.cu_number,
                 vat_group=r.sap_vat_group or "0",
-                base_amount=r.sap_base_amount or Decimal("0.00"),
+                base_amount=r.sap_base_amount,
                 source=InvoiceSource.SAP
             )
             
@@ -123,10 +121,10 @@ def get_session_reconciliation_results(
                 pin=r.kra_pin or "",
                 partner_name=r.kra_partner_name or "",
                 invoice_number=r.kra_invoice_number or "",
-                invoice_date=r.kra_invoice_date or date.today(),
+                invoice_date=r.kra_invoice_date,
                 cu_number=r.cu_number,
                 vat_group=r.kra_vat_group or "0",
-                base_amount=r.kra_base_amount or Decimal("0.00"),
+                base_amount=r.kra_base_amount,
                 source=InvoiceSource.KRA
             )
 

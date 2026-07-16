@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel, field_serializer
 
 
@@ -18,15 +19,15 @@ class Invoice(BaseModel):
     pin: str
     partner_name: str
     invoice_number: str
-    invoice_date: date
+    invoice_date: Optional[date] = None
     cu_number: str
     vat_group: str
-    base_amount: Decimal
+    base_amount: Optional[Decimal] = None
     source: InvoiceSource
 
     @field_serializer("base_amount")
-    def serialize_base_amount(self, base_amount: Decimal) -> float:
-        return float(base_amount)
+    def serialize_base_amount(self, base_amount: Optional[Decimal]) -> Optional[float]:
+        return float(base_amount) if base_amount is not None else None
 
     @property
     def normalized_pin(self) -> str:
