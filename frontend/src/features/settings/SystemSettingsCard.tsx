@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BaseAmountPolicy, PurchaseCUField, SystemSettings, UnmappedVatPolicy } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import {
@@ -35,6 +35,13 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   const [kraParsingProfiles, setKraParsingProfiles] = useState(
     settings.kra_parsing_profiles || { schema_version: 1, profiles: {} }
   );
+
+  useEffect(() => {
+    if (settings.kra_parsing_profiles) {
+      setKraParsingProfiles(settings.kra_parsing_profiles);
+    }
+  }, [settings.kra_parsing_profiles]);
+
   const [activeProfileTab, setActiveProfileTab] = useState("SEC_B");
   const availableSections = ["SEC_B", "SEC_F", "SEC_G", "SEC_H", "SEC_I"];
 

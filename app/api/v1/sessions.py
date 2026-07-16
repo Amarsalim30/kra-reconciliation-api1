@@ -104,11 +104,11 @@ def get_session_reconciliation_results(
     results = []
     for r in db_results:
         sap_invoice = None
-        if r.sap_invoice_number:
+        if r.status not in ["MISSING_IN_SAP"]:
             sap_invoice = Invoice(
                 pin=r.sap_pin or "",
                 partner_name=r.sap_partner_name or "",
-                invoice_number=r.sap_invoice_number,
+                invoice_number=r.sap_invoice_number or "",
                 invoice_date=r.sap_invoice_date or date.today(),
                 cu_number=r.cu_number,
                 vat_group=r.sap_vat_group or "0",
@@ -117,11 +117,11 @@ def get_session_reconciliation_results(
             )
             
         kra_invoice = None
-        if r.kra_invoice_number:
+        if r.status not in ["MISSING_IN_KRA", "MISSING_CU_NUMBER"]:
             kra_invoice = Invoice(
                 pin=r.kra_pin or "",
                 partner_name=r.kra_partner_name or "",
-                invoice_number=r.kra_invoice_number,
+                invoice_number=r.kra_invoice_number or "",
                 invoice_date=r.kra_invoice_date or date.today(),
                 cu_number=r.cu_number,
                 vat_group=r.kra_vat_group or "0",

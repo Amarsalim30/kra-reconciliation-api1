@@ -29,7 +29,7 @@ export function SAPConnectionCard({
   connection,
   onSaved,
 }: SAPConnectionCardProps) {
-  const [name, setName] = useState(connection?.name || "Primary SAP Connection");
+  const [name, setName] = useState(connection?.name || "SAP Service layer");
   const [baseUrl, setBaseUrl] = useState(connection?.base_url || "");
   const [companyDb, setCompanyDb] = useState(connection?.company_db || "");
   const [username, setUsername] = useState(connection?.username || "");
@@ -155,9 +155,9 @@ export function SAPConnectionCard({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+        <div className="space-y-6 max-w-2xl mx-auto">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">
               Connection Name
             </label>
             <input
@@ -170,9 +170,9 @@ export function SAPConnectionCard({
             />
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Server className="w-3.5 h-3.5 text-slate-500" />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Server className="w-4 h-4 text-blue-500" />
               Service Layer Base URL
             </label>
             <input
@@ -185,9 +185,9 @@ export function SAPConnectionCard({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-slate-500" />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Database className="w-4 h-4 text-blue-500" />
               Company Database Name
             </label>
             <input
@@ -200,9 +200,9 @@ export function SAPConnectionCard({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate-500" />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-500" />
               Service Layer Username
             </label>
             <input
@@ -215,10 +215,10 @@ export function SAPConnectionCard({
             />
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-slate-500" />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-blue-500" />
                 Password
               </span>
             </label>
@@ -244,7 +244,7 @@ export function SAPConnectionCard({
             </div>
           </div>
 
-          <div className="md:col-span-2 pt-2 flex items-center justify-between border-t border-slate-100">
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input
                 type="checkbox"
