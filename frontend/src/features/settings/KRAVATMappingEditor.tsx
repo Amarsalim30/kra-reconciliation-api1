@@ -29,11 +29,23 @@ const SCHEDULE_GUIDE = [
   { prefix: "SEC_I", file: "SEC_I_WITH_VAT_PIN1.csv", name: "I – Exempt Purchases", rate: "Exempt" },
 ];
 
+const sortMappingsBySchedule = (items: KRAVATMappingItem[]): KRAVATMappingItem[] => {
+  const prefixOrder = new Map(SCHEDULE_GUIDE.map((s, i) => [s.prefix.toUpperCase(), i]));
+  return [...items].sort((a, b) => {
+    const ai = prefixOrder.get(a.section_prefix.toUpperCase());
+    const bi = prefixOrder.get(b.section_prefix.toUpperCase());
+    if (ai !== undefined && bi !== undefined) return ai - bi;
+    if (ai !== undefined) return -1;
+    if (bi !== undefined) return 1;
+    return 0;
+  });
+};
+
 export function KRAVATMappingEditor({ mappings: initialMappings, selectedCompanyId, onSaved }: KRAVATMappingEditorProps) {
   const [mappings, setMappings] = useState<KRAVATMappingItem[]>(initialMappings);
 
   useEffect(() => {
-    setMappings(initialMappings);
+    setMappings(sortMappingsBySchedule(initialMappings));
   }, [initialMappings]);
   const [showGuide, setShowGuide] = useState(false);
   const [saving, setSaving] = useState(false);

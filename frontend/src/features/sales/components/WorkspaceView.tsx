@@ -184,12 +184,12 @@ export function WorkspaceView({
 
         {/* KRA Data Card */}
         <div className={`bg-white border rounded-xl shadow-sm p-5 flex flex-col gap-4 transition-all duration-200 ${
-          kraLoaded ? "border-emerald-200 ring-1 ring-emerald-100" : "border-slate-200"
+          kraLoaded ? "border-slate-200 ring-1 ring-slate-100" : "border-slate-200"
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kraLoaded ? "bg-emerald-50" : "bg-slate-100"}`}>
-                <FileSpreadsheet className={`w-4 h-4 ${kraLoaded ? "text-emerald-600" : "text-slate-500"}`} />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kraLoaded ? "bg-slate-100" : "bg-slate-100"}`}>
+                <FileSpreadsheet className={`w-4 h-4 ${kraLoaded ? "text-slate-600" : "text-slate-500"}`} />
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-900">KRA Portal CSVs</p>
@@ -200,7 +200,7 @@ export function WorkspaceView({
                 </p>
               </div>
             </div>
-            {kraLoaded && <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500 shrink-0" />}
+            {kraLoaded && <CheckCircle2 className="w-4.5 h-4.5 text-slate-400 shrink-0" />}
           </div>
 
           {/* Upload Button */}
@@ -222,7 +222,7 @@ export function WorkspaceView({
                   ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
                   : kraLoaded
                     ? "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
-                    : "bg-blue-600 border-transparent text-white hover:bg-blue-700 shadow-sm"
+                    : "bg-slate-900 border-transparent text-white hover:bg-slate-800 shadow-sm"
               }`}
             >
               {uiState.kra.status === AsyncStatus.Loading
@@ -237,12 +237,12 @@ export function WorkspaceView({
                 {fileStatuses.map((f, idx) => (
                   <div
                     key={idx}
-                    className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1 text-[11px] font-medium text-emerald-800 max-w-[200px]"
+                    className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1 text-[11px] font-medium text-slate-700 max-w-[200px]"
                     title={f.filename}
                   >
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="w-3 h-3 text-slate-400 shrink-0" />
                     <span className="truncate">{f.filename}</span>
-                    <span className="text-emerald-600 font-bold shrink-0">·{f.parsed}</span>
+                    <span className="text-slate-500 font-bold shrink-0">·{f.parsed}</span>
                   </div>
                 ))}
               </div>
@@ -253,14 +253,14 @@ export function WorkspaceView({
 
       {/* ── Ready to Compare Banner ── */}
       {readyToCompare && (
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-4 flex items-center justify-between shadow-md shadow-blue-200">
+        <div className="bg-white rounded-xl p-4 flex items-center justify-between shadow-sm border border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
-              <GitCompareArrows className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <GitCompareArrows className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Ready to Reconcile</p>
-              <p className="text-xs text-blue-200 mt-0.5">
+              <p className="text-sm font-bold text-slate-900">Ready to Reconcile</p>
+              <p className="text-xs text-slate-500 mt-0.5">
                 {sapPagination.totalItems} SAP records · {kraPagination.totalItems} KRA records — click to run comparison
               </p>
             </div>
@@ -268,7 +268,7 @@ export function WorkspaceView({
           <button
             onClick={handleCompare}
             disabled={uiState.comparison.status === AsyncStatus.Loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 hover:bg-blue-50 rounded-lg text-sm font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60 whitespace-nowrap"
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-lg text-sm font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60 whitespace-nowrap"
           >
             {uiState.comparison.status === AsyncStatus.Loading ? (
               <><LoaderCircle className="w-4 h-4 animate-spin" /> Running...</>
