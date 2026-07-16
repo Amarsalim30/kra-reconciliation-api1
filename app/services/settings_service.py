@@ -12,10 +12,10 @@ from app.models.settings import (
     SettingAuditLog,
     SystemSetting,
     UnmappedVatPolicy,
+    PurchaseCUField,
     VATMapping,
     KRAVATMapping,
     VatModule,
-    VatRateCategory,
 )
 from app.models.user import User
 from app.schemas.settings import (
@@ -37,14 +37,14 @@ from app.schemas.settings import (
 
 # Default built-in VAT codes for seeding newly initialized SAP connections
 DEFAULT_BUILTIN_VAT_MAPPINGS = [
-    {"module": VatModule.PURCHASES, "sap_code": "I1", "description": "Standard Input VAT 16%", "canonical_value": VatRateCategory.VAT_16},
-    {"module": VatModule.PURCHASES, "sap_code": "I2", "description": "Zero Rated Input VAT 0%", "canonical_value": VatRateCategory.ZERO_RATED},
-    {"module": VatModule.PURCHASES, "sap_code": "I3", "description": "Reduced Input VAT 8%", "canonical_value": VatRateCategory.VAT_8},
-    {"module": VatModule.PURCHASES, "sap_code": "X1", "description": "Exempt Input VAT", "canonical_value": VatRateCategory.EXEMPT},
-    {"module": VatModule.PURCHASES, "sap_code": "N2", "description": "Non-Deductible Input VAT 16%", "canonical_value": VatRateCategory.VAT_16},
-    {"module": VatModule.SALES, "sap_code": "O1", "description": "Standard Output VAT 16%", "canonical_value": VatRateCategory.VAT_16},
-    {"module": VatModule.SALES, "sap_code": "O2", "description": "Zero Rated Output VAT 0%", "canonical_value": VatRateCategory.ZERO_RATED},
-    {"module": VatModule.SALES, "sap_code": "X0", "description": "Exempt Output VAT", "canonical_value": VatRateCategory.EXEMPT},
+    {"module": VatModule.PURCHASES, "sap_code": "I1", "description": "Standard Input VAT 16%", "canonical_rate": "16"},
+    {"module": VatModule.PURCHASES, "sap_code": "I2", "description": "Zero Rated Input VAT 0%", "canonical_rate": "0"},
+    {"module": VatModule.PURCHASES, "sap_code": "I3", "description": "Reduced Input VAT 8%", "canonical_rate": "8"},
+    {"module": VatModule.PURCHASES, "sap_code": "X1", "description": "Exempt Input VAT", "canonical_rate": "EXEMPT"},
+    {"module": VatModule.PURCHASES, "sap_code": "N2", "description": "Non-Deductible Input VAT 16%", "canonical_rate": "16"},
+    {"module": VatModule.SALES, "sap_code": "O1", "description": "Standard Output VAT 16%", "canonical_rate": "16"},
+    {"module": VatModule.SALES, "sap_code": "O2", "description": "Zero Rated Output VAT 0%", "canonical_rate": "0"},
+    {"module": VatModule.SALES, "sap_code": "X0", "description": "Exempt Output VAT", "canonical_rate": "EXEMPT"},
 ]
 
 
@@ -137,16 +137,16 @@ class SettingsService:
             for m in db.query(VATMapping).filter(VATMapping.connection_id == connection_id).all()
         }
         to_add = []
-        for default_m in DEFAULT_BUILTIN_VAT_MAPPINGS:
-            key = (default_m["module"], default_m["sap_code"])
+        for m in DEFAULT_BUILTIN_VAT_MAPPINGS:
+            key = (m["module"], m["sap_code"])
             if key not in existing_codes:
                 to_add.append(
                     VATMapping(
                         connection_id=connection_id,
-                        module=default_m["module"],
-                        sap_code=default_m["sap_code"],
-                        description=default_m["description"],
-                        canonical_value=default_m["canonical_value"],
+                        module=m["module"],
+                        sap_code=m["sap_code"],
+                        description=m["description"],
+                        canonical_rate=m["canonical_rate"],
                         is_builtin=True,
                         is_system_generated=True,
                     )
@@ -164,15 +164,15 @@ class SettingsService:
         confirmed by the operator in the UI.
         """
         defaults = [
-            {"section_prefix": "SEC_B", "canonical_value": VatRateCategory.VAT_16,
+            {"section_prefix": "SEC_B", "canonical_rate": "16",
              "description": "Sales - standard rated"},
-            {"section_prefix": "SEC_F", "canonical_value": VatRateCategory.VAT_16,
+            {"section_prefix": "SEC_F", "canonical_rate": "16",
              "description": "Purchases - standard rated"},
-            {"section_prefix": "SEC_G", "canonical_value": VatRateCategory.VAT_16,
+            {"section_prefix": "SEC_G", "canonical_rate": "16",
              "description": "Purchases - standard rated"},
-            {"section_prefix": "SEC_H", "canonical_value": VatRateCategory.ZERO_RATED,
+            {"section_prefix": "SEC_H", "canonical_rate": "0",
              "description": "Purchases - zero rated"},
-            {"section_prefix": "SEC_I", "canonical_value": VatRateCategory.VAT_8,
+            {"section_prefix": "SEC_I", "canonical_rate": "8",
              "description": "Purchases - reduced rated"},
         ]
         existing = {
@@ -466,14 +466,14 @@ class SettingsService:
             if key in existing_db_mappings:
                 db_item = existing_db_mappings[key]
                 if (
-                    db_item.canonical_value != item.canonical_value
+                    db_item.canonical_rate != item.canonical_rate
                     or db_item.description != item.description
                 ):
                     changes[f"{item.module}:{code}"] = {
-                        "old": f"{db_item.canonical_value} ({db_item.description})",
-                        "new": f"{item.canonical_value} ({item.description})",
+                        "old": f"{db_item.canonical_rate} ({db_item.description})",
+                        "new": f"{item.canonical_rate} ({item.description})",
                     }
-                    db_item.canonical_value = item.canonical_value
+                    db_item.canonical_rate = item.canonical_rate
                     db_item.description = item.description
             else:
                 new_mapping = VATMapping(
@@ -481,14 +481,14 @@ class SettingsService:
                     module=item.module,
                     sap_code=code,
                     description=item.description,
-                    canonical_value=item.canonical_value,
+                    canonical_rate=item.canonical_rate,
                     is_builtin=False,
                     is_system_generated=False,
                 )
                 db.add(new_mapping)
                 changes[f"{item.module}:{code}"] = {
                     "old": None,
-                    "new": f"{item.canonical_value} ({item.description})",
+                    "new": f"{item.canonical_rate} ({item.description})",
                 }
 
         # Check for deleted custom mappings
@@ -497,7 +497,7 @@ class SettingsService:
                 if db_item.is_builtin:
                     raise ValueError(f"Cannot delete built-in SAP VAT code '{db_item.sap_code}' for {db_item.module}.")
                 changes[f"{db_item.module}:{db_item.sap_code}"] = {
-                    "old": f"{db_item.canonical_value} ({db_item.description})",
+                    "old": f"{db_item.canonical_rate} ({db_item.description})",
                     "new": "DELETED",
                 }
                 db.delete(db_item)
@@ -508,6 +508,7 @@ class SettingsService:
 
         updated = db.query(VATMapping).filter(VATMapping.connection_id == conn_id).all()
         return [VATMappingItem.model_validate(m) for m in updated]
+
     @classmethod
     def save_kra_vat_mappings(
         cls, db: Session, payload: KRAVATMappingsUpdatePayload, current_user: Optional[User] = None
@@ -535,8 +536,8 @@ class SettingsService:
             field_changes = {}
             if prefix in existing_db_mappings:
                 db_item = existing_db_mappings[prefix]
-                if db_item.canonical_value != item.canonical_value:
-                    field_changes["canonical_value"] = (str(db_item.canonical_value), str(item.canonical_value))
+                if db_item.canonical_rate != item.canonical_rate:
+                    field_changes["canonical_rate"] = (str(db_item.canonical_rate), str(item.canonical_rate))
                 for cf in column_fields:
                     new_val = getattr(item, cf)
                     if getattr(db_item, cf) != new_val:
@@ -550,20 +551,20 @@ class SettingsService:
             else:
                 new_mapping = KRAVATMapping(
                     section_prefix=prefix,
-                    canonical_value=item.canonical_value,
+                    canonical_rate=item.canonical_rate,
                     description=item.description,
                 )
                 db.add(new_mapping)
                 changes[f"KRA_VAT:{prefix}"] = {
                     "old": None,
-                    "new": f"{item.canonical_value} ({item.description})",
+                    "new": f"{item.canonical_rate} ({item.description})",
                 }
 
         # Check for deleted custom mappings
         for prefix, db_item in existing_db_mappings.items():
             if prefix not in submitted_keys:
-                changes[f"KRA_VAT:{prefix}"] = {
-                    "old": str(db_item.canonical_value),
+                changes[f"KRA_VAT:{db_item.section_prefix}"] = {
+                    "old": str(db_item.canonical_rate),
                     "new": "DELETED",
                 }
                 db.delete(db_item)

@@ -9,8 +9,8 @@ from app.models.settings import (
     PurchaseCUField,
     UnmappedVatPolicy,
     VatModule,
-    VatRateCategory,
 )
+from app.utils.vat_utils import normalize_vat_rate
 
 
 class SAPConnectionBase(BaseModel):
@@ -88,9 +88,14 @@ class VATMappingItem(BaseModel):
     module: VatModule
     sap_code: str = Field(..., min_length=1, max_length=50)
     description: str = Field(default="", max_length=200)
-    canonical_value: VatRateCategory
+    canonical_rate: str = Field(..., max_length=20)
     is_builtin: bool = False
     is_system_generated: bool = False
+
+    @field_validator("canonical_rate", mode="before")
+    @classmethod
+    def validate_rate(cls, v: Any) -> str:
+        return normalize_vat_rate(v)
 
     class Config:
         from_attributes = True
@@ -145,8 +150,13 @@ class KRAParsingProfilesConfig(BaseModel):
 class KRAVATMappingItem(BaseModel):
     id: Optional[int] = None
     section_prefix: str = Field(..., min_length=1, max_length=50)
-    canonical_value: VatRateCategory
+    canonical_rate: str = Field(..., max_length=20)
     description: str = ""
+
+    @field_validator("canonical_rate", mode="before")
+    @classmethod
+    def validate_rate(cls, v: Any) -> str:
+        return normalize_vat_rate(v)
 
     class Config:
         from_attributes = True

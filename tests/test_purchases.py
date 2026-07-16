@@ -22,8 +22,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def fixture_db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
-    from app.models.settings import KRAVATMapping, VatRateCategory
-    db.add(KRAVATMapping(section_prefix="SEC_F", canonical_value=VatRateCategory.VAT_16))
+    from app.models.settings import KRAVATMapping
+    db.add(KRAVATMapping(section_prefix="SEC_F", canonical_rate="16"))
     db.commit()
     try:
         yield db

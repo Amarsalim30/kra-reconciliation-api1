@@ -12,7 +12,6 @@ from app.models.settings import (
     UnmappedVatPolicy,
     VATMapping,
     VatModule,
-    VatRateCategory,
 )
 from app.models.user import User
 
@@ -26,7 +25,6 @@ __all__ = [
     "SystemSetting",
     "VATMapping",
     "SettingAuditLog",
-    "VatRateCategory",
     "BaseAmountPolicy",
     "UnmappedVatPolicy",
     "VatModule",

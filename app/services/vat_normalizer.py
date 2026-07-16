@@ -3,20 +3,13 @@ from typing import Dict, Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.settings import VATMapping, VatModule, VatRateCategory
+from app.models.settings import VATMapping, VatModule
+from app.utils.vat_utils import normalize_vat_rate
 
 
 class DocumentType(str, Enum):
     SALES = "sales"
     PURCHASES = "purchases"
-
-
-CANONICAL_RATE_DISPLAY_MAP = {
-    VatRateCategory.VAT_16: "16",
-    VatRateCategory.VAT_8: "8",
-    VatRateCategory.ZERO_RATED: "0",
-    VatRateCategory.EXEMPT: "EXEMPT",
-}
 
 
 class VatNormalizer:
@@ -58,7 +51,7 @@ class VatNormalizer:
         db_input = {}
         db_output = {}
         for m in mappings:
-            display_val = CANONICAL_RATE_DISPLAY_MAP.get(m.canonical_value, "EXEMPT")
+            display_val = m.canonical_rate
             if m.module == VatModule.PURCHASES or m.module == "purchases":
                 db_input[m.sap_code.strip().upper()] = display_val
             else:
@@ -79,23 +72,10 @@ class VatNormalizer:
         if not code:
             return ""
 
-        # Check for Exempt terms (takes precedence over 0%/numeric format)
-        if code in ("EXEMPT", "EXEMPTED", "EXEMPTION", "EX", "E") or "EXEMPT" in code:
-            return "EXEMPT"
-
-        # Clean percentage signs and whitespace
-        clean_code = code.rstrip("%").strip()
-
-        # Handle numeric percentage strings (e.g. "16.0", "16.00", "8.0", "0.0", "0")
         try:
-            num = float(clean_code)
-            if num.is_integer():
-                return str(int(num))
-            return str(num)
+            return normalize_vat_rate(val)
         except ValueError:
-            pass
-
-        return clean_code
+            return code
 
     def normalize(self, source: str, document_type: str, value: str, db: Optional[Session] = None) -> str:
         """

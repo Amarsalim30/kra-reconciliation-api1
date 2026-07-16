@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { VATMappingItem, VatModule, VatRateCategory } from "@/types/settings";
+import { VATMappingItem, VatModule } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import {
   Table,
@@ -35,18 +35,18 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
   // New Code Form State
   const [newCode, setNewCode] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newCategory, setNewCategory] = useState<VatRateCategory>("VAT_16");
+  const [newCategory, setNewCategory] = useState<string>("16");
 
   const filteredMappings = mappings.filter((m) => m.module === activeModule);
 
-  const handleCategoryChange = (index: number, newCategory: VatRateCategory) => {
+  const handleCategoryChange = (index: number, newCategory: string) => {
     const updated = [...mappings];
     const target = filteredMappings[index];
     const targetIdx = mappings.findIndex(
       (m) => m.module === target.module && m.sap_code.toUpperCase() === target.sap_code.toUpperCase()
     );
     if (targetIdx !== -1) {
-      updated[targetIdx].canonical_value = newCategory;
+      updated[targetIdx].canonical_rate = newCategory;
       setMappings(updated);
     }
   };
@@ -80,14 +80,14 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
         module: activeModule,
         sap_code: codeUpper,
         description: newDescription.trim() || `${codeUpper} Custom Tax Group`,
-        canonical_value: newCategory,
+        canonical_rate: newCategory,
         is_builtin: false,
       },
     ]);
 
     setNewCode("");
     setNewDescription("");
-    setNewCategory("VAT_16");
+    setNewCategory("16");
     setErrorMessage(null);
   };
 
@@ -113,7 +113,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           module: m.module,
           sap_code: m.sap_code,
           description: m.description,
-          canonical_value: m.canonical_value,
+          canonical_rate: m.canonical_rate,
           is_builtin: m.is_builtin,
         })),
       };
@@ -149,7 +149,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           </div>
           <div>
             <h2 className="text-base font-semibold tracking-tight text-white">
-              SAP VAT Group Code Normalizer Mappings
+              SAP VAT Mapping
             </h2>
             <p className="text-xs text-slate-400">
               Link ERP tax codes (e.g. O1, I1) to canonical rates (16%, 8%, Zero Rated, Exempt).
@@ -157,6 +157,15 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           </div>
         </div>
       </div>
+
+      {/* Reusable Datalist for VAT Rates */}
+      <datalist id="vat-rates-list">
+        <option value="16">16% (Standard Rate)</option>
+        <option value="12">12% (New Policy)</option>
+        <option value="8">8% (Reduced Rate)</option>
+        <option value="0">0% (Zero Rated)</option>
+        <option value="EXEMPT">Exempt (Tax Free)</option>
+      </datalist>
 
       <div className="p-6 space-y-6">
         {errorMessage && (
@@ -215,7 +224,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                 <th className="py-3 px-4">SAP Tax Code</th>
                 <th className="py-3 px-4">Description</th>
-                <th className="py-3 px-4">Canonical Rate Category</th>
+                <th className="py-3 px-4">Canonical Rate</th>
                 <th className="py-3 px-4 text-center">Built-in Guard</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
@@ -233,16 +242,14 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
                     />
                   </td>
                   <td className="py-3 px-4">
-                    <select
-                      value={item.canonical_value}
-                      onChange={(e) => handleCategoryChange(index, e.target.value as VatRateCategory)}
-                      className="px-2.5 py-1 text-xs rounded border border-slate-300 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="VAT_16">VAT 16% (Standard Rate)</option>
-                      <option value="VAT_8">VAT 8% (Reduced Rate)</option>
-                      <option value="ZERO_RATED">Zero Rated (0%)</option>
-                      <option value="EXEMPT">Exempt (Tax Free)</option>
-                    </select>
+                    <input
+                      type="text"
+                      list="vat-rates-list"
+                      value={item.canonical_rate}
+                      onChange={(e) => handleCategoryChange(index, e.target.value)}
+                      placeholder="e.g. 16, 0, EXEMPT"
+                      className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
                   </td>
                   <td className="py-3 px-4 text-center">
                     {item.is_builtin ? (
@@ -297,16 +304,14 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
               onChange={(e) => setNewDescription(e.target.value)}
               className="px-3 py-1.5 rounded border border-slate-300 bg-white text-xs focus:outline-none focus:border-blue-500"
             />
-            <select
+            <input
+              type="text"
+              list="vat-rates-list"
               value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value as VatRateCategory)}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Rate (e.g. 16, 0)"
               className="px-3 py-1.5 rounded border border-slate-300 bg-white text-xs font-medium focus:outline-none focus:border-blue-500"
-            >
-              <option value="VAT_16">VAT 16%</option>
-              <option value="VAT_8">VAT 8%</option>
-              <option value="ZERO_RATED">Zero Rated</option>
-              <option value="EXEMPT">Exempt</option>
-            </select>
+            />
             <button
               type="submit"
               className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors shadow-sm"

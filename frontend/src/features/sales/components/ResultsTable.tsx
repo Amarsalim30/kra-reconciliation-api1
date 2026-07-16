@@ -48,10 +48,10 @@ function CompareCell({
   const s = isNumeric ? formatNumeric(sapVal) : String(sapVal || "-");
   const k = isNumeric ? formatNumeric(kraVal) : String(kraVal || "-");
 
-  if (isMatch) return <span className="text-slate-800">{s}</span>;
-
   if (isMissingSap) return <span className="text-red-600 font-medium">{k}</span>;
   if (isMissingKra) return <span className="text-red-600 font-medium">{s}</span>;
+
+  if (isMatch) return <span className="text-slate-800">{s}</span>;
 
   return (
     <div className="flex flex-col text-xs leading-tight">

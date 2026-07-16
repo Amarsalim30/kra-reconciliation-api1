@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
 from enum import Enum
+from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, Optional
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     Enum as SQLEnum,
@@ -18,13 +21,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
-
-
-class VatRateCategory(str, Enum):
-    VAT_16 = "VAT_16"
-    VAT_8 = "VAT_8"
-    ZERO_RATED = "ZERO_RATED"
-    EXEMPT = "EXEMPT"
 
 
 class BaseAmountPolicy(str, Enum):
@@ -135,7 +131,7 @@ class VATMapping(Base):
     module = Column(SQLEnum(VatModule, native_enum=False, length=20), nullable=False)
     sap_code = Column(String(50), nullable=False)
     description = Column(String(200), nullable=False, default="")
-    canonical_value = Column(SQLEnum(VatRateCategory, native_enum=False, length=50), nullable=False)
+    canonical_rate = Column(String(20), nullable=False)
     is_builtin = Column(Boolean, nullable=False, default=False)
     is_system_generated = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
@@ -166,7 +162,7 @@ class KRAVATMapping(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     section_prefix = Column(String(50), unique=True, index=True, nullable=False, comment="E.g., SEC_B")
-    canonical_value = Column(SQLEnum(VatRateCategory, native_enum=False, length=50), nullable=False)
+    canonical_rate = Column(String(20), nullable=False)
     description = Column(String(200), nullable=False, default="")
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

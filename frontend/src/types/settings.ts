@@ -1,4 +1,3 @@
-export type VatRateCategory = "VAT_16" | "VAT_8" | "ZERO_RATED" | "EXEMPT";
 export type BaseAmountPolicy = "skip" | "reject_session" | "treat_as_zero";
 export type UnmappedVatPolicy = "reject_invoice" | "needs_review";
 export type VatModule = "sales" | "purchases";
@@ -56,14 +55,14 @@ export interface VATMappingItem {
   module: VatModule;
   sap_code: string;
   description: string;
-  canonical_value: VatRateCategory;
+  canonical_rate: string;
   is_builtin: boolean;
 }
 
 export interface KRAVATMappingItem {
   id?: number;
   section_prefix: string;
-  canonical_value: VatRateCategory;
+  canonical_rate: string;
   description?: string;
 }
 

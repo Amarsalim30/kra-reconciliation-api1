@@ -23,8 +23,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def fixture_db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
-    from app.models.settings import KRAVATMapping, VatRateCategory
-    db.add(KRAVATMapping(section_prefix="SEC_B", canonical_value=VatRateCategory.VAT_16))
+    from app.models.settings import KRAVATMapping
+    db.add(KRAVATMapping(section_prefix="SEC_B", canonical_rate="16"))
     db.commit()
     try:
         yield db
@@ -200,16 +200,16 @@ def test_parse_kra_csv_aggregate_errors(db_session):
 
 def test_parse_kra_csv_per_section_profile(db_session):
     """Each KRA section is its own schema; the profile drives column mapping."""
-    from app.models.settings import KRAVATMapping, VatRateCategory
+    from app.models.settings import KRAVATMapping
 
     # Purchases section: leading 'Local' column shifts indexes +1, amount at col 7,
     # no invoice-number column.
     db_session.add(KRAVATMapping(
-        section_prefix="SEC_F", canonical_value=VatRateCategory.VAT_16
+        section_prefix="SEC_F", canonical_rate="16"
     ))
     # Variant where the amount sits at col 8 (e.g. SEC_H layout).
     db_session.add(KRAVATMapping(
-        section_prefix="SEC_H", canonical_value=VatRateCategory.ZERO_RATED
+        section_prefix="SEC_H", canonical_rate="0"
     ))
     db_session.commit()
 

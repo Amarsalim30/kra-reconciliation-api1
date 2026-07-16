@@ -122,7 +122,7 @@ export default function SettingsPage() {
           }`}
         >
           <Tag className="w-4 h-4" />
-          VAT Code Normalizer
+          VAT Settings
         </button>
       </div>
 

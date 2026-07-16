@@ -117,11 +117,9 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
             detail=f"No VAT mapping configured for KRA section '{section_prefix}'. Please configure it in settings."
         )
 
-    from app.services.vat_normalizer import CANONICAL_RATE_DISPLAY_MAP
     # VAT Group must match the SAP representation (e.g. "16", "0", "8"), since
-    # reconciliation joins on cu_number + vat_group. Use the display map, not the
-    # canonical enum name ("VAT_16" would never match SAP's "16").
-    file_vat_rate = CANONICAL_RATE_DISPLAY_MAP.get(vat_mapping.canonical_value, "EXEMPT")
+    # reconciliation joins on cu_number + vat_group. 
+    file_vat_rate = vat_mapping.canonical_rate
 
     # Build the logical-field -> column-index map from the matched profile.
     # VAT Group is not read from a column (the KRA column is unreliable across

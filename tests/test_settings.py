@@ -109,7 +109,7 @@ def test_get_and_update_settings(client: TestClient, db_session):
         "module": "sales",
         "sap_code": "CUSTOM1",
         "description": "Custom Reduced Rate",
-        "canonical_value": "VAT_8",
+        "canonical_rate": "8",
         "is_builtin": False,
     })
 

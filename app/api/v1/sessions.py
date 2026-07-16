@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_active_session
 from app.database.database import get_db
+from app.domain.reconciliation_status import ReconciliationStatus
 from app.models.user import User
 from app.models.reconciliation_session import SessionInvoice, SessionReconciliationResult
 from app.schemas.invoice import InvoiceSource, Invoice, PaginatedInvoicesResponse
@@ -104,7 +105,7 @@ def get_session_reconciliation_results(
     results = []
     for r in db_results:
         sap_invoice = None
-        if r.status not in ["MISSING_IN_SAP"]:
+        if r.status != ReconciliationStatus.MISSING_IN_SAP:
             sap_invoice = Invoice(
                 pin=r.sap_pin or "",
                 partner_name=r.sap_partner_name or "",
@@ -117,7 +118,7 @@ def get_session_reconciliation_results(
             )
             
         kra_invoice = None
-        if r.status not in ["MISSING_IN_KRA", "MISSING_CU_NUMBER"]:
+        if r.status not in [ReconciliationStatus.MISSING_IN_KRA, ReconciliationStatus.MISSING_CU_NUMBER]:
             kra_invoice = Invoice(
                 pin=r.kra_pin or "",
                 partner_name=r.kra_partner_name or "",

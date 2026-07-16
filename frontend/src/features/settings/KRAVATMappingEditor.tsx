@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KRAVATMappingItem, VatRateCategory } from "@/types/settings";
+import { KRAVATMappingItem } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import { Save, Plus, Trash2, Tag, Loader2, Info } from "lucide-react";
 
@@ -21,7 +21,7 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
       ...mappings,
       {
         section_prefix: "",
-        canonical_value: "VAT_16",
+        canonical_rate: "16",
       },
     ]);
   };
@@ -64,7 +64,7 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
       const payload = {
         mappings: mappings.map(m => ({
           section_prefix: m.section_prefix.trim().toUpperCase(),
-          canonical_value: m.canonical_value,
+          canonical_rate: m.canonical_rate,
         })),
         reason: reason.trim() || undefined,
       };
@@ -97,11 +97,19 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
             <Tag className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h2 className="font-semibold text-lg">KRA CSV VAT Assignment</h2>
+            <h2 className="font-semibold text-lg">KRA Section Mapping</h2>
             <p className="text-slate-400 text-xs mt-0.5">Map KRA CSV filename prefixes to canonical VAT rates.</p>
           </div>
         </div>
       </div>
+
+      <datalist id="kra-vat-rates-list">
+        <option value="16">16% (Standard Rate)</option>
+        <option value="12">12% (New Policy)</option>
+        <option value="8">8% (Reduced Rate)</option>
+        <option value="0">0% (Zero Rated)</option>
+        <option value="EXEMPT">Exempt (Tax Free)</option>
+      </datalist>
 
       <form onSubmit={handleSave} className="p-6 space-y-6">
         <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 flex gap-3 text-sm text-blue-800 mb-6">
@@ -133,16 +141,14 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
                 />
               </div>
               <div className="w-48">
-                <select
-                  value={mapping.canonical_value}
-                  onChange={(e) => handleChange(idx, "canonical_value", e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white"
-                >
-                  <option value="VAT_16">VAT 16%</option>
-                  <option value="VAT_8">VAT 8%</option>
-                  <option value="ZERO_RATED">Zero Rated</option>
-                  <option value="EXEMPT">Exempt</option>
-                </select>
+                <input
+                  type="text"
+                  list="kra-vat-rates-list"
+                  value={mapping.canonical_rate}
+                  onChange={(e) => handleChange(idx, "canonical_rate", e.target.value)}
+                  placeholder="e.g. 16, 0, EXEMPT"
+                  className="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
               </div>
               <button
                 type="button"
