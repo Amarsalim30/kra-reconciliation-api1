@@ -58,7 +58,7 @@ class SAPConnectionResponse(SAPConnectionBase):
 
 class SystemSettingsBase(BaseModel):
     amount_tolerance: Decimal = Field(default=Decimal("10.00"), ge=Decimal("0.00"), description="Amount tolerance in KES")
-    base_amount_policy: BaseAmountPolicy = Field(default=BaseAmountPolicy.SKIP)
+    base_amount_policy: BaseAmountPolicy = Field(default=BaseAmountPolicy.ALLOW)
     unmapped_vat_policy: UnmappedVatPolicy = Field(default=UnmappedVatPolicy.NEEDS_REVIEW)
     ignore_missing_cu: bool = Field(default=False)
     include_credit_notes: bool = Field(default=True)

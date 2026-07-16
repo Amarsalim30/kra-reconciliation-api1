@@ -250,22 +250,20 @@ def test_sap_mapper_base_amount_policies():
     original_policy = settings.sap_base_amount_policy
 
     try:
-        # 1. SKIP Policy (default)
+        # 1. SKIP Policy (skips 0.00, allows negative lines: 100 + -50 = 50.00)
         settings.sap_base_amount_policy = BaseAmountPolicy.SKIP
         records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
         assert len(records) == 1
-        assert records[0].base_amount == Decimal("100.00")
+        assert records[0].base_amount == Decimal("50.00")
 
-        # 2. REJECT Policy
+        # 2. REJECT Policy (rejects on 0.00)
         settings.sap_base_amount_policy = BaseAmountPolicy.REJECT
-        with pytest.raises(SAPQueryError, match="Base Amount.*<= 0"):
+        with pytest.raises(SAPQueryError, match="Base Amount is zero"):
             map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
 
-        # 3. ALLOW Policy
+        # 3. ALLOW Policy (allows 0.00 and negative lines: 100 + 0 + -50 = 50.00)
         settings.sap_base_amount_policy = BaseAmountPolicy.ALLOW
         records = map_sap_document_to_canonical_rows(raw_invoice, "Invoice", "Invoices")
-        # With allow, -50 is mapped to 50 for Invoices (abs value) if allow permits processing it
-        # Wait, the aggregation does 100 + 0 - 50 = 50, then abs(50) = 50.
         assert len(records) == 1
         assert records[0].base_amount == Decimal("50.00")
     finally:

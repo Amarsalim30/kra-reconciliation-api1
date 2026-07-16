@@ -22,7 +22,9 @@ from app.database.base import Base
 
 
 class BaseAmountPolicy(str, Enum):
+    ALLOW = "allow"
     SKIP = "skip"
+    REJECT = "reject"
     REJECT_SESSION = "reject_session"
     TREAT_AS_ZERO = "treat_as_zero"
 

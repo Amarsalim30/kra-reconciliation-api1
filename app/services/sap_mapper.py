@@ -136,20 +136,22 @@ def map_sap_document_to_canonical_rows(
             )
 
         # 3. Base Amount Policy Check
-        if base_amount <= 0:
-            if policy == BaseAmountPolicy.SKIP:
+        # Negative base amounts (e.g. Credit Notes, adjustments) are explicitly allowed.
+        # Zero base amounts are filtered or rejected based on policy.
+        if base_amount == 0:
+            if policy in (BaseAmountPolicy.SKIP, "skip"):
                 logger.warning(
-                    f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} line {line_idx} skipped because base_amount ({base_amount}) <= 0 under policy 'skip'."
+                    f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} line {line_idx} skipped because base_amount is 0.00 under policy 'skip'."
                 )
                 continue
-            elif policy == BaseAmountPolicy.REJECT:
+            elif policy in (BaseAmountPolicy.REJECT, "reject", "reject_session"):
                 logger.error(
-                    f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} line {line_idx} rejected because base_amount ({base_amount}) <= 0 under policy 'reject'."
+                    f"[ReconciliationSession: {reconciliation_session_id}] {source_document_type} {invoice_number} line {line_idx} rejected because base_amount is 0.00 under policy 'reject'."
                 )
                 raise SAPQueryError(
-                    f"SAP {source_document_type} {invoice_number} line {line_idx} rejected: Base Amount ({base_amount}) <= 0."
+                    f"SAP {source_document_type} {invoice_number} line {line_idx} rejected: Base Amount is zero."
                 )
-            # Under ALLOW, we proceed and include the record
+            # Under ALLOW ("allow") or TREAT_AS_ZERO, zero amount lines are kept and processed
 
         valid_lines.append((vat_group_str, base_amount))
 

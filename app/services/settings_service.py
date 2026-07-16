@@ -80,7 +80,7 @@ class SettingsService:
             setting = CompanySetting(
                 company_id=company_id,
                 amount_tolerance=Decimal("10.00"),
-                base_amount_policy=BaseAmountPolicy.SKIP,
+                base_amount_policy=BaseAmountPolicy.ALLOW,
                 unmapped_vat_policy=UnmappedVatPolicy.NEEDS_REVIEW,
                 ignore_missing_cu=False,
                 include_credit_notes=True,
@@ -208,7 +208,7 @@ class SettingsService:
             include_debit_notes=setting.include_debit_notes,
             skip_cancelled=setting.skip_cancelled,
             purchase_cu_source=setting.purchase_cu_source,
-            kra_parsing_profiles=setting.kra_parsing_profiles,
+            kra_parsing_profiles=setting.kra_parsing_profiles or DEFAULT_KRA_PARSING_PROFILES,
             version=setting.version,
             updated_at=setting.updated_at,
             warning=warning,
@@ -338,6 +338,8 @@ class SettingsService:
         ]
 
         for field_name in fields_to_check:
+            if field_name not in payload.model_fields_set:
+                continue
             new_val = getattr(payload, field_name)
             if hasattr(new_val, "model_dump"):
                 new_val = new_val.model_dump()
@@ -369,7 +371,7 @@ class SettingsService:
             include_debit_notes=setting.include_debit_notes,
             skip_cancelled=setting.skip_cancelled,
             purchase_cu_source=setting.purchase_cu_source,
-            kra_parsing_profiles=setting.kra_parsing_profiles,
+            kra_parsing_profiles=setting.kra_parsing_profiles or DEFAULT_KRA_PARSING_PROFILES,
             version=setting.version,
             updated_at=setting.updated_at,
             warning=warning,

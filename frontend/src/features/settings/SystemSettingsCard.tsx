@@ -168,9 +168,9 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
               onChange={(e) => setBaseAmountPolicy(e.target.value as BaseAmountPolicy)}
               className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
             >
-              <option value="skip">Skip Record (Default)</option>
-              <option value="reject_session">Reject Entire Reconciliation Session</option>
-              <option value="treat_as_zero">Treat Missing Base Amount as 0.00 KES</option>
+              <option value="allow">Allow All Amounts (Includes Negative & Zero - Default)</option>
+              <option value="skip">Skip Zero Amounts (0.00)</option>
+              <option value="reject">Reject Reconciliation Session on Zero Amount</option>
             </select>
           </div>
 

@@ -45,12 +45,9 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
   const [activeProfileTab, setActiveProfileTab] = useState("SEC_B");
 
   useEffect(() => {
-    if (settings.kra_parsing_profiles) {
-      const timer = setTimeout(() => {
-        setKraParsingProfiles(settings.kra_parsing_profiles!);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
+    setKraParsingProfiles(
+      settings.kra_parsing_profiles || { schema_version: 1, profiles: {} }
+    );
   }, [settings.kra_parsing_profiles]);
 
   const handleProfileChange = (section: string, field: string, value: string) => {

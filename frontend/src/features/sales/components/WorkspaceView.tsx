@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { WorkflowStep, AsyncStatus, WorkspaceUIState } from "../workspace/types";
 import { DataTable, Column } from "@/components/DataTable";
 import { Invoice } from "../types";
-import { downloadTemplate } from "../api/exportApi";
 import { FileUploadStatus } from "../api/reconciliation";
 import { 
   Database, 
@@ -14,7 +13,6 @@ import {
   LoaderCircle, 
   RefreshCw, 
   Upload, 
-  Download,
   FileText
 } from "lucide-react";
 
@@ -75,20 +73,6 @@ export function WorkspaceView({
   workflowStep,
   readyToCompare
 }: WorkspaceViewProps) {
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
-
-  const handleDownloadTemplate = async () => {
-    setLoadingTemplate(true);
-    try {
-      await downloadTemplate(type);
-    } catch (err) {
-      console.error("Template download failed", err);
-      alert("Failed to download template. Please try again.");
-    } finally {
-      setLoadingTemplate(false);
-    }
-  };
-
   return (
     <div className="flex flex-col gap-6 w-full animate-fade-in">
       {/* Controls */}
@@ -116,14 +100,6 @@ export function WorkspaceView({
               {uiState.kra.status === AsyncStatus.Loading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {uiState.kra.status === AsyncStatus.Loaded ? "Upload More CSVs" : "Upload Files"}
             </label>
-            <button 
-              onClick={handleDownloadTemplate} 
-              disabled={loadingTemplate}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 flex items-center gap-1.5 h-[38px] px-3 transition-colors"
-            >
-              {loadingTemplate ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} 
-              Template
-            </button>
           </div>
           {fileStatuses.length > 0 && (
             <div className="flex flex-col gap-1 mt-2 text-xs text-slate-600 max-h-32 overflow-y-auto w-full max-w-sm">

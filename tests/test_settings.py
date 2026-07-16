@@ -183,3 +183,62 @@ def test_multi_company_management(client: TestClient, db_session):
     del_res = client.delete(f"/api/v1/company/{new_id}", headers=headers)
     assert del_res.status_code == 204
 
+
+def test_partial_system_settings_update(client: TestClient, db_session):
+    login_res = client.post("/api/v1/auth/login", json={"username": "admin_tester", "password": "securepass123"})
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. GET initial settings (confirm kra_parsing_profiles is present via fallback)
+    response = client.get("/api/v1/settings?company_id=1", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    sys_settings = data["system_settings"]
+    assert sys_settings["kra_parsing_profiles"] is not None
+    assert "SEC_B" in sys_settings["kra_parsing_profiles"]["profiles"]
+    
+    initial_version = sys_settings["version"]
+    initial_tolerance = sys_settings["amount_tolerance"]
+
+    # 2. Update ONLY amount_tolerance and version (SystemSettingsCard update)
+    sys_update_payload = {
+        "amount_tolerance": "42.00",
+        "version": initial_version,
+    }
+    update_res = client.put("/api/v1/settings/system-settings?company_id=1", json=sys_update_payload, headers=headers)
+    assert update_res.status_code == 200
+    updated_sys = update_res.json()
+    assert updated_sys["amount_tolerance"] == "42.00"
+    assert updated_sys["version"] == initial_version + 1
+    # kra_parsing_profiles should NOT be None
+    assert updated_sys["kra_parsing_profiles"] is not None
+    assert "SEC_B" in updated_sys["kra_parsing_profiles"]["profiles"]
+
+    # 3. Update ONLY kra_parsing_profiles and version (KRAParsingProfilesCard update)
+    custom_profiles = {
+        "schema_version": 1,
+        "profiles": {
+            "SEC_B": {
+                "pin_column": 10,
+                "partner_name_column": 11,
+                "invoice_number_column": 12,
+                "invoice_date_column": 13,
+                "cu_number_column": 14,
+                "base_amount_column": 15,
+            }
+        }
+    }
+    profiles_update_payload = {
+        "kra_parsing_profiles": custom_profiles,
+        "version": updated_sys["version"],
+    }
+    update_res2 = client.put("/api/v1/settings/system-settings?company_id=1", json=profiles_update_payload, headers=headers)
+    assert update_res2.status_code == 200
+    updated_sys2 = update_res2.json()
+    assert updated_sys2["kra_parsing_profiles"]["profiles"]["SEC_B"]["pin_column"] == 10
+    # amount_tolerance should NOT be reset to default (10.00), it should remain 42.00
+    assert updated_sys2["amount_tolerance"] == "42.00"
+    assert updated_sys2["version"] == updated_sys["version"] + 1
+
+

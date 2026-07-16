@@ -1,4 +1,4 @@
-export type BaseAmountPolicy = "skip" | "reject_session" | "treat_as_zero";
+export type BaseAmountPolicy = "allow" | "skip" | "reject" | "reject_session" | "treat_as_zero";
 export type UnmappedVatPolicy = "reject_invoice" | "needs_review";
 export type VatModule = "sales" | "purchases";
 
