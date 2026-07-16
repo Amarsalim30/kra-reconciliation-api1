@@ -1,0 +1,141 @@
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.database.base import Base
+from app.database.database import get_db
+from app.main import app
+from app.core.security import create_access_token, hash_password
+from app.models.company import Company
+from app.models.user import User
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test_users.db"
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+@pytest.fixture(name="db_session", scope="function")
+def fixture_db_session():
+    Base.metadata.create_all(bind=engine)
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(name="client", scope="function")
+def fixture_client(db_session):
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+def test_user_management_and_password_reset(client, db_session):
+    # Create 2 companies
+    c1 = Company(name="Company Alpha", kra_pin="P000000001A")
+    c2 = Company(name="Company Beta", kra_pin="P000000002B")
+    db_session.add_all([c1, c2])
+    db_session.commit()
+    db_session.refresh(c1)
+    db_session.refresh(c2)
+
+    # Create Platform Admin
+    platform_admin = User(
+        username="platform_admin",
+        password_hash=hash_password("admin12345"),
+        role="admin",
+        company_id=None,
+    )
+
+    # Create Company 1 Admin
+    c1_admin = User(
+        username="c1_admin",
+        password_hash=hash_password("admin12345"),
+        role="admin",
+        company_id=c1.id,
+    )
+
+    # Create Company 1 Worker
+    c1_worker = User(
+        username="c1_worker",
+        password_hash=hash_password("worker12345"),
+        role="checker",
+        company_id=c1.id,
+    )
+
+    # Create Company 2 Worker
+    c2_worker = User(
+        username="c2_worker",
+        password_hash=hash_password("worker12345"),
+        role="checker",
+        company_id=c2.id,
+    )
+
+    db_session.add_all([platform_admin, c1_admin, c1_worker, c2_worker])
+    db_session.commit()
+
+    # Token for C1 Admin
+    c1_admin_token = create_access_token({"sub": "c1_admin"})
+    headers_c1 = {"Authorization": f"Bearer {c1_admin_token}"}
+
+    # 1. Company 1 Admin resets password for C1 worker (Should Succeed)
+    res = client.post(
+        f"/api/v1/users/{c1_worker.id}/reset-password",
+        json={"new_password": "new_password_123"},
+        headers=headers_c1,
+    )
+    assert res.status_code == 200, res.text
+
+    # Verify C1 Worker can login with new password
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"username": "c1_worker", "password": "new_password_123"},
+    )
+    assert login_res.status_code == 200
+
+    # 2. Company 1 Admin tries to reset password for C2 worker (Should fail 403 Forbidden)
+    res_fail = client.post(
+        f"/api/v1/users/{c2_worker.id}/reset-password",
+        json={"new_password": "hacked_password_123"},
+        headers=headers_c1,
+    )
+    assert res_fail.status_code == 403
+
+    # 3. Company 1 Admin creates a user for Company 1 (Should Succeed)
+    create_res = client.post(
+        "/api/v1/users",
+        json={
+            "username": "c1_new_member",
+            "password": "password12345",
+            "role": "viewer",
+        },
+        headers=headers_c1,
+    )
+    assert create_res.status_code == 201
+    # 4. Company 1 Admin updates username of C1 worker (Should Succeed)
+    update_res = client.patch(
+        f"/api/v1/users/{c1_worker.id}",
+        json={"username": "c1_worker_updated"},
+        headers=headers_c1,
+    )
+    assert update_res.status_code == 200, update_res.text
+    assert update_res.json()["username"] == "c1_worker_updated"
+
+    # 5. Attempting to set duplicate username (Should return 400 Bad Request)
+    dup_res = client.patch(
+        f"/api/v1/users/{c1_worker.id}",
+        json={"username": "c1_admin"},
+        headers=headers_c1,
+    )
+    assert dup_res.status_code == 400
+    assert "already in use" in dup_res.json()["detail"]

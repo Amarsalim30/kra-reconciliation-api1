@@ -335,6 +335,7 @@ interface EditUserRowProps {
 }
 
 function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
+  const [username, setUsername] = useState(user.username);
   const [role, setRole] = useState<UserRole>(user.role as UserRole);
   const [email, setEmail] = useState(user.email || "");
   const [fullName, setFullName] = useState(user.full_name || "");
@@ -347,6 +348,7 @@ function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
     setError(null);
     try {
       const payload: UserUpdatePayload = {
+        username: username.trim() || undefined,
         role,
         email: email || undefined,
         full_name: fullName || undefined,
@@ -379,7 +381,17 @@ function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
             <div>{error}</div>
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-slate-600 uppercase">Username *</label>
+            <input
+              type="text"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500 font-mono"
+            />
+          </div>
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-slate-600 uppercase">Full Name</label>
             <input

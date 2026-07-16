@@ -54,6 +54,13 @@ def update_user(db: Session, user_id: int, payload: UserUpdate) -> Optional[User
     user = get_by_id(db, user_id)
     if user is None:
         return None
+    if payload.username is not None and payload.username.strip():
+        new_username = payload.username.strip()
+        if new_username != user.username:
+            existing = get_by_username(db, new_username)
+            if existing and existing.id != user_id:
+                raise ValueError(f"Username '{new_username}' is already in use.")
+            user.username = new_username
     if payload.email is not None:
         user.email = payload.email
     if payload.full_name is not None:
