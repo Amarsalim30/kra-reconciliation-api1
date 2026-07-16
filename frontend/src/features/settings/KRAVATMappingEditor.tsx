@@ -138,7 +138,7 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
                   value={mapping.section_prefix}
                   onChange={(e) => handleChange(idx, "section_prefix", e.target.value)}
                   placeholder="e.g. SEC_B"
-                  className="w-full px-3 py-2 border border-slate-300 rounded font-mono text-sm"
+                  className="w-full px-3 py-2.5 h-10 border border-slate-200 rounded-lg font-mono text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
                 />
               </div>
               <div className="w-48">
@@ -148,13 +148,13 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
                   value={mapping.canonical_rate}
                   onChange={(e) => handleChange(idx, "canonical_rate", e.target.value)}
                   placeholder="e.g. 16, 0, EXEMPT"
-                  className="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 h-10 border border-slate-200 rounded-lg text-sm bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => handleRemove(idx)}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer mt-0.5"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -165,7 +165,7 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
         <button
           type="button"
           onClick={handleAdd}
-          className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add Mapping
         </button>
@@ -180,13 +180,13 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Added SEC_F mapping"
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 h-[38px]"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg font-semibold text-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Mappings

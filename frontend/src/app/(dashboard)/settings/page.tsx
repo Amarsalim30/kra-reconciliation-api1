@@ -177,14 +177,14 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 max-w-7xl mx-auto w-full space-y-6 pb-12 px-4 md:px-6">
       {/* Top Title Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
             Enterprise Settings
-            <ShieldCheck className="w-5.5 h-5.5 text-blue-600" />
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Manage SAP infrastructure endpoints, reconciliation tolerances, KRA mappings, and team access.
+          <p className="text-sm text-slate-400 mt-0.5">
+            SAP infrastructure · Reconciliation rules · KRA mappings · Team access
           </p>
         </div>
       </div>
@@ -192,13 +192,13 @@ export default function SettingsPage() {
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Left Sticky Sidebar */}
         <aside className="w-full lg:w-64 shrink-0 lg:sticky lg:top-6 space-y-6">
-          <nav className="space-y-6 bg-white border border-slate-200 rounded-xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <nav className="space-y-5 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
             {filteredSections.map((section, idx) => (
-              <div key={idx} className="space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">
+              <div key={idx} className="space-y-0.5">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 py-1.5">
                   {section.title}
                 </h4>
-                <ul className="space-y-1">
+                <ul className="space-y-0.5">
                   {section.items.map((item) => {
                     const isActive = activeTab === item.id;
                     return (
@@ -206,16 +206,19 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => setActiveTab(item.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg transition-all ${
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-lg cursor-pointer transition-all duration-150 ${
                             isActive
-                              ? "bg-blue-50 text-blue-700 shadow-sm"
-                              : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                              ? "bg-blue-50 text-blue-700 border border-blue-100 shadow-[0_1px_2px_rgba(59,130,246,0.08)]"
+                              : "text-slate-500 border border-transparent hover:text-slate-800 hover:bg-slate-50"
                           }`}
                         >
-                          <span className={isActive ? "text-blue-600" : "text-slate-400"}>
+                          <span className={`shrink-0 transition-colors ${isActive ? "text-blue-600" : "text-slate-400"}`}>
                             {item.icon}
                           </span>
                           {item.label}
+                          {isActive && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                          )}
                         </button>
                       </li>
                     );

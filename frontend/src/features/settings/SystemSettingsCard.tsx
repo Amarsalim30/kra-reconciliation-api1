@@ -170,7 +170,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
             value={amountTolerance}
             onChange={(e) => setAmountTolerance(e.target.value)}
             required
-            className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+            className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
 
           {showToleranceWarning && (
@@ -193,7 +193,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
             <select
               value={baseAmountPolicy}
               onChange={(e) => setBaseAmountPolicy(e.target.value as BaseAmountPolicy)}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
             >
               <option value="skip">Skip Record (Default)</option>
               <option value="reject_session">Reject Entire Reconciliation Session</option>
@@ -209,7 +209,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
               <select
                 value={unmappedVatPolicy}
                 onChange={(e) => setUnmappedVatPolicy(e.target.value as UnmappedVatPolicy)}
-                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
               >
                 <option value="needs_review">Mark for Audit Review (NEEDS_REVIEW)</option>
                 <option value="reject_invoice">Reject Specific Invoice Immediately</option>
@@ -224,7 +224,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
               <select
                 value={purchaseCuSource}
                 onChange={(e) => setPurchaseCuSource(e.target.value as PurchaseCUField)}
-                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
               >
                 <option value="U_CUINV">KRA (U_CUINV)</option>
                 <option value="NumAtCard">Vendor Reference (NumAtCard)</option>
@@ -258,7 +258,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                   key={sec}
                   type="button"
                   onClick={() => setActiveProfileTab(sec)}
-                  className={`px-4 py-2 text-xs font-bold transition-all rounded-md ${
+                  className={`px-4 py-2 text-xs font-bold transition-all rounded-md cursor-pointer ${
                     activeProfileTab === sec
                       ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
                       : "text-slate-500 hover:text-slate-800"
@@ -283,8 +283,8 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                           min={0}
                           value={(kraParsingProfiles.profiles as unknown as Record<string, Record<string, number | null>>)[sec]?.[field] ?? ""}
                           onChange={e => handleProfileChange(sec, field, e.target.value)}
-                          placeholder="-"
-                          className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                          placeholder="–"
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-300"
                         />
                       </div>
                     ))}
@@ -332,7 +332,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Operational Rules

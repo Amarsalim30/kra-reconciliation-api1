@@ -10,8 +10,64 @@
   --foreground: #0f172a;
 }
 
+/* ─── Base resets ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Prevent Tailwind v4 default border from inheriting currentColor (black) */
+*,
+::after,
+::before {
+  border-color: #e2e8f0; /* slate-200 */
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Form element polish ─────────────────────────────────────── */
+input,
+textarea,
+select {
+  font-family: inherit;
+  /* Remove harsh browser default focus outlines — replaced by ring utilities */
+  outline: none;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ─── Smooth scrolling ────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Custom scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
 }

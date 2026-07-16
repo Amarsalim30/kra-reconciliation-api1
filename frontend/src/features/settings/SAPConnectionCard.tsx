@@ -169,7 +169,7 @@ export function SAPConnectionCard({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Production Service Layer"
               required
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium placeholder:text-slate-400"
             />
           </div>
 
@@ -184,7 +184,7 @@ export function SAPConnectionCard({
               onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="https://b1su0206.cloudtaktiks.com:50000/b1s/v1"
               required
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
           </div>
 
@@ -199,7 +199,7 @@ export function SAPConnectionCard({
               onChange={(e) => setCompanyDb(e.target.value)}
               placeholder="CT_TECHBIZ_TESTII"
               required
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
           </div>
 
@@ -214,7 +214,7 @@ export function SAPConnectionCard({
               onChange={(e) => setUsername(e.target.value)}
               placeholder="cloudtaktiks\username"
               required
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
           </div>
 
@@ -231,12 +231,12 @@ export function SAPConnectionCard({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={connection?.password_set ? "•••••••• (Unchanged)" : "Enter Service Layer Password"}
-                className="w-full pl-3.5 pr-10 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="w-full pl-3.5 pr-10 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" />
@@ -271,20 +271,20 @@ export function SAPConnectionCard({
             type="button"
             onClick={handleTestConnection}
             disabled={testing}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-slate-300"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-all duration-150 border border-slate-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {testing ? (
-              <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
+              <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
             ) : (
-              <Activity className="w-4 h-4 text-slate-600" />
+              <Activity className="w-4 h-4 text-slate-500" />
             )}
-            Run Diagnostics Test
+            Run Diagnostics
           </button>
 
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

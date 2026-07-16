@@ -187,9 +187,9 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           <button
             type="button"
             onClick={() => setActiveModule("purchases")}
-            className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               activeModule === "purchases"
-                ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
+                ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
                 : "text-slate-600 hover:text-slate-950"
             }`}
           >
@@ -205,9 +205,9 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           <button
             type="button"
             onClick={() => setActiveModule("sales")}
-            className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               activeModule === "sales"
-                ? "bg-white text-blue-700 shadow-sm border border-slate-200/40"
+                ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
                 : "text-slate-600 hover:text-slate-950"
             }`}
           >
@@ -242,7 +242,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
                       type="text"
                       value={item.description}
                       onChange={(e) => handleDescriptionChange(index, e.target.value)}
-                      className="w-full px-2.5 py-1 text-xs rounded border border-slate-200 focus:outline-none focus:border-blue-500"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500"
                     />
                   </td>
                   <td className="py-3 px-4">
@@ -252,7 +252,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
                       value={item.canonical_rate}
                       onChange={(e) => handleCategoryChange(index, e.target.value)}
                       placeholder="e.g. 16, 0, EXEMPT"
-                      className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 font-semibold text-slate-800 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-300"
                     />
                   </td>
                   <td className="py-3 px-4 text-center">
@@ -272,7 +272,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
                       <button
                         type="button"
                         onClick={() => handleDeleteCode(item.sap_code)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer"
                         title="Remove custom code"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -299,14 +299,14 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
               value={newCode}
               onChange={(e) => setNewCode(e.target.value)}
               required
-              className="px-3 py-1.5 rounded border border-slate-300 bg-white text-xs font-mono focus:outline-none focus:border-blue-500"
+              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
             <input
               type="text"
               placeholder="Description (e.g. Special Rate)"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              className="px-3 py-1.5 rounded border border-slate-300 bg-white text-xs focus:outline-none focus:border-blue-500"
+              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
             <input
               type="text"
@@ -314,13 +314,13 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="Rate (e.g. 16, 0)"
-              className="px-3 py-1.5 rounded border border-slate-300 bg-white text-xs font-medium focus:outline-none focus:border-blue-500"
+              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
             <button
               type="submit"
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors shadow-sm"
+              className="px-4 py-2 h-9 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold transition-all duration-150 shadow-sm cursor-pointer inline-flex items-center justify-center gap-1.5"
             >
-              Add Tax Code
+              <Plus className="w-3.5 h-3.5" /> Add Code
             </button>
           </div>
         </form>
@@ -335,7 +335,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Added custom VAT group code for specialized petroleum imports"
-            className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+            className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
           />
         </div>
 
@@ -345,7 +345,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
             type="submit"
             onClick={handleSaveMappings}
             disabled={saving}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Tax Mappings

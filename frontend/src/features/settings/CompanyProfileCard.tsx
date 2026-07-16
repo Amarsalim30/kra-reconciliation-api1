@@ -132,7 +132,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Acme Corp Ltd"
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium placeholder:text-slate-400"
             />
           </div>
 
@@ -148,7 +148,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
               onChange={(e) => setKraPin(e.target.value.toUpperCase())}
               placeholder="e.g. P051234567Q"
               maxLength={20}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
             />
             <span className="text-[11px] text-slate-500 block">Kenya Revenue Authority PIN for the company.</span>
           </div>
@@ -162,7 +162,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full px-3.5 py-2.25 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -179,7 +179,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3.5 py-2.25 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>{tz}</option>
@@ -196,7 +196,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
             <select
               value={fiscalYearStartMonth}
               onChange={(e) => setFiscalYearStartMonth(parseInt(e.target.value))}
-              className="w-full px-3.5 py-2.25 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
             >
               {MONTH_NAMES.map((month, idx) => (
                 <option key={idx + 1} value={idx + 1}>{month}</option>
@@ -210,7 +210,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2 disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Company Profile
