@@ -354,6 +354,7 @@ export default function SettingsPage() {
           {activeTab === "kra-vat-mappings" && (
             <KRAVATMappingEditor
               mappings={data.kra_vat_mappings}
+              selectedCompanyId={selectedCompanyId}
               onSaved={handleSettingsSaved}
             />
           )}

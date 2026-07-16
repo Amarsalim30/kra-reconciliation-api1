@@ -26,10 +26,10 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
 
   // We wrap handleCompare to also handle navigation to the Results view
   const handleCompareWithNavigation = async () => {
-    await triggerCompare();
-    // After comparison completes (either Success or Error), transition navigation view.
-    // The underlying state model ensures data is retained.
-    setNavState("results");
+    const ok = await triggerCompare();
+    if (ok) {
+      setNavState("results");
+    }
   };
 
   const getSessionStatusLabel = (status: SessionStatus) => {

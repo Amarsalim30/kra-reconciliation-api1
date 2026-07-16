@@ -81,14 +81,18 @@ def get_current_company(
     db: Session = Depends(get_db),
 ) -> "Company":
     """Resolve the company a user belongs to. Platform admins without a company
-    are rejected from company-scoped operations (they manage via explicit IDs)."""
+    are associated with the primary company (first created)."""
     from app.models.company import Company
 
     if current_user.company_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is not associated with a company.",
-        )
+        company = db.query(Company).order_by(Company.id.asc()).first()
+        if company is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No company profiles exist yet.",
+            )
+        return company
+
     company = db.query(Company).filter(Company.id == current_user.company_id).first()
     if company is None:
         raise HTTPException(
@@ -132,11 +136,14 @@ def get_active_session(
 ) -> ReconciliationSession:
     from datetime import datetime, timedelta, timezone
 
-    session = db.query(ReconciliationSession).filter(
+    query_filters = [
         ReconciliationSession.id == session_id,
         ReconciliationSession.user_id == current_user.id,
-        ReconciliationSession.company_id == current_user.company_id,
-    ).first()
+    ]
+    if current_user.company_id is not None:
+        query_filters.append(ReconciliationSession.company_id == current_user.company_id)
+
+    session = db.query(ReconciliationSession).filter(*query_filters).first()
     
     if session is None:
         raise HTTPException(

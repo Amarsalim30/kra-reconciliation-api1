@@ -147,20 +147,29 @@ class SettingsService:
     @classmethod
     def seed_default_kra_section_profiles(cls, db: Session):
         defaults = [
-            {"section_prefix": "SEC_B", "canonical_rate": "16", "description": "Sales - standard rated"},
-            {"section_prefix": "SEC_F", "canonical_rate": "16", "description": "Purchases - standard rated"},
-            {"section_prefix": "SEC_G", "canonical_rate": "16", "description": "Purchases - standard rated"},
-            {"section_prefix": "SEC_H", "canonical_rate": "0", "description": "Purchases - zero rated"},
-            {"section_prefix": "SEC_I", "canonical_rate": "8", "description": "Purchases - reduced rated"},
+            {"section_prefix": "SEC_B", "canonical_rate": "16", "description": "B – General Rated Supplies (Sales) 16%"},
+            {"section_prefix": "SEC_F", "canonical_rate": "16", "description": "F – General Rated Purchases (local) 16%"},
+            {"section_prefix": "SEC_G", "canonical_rate": "8", "description": "G – Other Rated Purchases 8% (Petroleum)"},
+            {"section_prefix": "SEC_H", "canonical_rate": "0", "description": "H – Zero-Rated Purchases 0%"},
+            {"section_prefix": "SEC_I", "canonical_rate": "EXEMPT", "description": "I – Exempt Purchases Exempt"},
         ]
-        existing = {m.section_prefix.strip().upper() for m in db.query(KRAVATMapping).all()}
+        existing = {m.section_prefix.strip().upper(): m for m in db.query(KRAVATMapping).all()}
         to_add = []
         for d in defaults:
-            if d["section_prefix"].upper() not in existing:
+            prefix = d["section_prefix"].upper()
+            if prefix not in existing:
                 to_add.append(KRAVATMapping(**d))
+            else:
+                item = existing[prefix]
+                if prefix == "SEC_G" and item.canonical_rate == "16":
+                    item.canonical_rate = "8"
+                    item.description = d["description"]
+                elif prefix == "SEC_I" and item.canonical_rate == "8":
+                    item.canonical_rate = "EXEMPT"
+                    item.description = d["description"]
         if to_add:
             db.add_all(to_add)
-            db.commit()
+        db.commit()
 
     # ------------------------------------------------------------------ #
     # Composite (read) settings, scoped to a company
@@ -476,6 +485,7 @@ class SettingsService:
                 db_item = existing_db_mappings[prefix]
                 if db_item.canonical_rate != item.canonical_rate:
                     field_changes["canonical_rate"] = (str(db_item.canonical_rate), str(item.canonical_rate))
+                    db_item.canonical_rate = item.canonical_rate
                 for cf in column_fields:
                     new_val = getattr(item, cf)
                     if getattr(db_item, cf) != new_val:

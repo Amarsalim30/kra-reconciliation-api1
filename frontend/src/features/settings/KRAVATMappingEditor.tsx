@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KRAVATMappingItem } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import {
@@ -17,6 +17,7 @@ import {
 
 interface KRAVATMappingEditorProps {
   mappings: KRAVATMappingItem[];
+  selectedCompanyId?: number | null;
   onSaved: () => void;
 }
 
@@ -28,8 +29,12 @@ const SCHEDULE_GUIDE = [
   { prefix: "SEC_I", file: "SEC_I_WITH_VAT_PIN1.csv", name: "I – Exempt Purchases", rate: "Exempt" },
 ];
 
-export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAVATMappingEditorProps) {
+export function KRAVATMappingEditor({ mappings: initialMappings, selectedCompanyId, onSaved }: KRAVATMappingEditorProps) {
   const [mappings, setMappings] = useState<KRAVATMappingItem[]>(initialMappings);
+
+  useEffect(() => {
+    setMappings(initialMappings);
+  }, [initialMappings]);
   const [showGuide, setShowGuide] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

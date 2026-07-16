@@ -51,8 +51,14 @@ def load_sap_invoices(
     ).delete()
     db.commit()
 
+    company_id = current_user.company_id
+    if company_id is None:
+        from app.models.company import Company
+        comp = db.query(Company).order_by(Company.id.asc()).first()
+        company_id = comp.id if comp else None
+
     session = ReconciliationSession(
-        company_id=current_user.company_id,
+        company_id=company_id,
         user_id=current_user.id,
         from_date=from_date,
         to_date=to_date,
@@ -62,7 +68,7 @@ def load_sap_invoices(
     db.add(session)
     db.commit()
 
-    system_setting = SettingsService.get_or_create_company_settings(db, current_user.company_id)
+    system_setting = SettingsService.get_or_create_company_settings(db, company_id)
     invoices = invoice_service.get_invoices(
         from_date,
         to_date,
@@ -101,7 +107,8 @@ def upload_kra_csvs(
             detail=f"Active session type is not for {reconciliation_type.value.capitalize()} reconciliation.",
         )
 
-    all_invoices, file_statuses = kra_service.parse_multiple_kra_csvs(files, db, company_id=current_user.company_id)
+    company_id = session.company_id or current_user.company_id
+    all_invoices, file_statuses = kra_service.parse_multiple_kra_csvs(files, db, company_id=company_id)
 
     if all_invoices:
         db.query(SessionInvoice).filter(

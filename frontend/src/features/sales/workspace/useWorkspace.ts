@@ -146,8 +146,8 @@ export function useWorkspace(type: "sales" | "purchases") {
     }
   };
 
-  const handleCompare = async () => {
-    if (!sessionId) return;
+  const handleCompare = async (): Promise<boolean> => {
+    if (!sessionId) return false;
     
     setUiState(prev => ({ ...prev, comparison: { status: AsyncStatus.Loading } }));
     setGlobalError(null);
@@ -156,28 +156,24 @@ export function useWorkspace(type: "sales" | "purchases") {
     try {
       const data = await compareInvoices(sessionId);
       setSummary(data.summary);
-
-      // We don't seed results directly here, the pagination hook will fetch page 1 automatically when enabled.
-      // But we can reset it to trigger the fetch if needed, or if the API returned it, seed it.
-      // Assuming the API just returns summary and we need to fetch results.
-
       setUiState(prev => ({ ...prev, comparison: { status: AsyncStatus.Loaded } }));
+      return true;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during comparison.";
 
-      // The backend returns 400 when one side has no data — treat that as an
-      // informative empty state rather than a hard error.
       const upper = errorMessage.toUpperCase();
       if (upper.includes("SAP INVOICE LOAD IS REQUIRED")) {
         setUiState(prev => ({ ...prev, comparison: { status: AsyncStatus.Empty, emptyReason: "SAP" } }));
-        return;
+        return true;
       }
       if (upper.includes("KRA CSV UPLOAD IS REQUIRED")) {
         setUiState(prev => ({ ...prev, comparison: { status: AsyncStatus.Empty, emptyReason: "KRA" } }));
-        return;
+        return true;
       }
 
       setUiState(prev => ({ ...prev, comparison: { status: AsyncStatus.Error, error: errorMessage } }));
+      setGlobalError(errorMessage);
+      return false;
     }
   };
 
