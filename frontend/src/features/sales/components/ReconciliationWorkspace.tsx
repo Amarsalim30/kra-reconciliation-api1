@@ -46,17 +46,34 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full pb-20">
+    <div className="flex flex-col gap-5 w-full pb-20">
       {/* Shared Page Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight capitalize">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight capitalize">
             {type} Reconciliation
           </h2>
-          <div className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 border border-slate-200">
-            <div className={`w-2 h-2 rounded-full ${sessionStatus === SessionStatus.Completed ? "bg-green-500" : sessionStatus === SessionStatus.Error ? "bg-red-500" : "bg-blue-500 animate-pulse"}`} />
-            Session: {getSessionStatusLabel(sessionStatus)}
-          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
+            SAP ERP ↔ KRA Portal · {new Date().toLocaleDateString("en-KE", { month: "long", year: "numeric" })}
+          </p>
+        </div>
+
+        {/* Session status pill */}
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+          sessionStatus === SessionStatus.Completed
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : sessionStatus === SessionStatus.Error
+              ? "bg-red-50 text-red-700 border-red-200"
+              : "bg-blue-50 text-blue-700 border-blue-200"
+        }`}>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${
+            sessionStatus === SessionStatus.Completed
+              ? "bg-emerald-500"
+              : sessionStatus === SessionStatus.Error
+                ? "bg-red-500"
+                : "bg-blue-500 animate-pulse"
+          }`} />
+          {getSessionStatusLabel(sessionStatus)}
         </div>
       </div>
 
