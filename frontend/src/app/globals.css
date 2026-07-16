@@ -27,9 +27,10 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 /* ─── Form element polish ─────────────────────────────────────── */
@@ -70,4 +71,20 @@ html {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8; /* slate-400 */
+}
+
+/* ─── Settings panel fade-in ──────────────────────────────────── */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-panel {
+  animation: panel-in 0.18s ease-out both;
 }

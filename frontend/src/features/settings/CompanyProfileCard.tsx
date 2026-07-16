@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   ShieldAlert,
   MapPin,
-  DollarSign,
   Calendar,
   Globe,
   Trash2,
@@ -538,8 +537,10 @@ export function CompanyProfileCard({ companies = [], onSaved }: CompanyProfileCa
                         </div>
 
                         <div className="flex items-center gap-1.5 text-slate-600">
-                          <DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-medium text-slate-800">{c.currency} Base</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                            {c.currency}
+                          </span>
+                          <span className="font-medium text-slate-800">Base Currency</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 text-slate-600">

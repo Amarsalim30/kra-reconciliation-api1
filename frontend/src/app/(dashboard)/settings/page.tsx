@@ -23,6 +23,7 @@ import {
   Users,
   FileSpreadsheet,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 type ActiveTab =
@@ -234,6 +235,11 @@ export default function SettingsPage() {
     }))
     .filter((sec) => sec.items.length > 0);
 
+  // Derive the display label for the active tab
+  const activeItemLabel = filteredSections
+    .flatMap((s) => s.items)
+    .find((i) => i.id === activeTab)?.label ?? "Settings";
+
   return (
     <div className="flex-1 max-w-7xl mx-auto w-full space-y-6 pb-12 px-4 md:px-6">
       {/* Header with Company Scope Switcher */}
@@ -277,34 +283,46 @@ export default function SettingsPage() {
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Left Sticky Sidebar */}
-        <aside className="w-full lg:w-64 shrink-0 lg:sticky lg:top-6 space-y-6">
-          <nav className="space-y-5 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+        <aside className="w-full lg:w-56 shrink-0 lg:sticky lg:top-6">
+          <nav className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             {filteredSections.map((section, idx) => (
-              <div key={idx} className="space-y-0.5">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 py-1.5">
-                  {section.title}
-                </h4>
-                <ul className="space-y-0.5">
+              <div key={idx}>
+                {idx > 0 && <div className="border-t border-slate-100" />}
+
+                <div className="px-4 pt-4 pb-1.5">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+                    {section.title}
+                  </p>
+                </div>
+
+                <ul className="pb-3">
                   {section.items.map((item) => {
-                    const isActive = activeTab === item.id;
+                    const active = activeTab === item.id;
                     return (
                       <li key={item.id}>
                         <button
                           type="button"
                           onClick={() => setActiveTab(item.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-lg cursor-pointer transition-all duration-150 ${
-                            isActive
-                              ? "bg-blue-50 text-blue-700 border border-blue-100 shadow-[0_1px_2px_rgba(59,130,246,0.08)]"
-                              : "text-slate-500 border border-transparent hover:text-slate-800 hover:bg-slate-50"
+                          className={`group relative w-full flex items-center gap-2.5 pl-4 pr-3 py-2 text-xs font-medium cursor-pointer transition-all duration-100 ${
+                            active
+                              ? "text-blue-700 bg-blue-50/70"
+                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
                           }`}
                         >
-                          <span className={`shrink-0 transition-colors ${isActive ? "text-blue-600" : "text-slate-400"}`}>
+                          {/* Left accent bar */}
+                          {active && (
+                            <span className="absolute left-0 top-1 bottom-1 w-[3px] bg-blue-600 rounded-r-full" />
+                          )}
+
+                          {/* Icon */}
+                          <span className={`shrink-0 ${active ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`}>
                             {item.icon}
                           </span>
-                          {item.label}
-                          {isActive && (
-                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                          )}
+
+                          {/* Label — truncate prevents wrapping */}
+                          <span className={`truncate ${active ? "font-semibold" : ""}`}>
+                            {item.label}
+                          </span>
                         </button>
                       </li>
                     );
@@ -316,7 +334,14 @@ export default function SettingsPage() {
         </aside>
 
         {/* Right Tab Panel Content */}
-        <main className="flex-1 min-w-0 w-full">
+        <main key={activeTab} className="settings-panel flex-1 min-w-0 w-full">
+          {/* Breadcrumb path */}
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-4">
+            <span>Settings</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="text-slate-700 font-semibold">{activeItemLabel}</span>
+          </div>
+
           {activeTab === "sap-connection" && (
             <SAPConnectionCard
               connection={data.sap_connection}
