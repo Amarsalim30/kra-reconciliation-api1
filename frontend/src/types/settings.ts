@@ -97,7 +97,7 @@ export interface SettingAuditLog {
   user_id: number | null;
   user_email: string | null;
   action: string;
-  changes_json: Record<string, { old: any; new: any }>;
+  changes_json: Record<string, { old: unknown; new: unknown }>;
   reason?: string | null;
   created_at: string;
 }

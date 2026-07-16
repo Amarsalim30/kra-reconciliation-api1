@@ -61,8 +61,9 @@ export function SAPConnectionCard({
       });
       const data: TestConnectionResponse = await res.json();
       setTestResult(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to initiate SAP diagnostic test.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(msg || "Failed to initiate SAP diagnostic test.");
     } finally {
       setTesting(false);
     }
@@ -75,7 +76,7 @@ export function SAPConnectionCard({
     setSuccessMessage(null);
 
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         name,
         base_url: baseUrl,
         company_db: companyDb,
@@ -106,8 +107,9 @@ export function SAPConnectionCard({
       setPassword("");
       setSuccessMessage("SAP connection configuration saved successfully!");
       onSaved();
-    } catch (err: any) {
-      setErrorMessage(err.message || "An error occurred while saving.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(msg || "An error occurred while saving.");
     } finally {
       setSaving(false);
     }
@@ -115,17 +117,17 @@ export function SAPConnectionCard({
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">
-      {/* Header Banner */}
-      <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
-            <Server className="w-5 h-5 text-blue-400" />
+          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
+            <Server className="w-5 h-5 text-slate-500" />
           </div>
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900">
               SAP Business One Connection
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 mt-0.5">
               Configure Service Layer connection string and credentials.
             </p>
           </div>
@@ -133,7 +135,8 @@ export function SAPConnectionCard({
 
         {connection && (
           <div className="text-right">
-            <span className="text-[11px] text-emerald-400 font-mono font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               {connection.password_set ? "Credentials Configured" : "Unauthenticated"}
             </span>
           </div>
@@ -295,22 +298,22 @@ export function SAPConnectionCard({
 
       {/* Diagnostics Modal / Output Display */}
       {testResult && (
-        <div className="m-6 p-4 bg-slate-900 rounded-xl border border-slate-800 text-slate-200 text-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="m-6 p-5 bg-slate-50 rounded-xl border border-slate-200 text-slate-800 text-sm space-y-4 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <div className="flex items-center gap-2">
               {testResult.connected ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               ) : (
-                <XCircle className="w-5 h-5 text-rose-400" />
+                <XCircle className="w-5 h-5 text-rose-600" />
               )}
-              <span className="font-semibold text-white">
+              <span className="font-bold text-slate-900">
                 {testResult.connected ? "Diagnostic Test Succeeded" : "Connection Failure Diagnostic"}
               </span>
             </div>
 
             {testResult.metadata?.latency_ms && (
-              <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs text-slate-600 flex items-center gap-1.5 font-mono bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
                 {testResult.metadata.latency_ms} ms
               </span>
             )}
@@ -320,30 +323,30 @@ export function SAPConnectionCard({
             {Object.entries(testResult.steps).map(([stepKey, stepVal]) => (
               <div
                 key={stepKey}
-                className="flex items-start gap-2 text-xs font-mono p-2 rounded bg-slate-950/60 border border-slate-800"
+                className="flex items-start gap-2.5 text-xs font-mono p-3 rounded-lg bg-white border border-slate-200/60 shadow-[0_1px_2px_rgba(0,0,0,0.01)]"
               >
                 {stepVal.status === "pass" ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 ) : (
-                  <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <span className="font-semibold text-slate-300 capitalize">{stepKey.replace("_", " ")}: </span>
-                  <span className="text-slate-400">{stepVal.message}</span>
+                  <span className="font-bold text-slate-700 capitalize">{stepKey.replace(/_/g, " ")}: </span>
+                  <span className="text-slate-600">{stepVal.message}</span>
                 </div>
               </div>
             ))}
           </div>
 
           {testResult.metadata && (
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-2 border-t border-slate-800">
+            <div className="grid grid-cols-2 gap-4 text-xs font-mono pt-3 border-t border-slate-200">
               <div>
-                <span className="text-slate-500 block">System Version</span>
-                <span className="text-slate-300 font-semibold">{testResult.metadata.system_version}</span>
+                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">System Version</span>
+                <span className="text-slate-800 font-bold">{testResult.metadata.system_version}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">Connected Company</span>
-                <span className="text-slate-300 font-semibold">{testResult.metadata.company_name}</span>
+                <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Connected Company</span>
+                <span className="text-slate-800 font-bold">{testResult.metadata.company_name}</span>
               </div>
             </div>
           )}

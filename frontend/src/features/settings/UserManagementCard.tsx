@@ -101,8 +101,9 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
       }
       onCreated();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "An error occurred.");
     } finally {
       setSaving(false);
     }
@@ -111,12 +112,12 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-900 to-blue-700 text-white flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <UserPlus className="w-5 h-5" />
-            <h3 className="font-semibold text-sm">Create New User</h3>
+            <UserPlus className="w-5 h-5 text-blue-600" />
+            <h3 className="font-bold text-slate-900 text-sm">Create New User</h3>
           </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -232,8 +233,9 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
       }
       setSuccess(true);
       onReset();
-    } catch (err: any) {
-      setError(err.message || "An error occurred.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "An error occurred.");
     } finally {
       setSaving(false);
     }
@@ -242,12 +244,12 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden">
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <KeyRound className="w-5 h-5 text-amber-400" />
-            <h3 className="font-semibold text-sm">Reset Password — {user.username}</h3>
+            <KeyRound className="w-5 h-5 text-amber-500" />
+            <h3 className="font-bold text-slate-900 text-sm">Reset Password — {user.username}</h3>
           </div>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -324,8 +326,9 @@ function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
         throw new Error(err.detail || "Failed to save.");
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.message || "An error occurred.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "An error occurred.");
     } finally {
       setSaving(false);
     }
@@ -434,21 +437,21 @@ export function UserManagementCard({ users, currentUserId, onSaved }: UserManage
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-800 rounded-lg border border-slate-600">
-              <Users className="w-5 h-5 text-blue-400" />
+            <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <Users className="w-5 h-5 text-slate-500" />
             </div>
             <div>
-              <h2 className="text-base font-semibold tracking-tight">Team Members</h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <h2 className="text-base font-bold text-slate-900">Team Members</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
                 {users.length} user{users.length !== 1 ? "s" : ""} · Manage roles and access levels
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
           >
             <UserPlus className="w-4 h-4" />
             Invite User
@@ -456,7 +459,7 @@ export function UserManagementCard({ users, currentUserId, onSaved }: UserManage
         </div>
 
         {/* Role Legend */}
-        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-4 flex-wrap">
+        <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-4 flex-wrap">
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Roles:</span>
           {(Object.entries(ROLE_META) as [UserRole, typeof ROLE_META[UserRole]][]).map(([role, meta]) => (
             <span key={role} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${meta.color}`}>
@@ -579,7 +582,7 @@ export function UserManagementCard({ users, currentUserId, onSaved }: UserManage
               {users.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-slate-400 text-sm">
-                    No users found. Click "Invite User" to add the first team member.
+                    No users found. Click &quot;Invite User&quot; to add the first team member.
                   </td>
                 </tr>
               )}

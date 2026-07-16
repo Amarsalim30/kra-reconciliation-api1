@@ -81,8 +81,9 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
       }
       setSuccess("Company profile saved successfully.");
       onSaved();
-    } catch (err: any) {
-      setError(err.message || "An error occurred.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "An error occurred.");
     } finally {
       setSaving(false);
     }
@@ -91,18 +92,20 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 bg-gradient-to-r from-violet-900 to-violet-700 text-white flex items-center gap-4">
-        {/* Company Avatar */}
-        <div className="w-12 h-12 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-lg shrink-0 backdrop-blur-sm">
-          {initials || <Building2 className="w-6 h-6" />}
-        </div>
-        <div>
-          <h2 className="text-base font-semibold tracking-tight">{name}</h2>
-          <p className="text-xs text-violet-200 mt-0.5">Company Profile &amp; Legal Information</p>
+      <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {/* Company Avatar */}
+          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-lg shrink-0">
+            {initials || <Building2 className="w-5 h-5 text-slate-500" />}
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">{name || "Company Settings"}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Company Profile &amp; Legal Information</p>
+          </div>
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="p-6 space-y-5">
+      <form onSubmit={handleSave} className="p-6 space-y-6">
         {error && (
           <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-3">
             <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
@@ -116,7 +119,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Company Name */}
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -129,7 +132,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Acme Corp Ltd"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600"
+              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
             />
           </div>
 
@@ -145,9 +148,9 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
               onChange={(e) => setKraPin(e.target.value.toUpperCase())}
               placeholder="e.g. P051234567Q"
               maxLength={20}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600"
+              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
             />
-            <span className="text-[11px] text-slate-500">Kenya Revenue Authority PIN for the company.</span>
+            <span className="text-[11px] text-slate-500 block">Kenya Revenue Authority PIN for the company.</span>
           </div>
 
           {/* Currency */}
@@ -159,7 +162,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600 font-medium"
+              className="w-full px-3.5 py-2.25 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-medium"
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -176,7 +179,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600"
+              className="w-full px-3.5 py-2.25 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>{tz}</option>
@@ -193,7 +196,7 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
             <select
               value={fiscalYearStartMonth}
               onChange={(e) => setFiscalYearStartMonth(parseInt(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600"
+              className="w-full px-3.5 py-2.25 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
             >
               {MONTH_NAMES.map((month, idx) => (
                 <option key={idx + 1} value={idx + 1}>{month}</option>
@@ -203,11 +206,11 @@ export function CompanyProfileCard({ company, onSaved }: CompanyProfileCardProps
         </div>
 
         {/* Save */}
-        <div className="pt-4 border-t border-slate-200 flex justify-end">
+        <div className="pt-5 border-t border-slate-200 flex justify-end">
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2 disabled:opacity-60"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2 disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Company Profile

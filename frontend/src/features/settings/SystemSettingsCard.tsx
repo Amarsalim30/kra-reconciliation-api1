@@ -38,7 +38,10 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
 
   useEffect(() => {
     if (settings.kra_parsing_profiles) {
-      setKraParsingProfiles(settings.kra_parsing_profiles);
+      const timer = setTimeout(() => {
+        setKraParsingProfiles(settings.kra_parsing_profiles!);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [settings.kra_parsing_profiles]);
 
@@ -101,8 +104,9 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
 
       setSuccessMessage("Operational reconciliation rules updated successfully!");
       onSaved();
-    } catch (err: any) {
-      setErrorMessage(err.message || "An error occurred while saving system settings.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(msg || "An error occurred while saving system settings.");
     } finally {
       setSaving(false);
     }
@@ -111,22 +115,24 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">
       {/* Header */}
-      <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
-            <Sliders className="w-5 h-5 text-blue-400" />
+          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
+            <Sliders className="w-5 h-5 text-slate-500" />
           </div>
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-white">
-              Operational Reconciliation Rules & Flags
+            <h2 className="text-base font-bold text-slate-900">
+              Operational Reconciliation Rules
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 mt-0.5">
               Configure amount variances, zero-amount handling, missing CU flags, and ingestion filters.
             </p>
           </div>
         </div>
 
-        <span className="text-xs text-slate-400 font-mono">Setting Version v{settings.version}</span>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 font-mono">
+          v{settings.version}
+        </span>
       </div>
 
       <form onSubmit={handleSaveSystemSettings} className="p-6 space-y-6">
@@ -246,16 +252,16 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
           </div>
 
           <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-            <div className="flex bg-slate-50 border-b border-slate-200 overflow-x-auto">
+            <div className="flex bg-slate-50 border-b border-slate-200 overflow-x-auto p-1.5 gap-1">
               {availableSections.map((sec) => (
                 <button
                   key={sec}
                   type="button"
                   onClick={() => setActiveProfileTab(sec)}
-                  className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                  className={`px-4 py-2 text-xs font-bold transition-all rounded-md ${
                     activeProfileTab === sec
-                      ? "border-blue-700 text-blue-700 bg-white"
-                      : "border-transparent text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
+                      : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   {sec}
@@ -275,7 +281,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                         <input
                           type="number"
                           min={0}
-                          value={(kraParsingProfiles.profiles as Record<string, any>)[sec]?.[field] ?? ""}
+                          value={(kraParsingProfiles.profiles as unknown as Record<string, Record<string, number | null>>)[sec]?.[field] ?? ""}
                           onChange={e => handleProfileChange(sec, field, e.target.value)}
                           placeholder="-"
                           className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
@@ -295,7 +301,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
                         <thead>
                           <tr className="bg-slate-200/50">
                             {[0,1,2,3,4,5,6,7].map(col => {
-                              const mappedField = Object.entries((kraParsingProfiles.profiles as Record<string, any>)[sec] || {}).find(([, val]) => val === col);
+                              const mappedField = Object.entries((kraParsingProfiles.profiles as unknown as Record<string, Record<string, number | null>>)[sec] || {}).find(([, val]) => val === col);
                               const fieldName = mappedField ? mappedField[0].replace("_column", "") : `Col ${col}`;
                               return (
                                 <th key={col} className="px-2 py-1 font-semibold text-slate-700 whitespace-nowrap border-b border-slate-200">

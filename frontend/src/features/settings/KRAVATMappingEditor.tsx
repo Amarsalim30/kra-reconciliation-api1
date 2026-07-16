@@ -32,7 +32,7 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
     setMappings(newMappings);
   };
 
-  const handleChange = (index: number, field: keyof KRAVATMappingItem, value: any) => {
+  const handleChange = (index: number, field: keyof KRAVATMappingItem, value: string) => {
     const newMappings = [...mappings];
     newMappings[index] = { ...newMappings[index], [field]: value };
     setMappings(newMappings);
@@ -82,23 +82,24 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
 
       setReason("");
       onSaved();
-    } catch (err: any) {
-      setError(err.message || "An error occurred saving KRA VAT mappings.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "An error occurred saving KRA VAT mappings.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
-      <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
-            <Tag className="w-5 h-5 text-emerald-400" />
+          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
+            <Tag className="w-5 h-5 text-slate-500" />
           </div>
           <div>
-            <h2 className="font-semibold text-lg">KRA Section Mapping</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Map KRA CSV filename prefixes to canonical VAT rates.</p>
+            <h2 className="text-base font-bold text-slate-900">KRA Section Mapping</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Map KRA CSV filename prefixes to canonical VAT rates.</p>
           </div>
         </div>
       </div>
