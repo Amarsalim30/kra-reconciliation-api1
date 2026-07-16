@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useEffect, Fragment } from "react";
+import { createPortal } from "react-dom";
 import { UserRecord, UserCreatePayload, UserUpdatePayload, UserRole, CompanyProfile } from "@/types/company";
 import { fetchWithAuth } from "@/lib/api";
 import {
@@ -75,6 +76,7 @@ interface CreateUserModalProps {
 }
 
 function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -83,6 +85,10 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
   const [companyId, setCompanyId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +122,9 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -229,7 +237,8 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -241,10 +250,15 @@ interface ResetPasswordModalProps {
 }
 
 function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,7 +284,9 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -322,7 +338,8 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

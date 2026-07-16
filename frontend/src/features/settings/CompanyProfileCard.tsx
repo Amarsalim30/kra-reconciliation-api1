@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { CompanyProfile, CompanyCreatePayload, CompanyUpdatePayload } from "@/types/company";
 import { fetchWithAuth } from "@/lib/api";
 import {
@@ -53,6 +54,7 @@ interface CreateCompanyModalProps {
 }
 
 function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
   const [kraPin, setKraPin] = useState("");
   const [currency, setCurrency] = useState("KES");
@@ -60,6 +62,10 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
   const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +98,9 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -199,7 +207,8 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -211,6 +220,7 @@ interface EditCompanyModalProps {
 }
 
 function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [name, setName] = useState(company.name);
   const [kraPin, setKraPin] = useState(company.kra_pin || "");
   const [timezone, setTimezone] = useState(company.timezone);
@@ -218,6 +228,10 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
   const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(company.fiscal_year_start_month);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +264,9 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -353,7 +369,8 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
