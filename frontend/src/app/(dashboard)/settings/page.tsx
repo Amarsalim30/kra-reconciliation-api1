@@ -8,6 +8,7 @@ import { SAPConnectionCard } from "@/features/settings/SAPConnectionCard";
 import { SystemSettingsCard } from "@/features/settings/SystemSettingsCard";
 import { VATMappingEditor } from "@/features/settings/VATMappingEditor";
 import { KRAVATMappingEditor } from "@/features/settings/KRAVATMappingEditor";
+import { KRAParsingProfilesCard } from "@/features/settings/KRAParsingProfilesCard";
 import { CompanyProfileCard } from "@/features/settings/CompanyProfileCard";
 import { UserManagementCard } from "@/features/settings/UserManagementCard";
 import {
@@ -20,6 +21,7 @@ import {
   RefreshCw,
   Building2,
   Users,
+  FileSpreadsheet,
 } from "lucide-react";
 
 type ActiveTab =
@@ -28,6 +30,7 @@ type ActiveTab =
   | "sap-connection"
   | "sap-vat-mappings"
   | "recon-rules"
+  | "kra-section-profiles"
   | "kra-vat-mappings";
 
 interface NavItem {
@@ -155,13 +158,14 @@ export default function SettingsPage() {
       title: "SAP Integration",
       items: [
         { id: "sap-connection", label: "Connection Parameters", icon: <Server className="w-4 h-4" /> },
-        { id: "sap-vat-mappings", label: "VAT Tax Codes", icon: <Tag className="w-4 h-4" /> },
+        { id: "sap-vat-mappings", label: "SAP VAT Codes", icon: <Tag className="w-4 h-4" /> },
       ],
     },
     {
       title: "Reconciliation",
       items: [
         { id: "recon-rules", label: "Rules & Tolerances", icon: <Sliders className="w-4 h-4" /> },
+        { id: "kra-section-profiles", label: "KRA Section Profiles", icon: <FileSpreadsheet className="w-4 h-4" /> },
         { id: "kra-vat-mappings", label: "KRA Section VAT Mappings", icon: <Tag className="w-4 h-4" /> },
       ],
     },
@@ -249,6 +253,13 @@ export default function SettingsPage() {
             <VATMappingEditor
               connectionId={data.sap_connection?.id || 0}
               mappings={data.vat_mappings}
+              onSaved={loadSettings}
+            />
+          )}
+
+          {activeTab === "kra-section-profiles" && (
+            <KRAParsingProfilesCard
+              settings={data.system_settings}
               onSaved={loadSettings}
             />
           )}

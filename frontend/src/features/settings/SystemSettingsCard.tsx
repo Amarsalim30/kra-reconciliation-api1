@@ -31,37 +31,6 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   const [purchaseCuSource, setPurchaseCuSource] = useState<PurchaseCUField>(
     settings.purchase_cu_source
   );
-  
-  const [kraParsingProfiles, setKraParsingProfiles] = useState(
-    settings.kra_parsing_profiles || { schema_version: 1, profiles: {} }
-  );
-
-  useEffect(() => {
-    if (settings.kra_parsing_profiles) {
-      const timer = setTimeout(() => {
-        setKraParsingProfiles(settings.kra_parsing_profiles!);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [settings.kra_parsing_profiles]);
-
-  const [activeProfileTab, setActiveProfileTab] = useState("SEC_B");
-  const availableSections = ["SEC_B", "SEC_F", "SEC_G", "SEC_H", "SEC_I"];
-
-  const handleProfileChange = (section: string, field: string, value: string) => {
-    const numValue = value === "" ? null : parseInt(value, 10);
-    setKraParsingProfiles(prev => ({
-      ...prev,
-      profiles: {
-        ...prev.profiles,
-        [section]: {
-          ...prev.profiles[section],
-          [field]: numValue
-        }
-      }
-    }));
-  };
-
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -82,7 +51,6 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
         base_amount_policy: baseAmountPolicy,
         unmapped_vat_policy: unmappedVatPolicy,
         purchase_cu_source: purchaseCuSource,
-        kra_parsing_profiles: kraParsingProfiles,
         version: settings.version,
       };
 
@@ -129,10 +97,6 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
             </p>
           </div>
         </div>
-
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 font-mono">
-          v{settings.version}
-        </span>
       </div>
 
       <form onSubmit={handleSaveSystemSettings} className="p-6 space-y-6">
@@ -237,95 +201,6 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
               </span>
             </div>
           </div>
-
-        {/* KRA CSV Parsing Profiles */}
-        <div className="space-y-3 pt-3 border-t border-slate-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                KRA CSV Parsing Profiles
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Map the 0-based column index for each KRA section.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-            <div className="flex bg-slate-50 border-b border-slate-200 overflow-x-auto p-1.5 gap-1">
-              {availableSections.map((sec) => (
-                <button
-                  key={sec}
-                  type="button"
-                  onClick={() => setActiveProfileTab(sec)}
-                  className={`px-4 py-2 text-xs font-bold transition-all rounded-md cursor-pointer ${
-                    activeProfileTab === sec
-                      ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  {sec}
-                </button>
-              ))}
-            </div>
-            
-            <div className="p-4 bg-white">
-              {availableSections.map((sec) => (
-                <div key={sec} className={activeProfileTab === sec ? "block" : "hidden"}>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {["pin_column", "partner_name_column", "invoice_number_column", "invoice_date_column", "cu_number_column", "base_amount_column"].map((field) => (
-                      <div key={field} className="space-y-1.5">
-                        <label className="text-xs font-medium text-slate-700 capitalize">
-                          {field.replace(/_/g, " ")}
-                        </label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={(kraParsingProfiles.profiles as unknown as Record<string, Record<string, number | null>>)[sec]?.[field] ?? ""}
-                          onChange={e => handleProfileChange(sec, field, e.target.value)}
-                          placeholder="–"
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-300"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Lightweight Preview */}
-                  <div className="mt-6 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                      <FileCheck className="w-3.5 h-3.5" />
-                      Example Data Mapping (Column 0, 1, 2...)
-                    </p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs font-mono text-slate-500">
-                        <thead>
-                          <tr className="bg-slate-200/50">
-                            {[0,1,2,3,4,5,6,7].map(col => {
-                              const mappedField = Object.entries((kraParsingProfiles.profiles as unknown as Record<string, Record<string, number | null>>)[sec] || {}).find(([, val]) => val === col);
-                              const fieldName = mappedField ? mappedField[0].replace("_column", "") : `Col ${col}`;
-                              return (
-                                <th key={col} className="px-2 py-1 font-semibold text-slate-700 whitespace-nowrap border-b border-slate-200">
-                                  {fieldName}
-                                </th>
-                              );
-                            })}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            {[0,1,2,3,4,5,6,7].map(col => (
-                              <td key={col} className="px-2 py-1.5 whitespace-nowrap text-[11px]">Data...</td>
-                            ))}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
         {/* Action Button */}
         <div className="pt-4 border-t border-slate-200 flex justify-end">

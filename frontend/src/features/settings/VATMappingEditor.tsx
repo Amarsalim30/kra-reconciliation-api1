@@ -187,10 +187,11 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           <button
             type="button"
             onClick={() => setActiveModule("purchases")}
-            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            aria-pressed={activeModule === "purchases"}
+            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${
               activeModule === "purchases"
-                ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
-                : "text-slate-600 hover:text-slate-950"
+                ? "bg-white text-blue-700 shadow-sm border-slate-200"
+                : "text-slate-600 border-transparent hover:text-slate-950"
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
@@ -205,10 +206,11 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
           <button
             type="button"
             onClick={() => setActiveModule("sales")}
-            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            aria-pressed={activeModule === "sales"}
+            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${
               activeModule === "sales"
-                ? "bg-white text-blue-700 shadow-sm border border-slate-200/60"
-                : "text-slate-600 hover:text-slate-950"
+                ? "bg-white text-blue-700 shadow-sm border-slate-200"
+                : "text-slate-600 border-transparent hover:text-slate-950"
             }`}
           >
             <ShoppingCart className="w-3.5 h-3.5" />

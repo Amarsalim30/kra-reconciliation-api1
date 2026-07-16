@@ -113,13 +113,52 @@ export function KRAVATMappingEditor({ mappings: initialMappings, onSaved }: KRAV
       </datalist>
 
       <form onSubmit={handleSave} className="p-6 space-y-6">
-        <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 flex gap-3 text-sm text-blue-800 mb-6">
-          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold mb-1">How VAT Assignment Works</p>
-            <p className="opacity-90">
-              During CSV upload, the system will check if the uploaded filename starts with any of the prefixes below. If a match is found, the entire file will be assigned the corresponding canonical VAT rate, ignoring the VAT Group column.
-            </p>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-slate-800 font-semibold text-xs uppercase tracking-wider">
+            <Info className="w-4 h-4 text-blue-600 shrink-0" />
+            KRA Standard Return Sections & Canonical VAT Rates Reference
+          </div>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            During CSV ingestion, the file prefix maps directly to KRA VAT return schedule rules. Matching filenames automatically enforce canonical VAT rate groups during automated reconciliation:
+          </p>
+
+          <div className="overflow-x-auto rounded-lg border border-slate-200/80 bg-white shadow-xs">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100/80 border-b border-slate-200 font-semibold text-slate-700">
+                <tr>
+                  <th className="px-3 py-2">Expected Filename Pattern</th>
+                  <th className="px-3 py-2">KRA Return Section Name</th>
+                  <th className="px-3 py-2">Canonical Rate Group</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-[11px] text-slate-600">
+                <tr className="hover:bg-slate-50/50">
+                  <td className="px-3 py-2 font-bold text-slate-900">SEC_B_WITH_VAT_PIN1.csv</td>
+                  <td className="px-3 py-2 font-sans font-medium text-slate-800">B – General Rated Supplies (Sales)</td>
+                  <td className="px-3 py-2"><span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">16%</span></td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="px-3 py-2 font-bold text-slate-900">SEC_F_WITH_VAT_PIN1.csv</td>
+                  <td className="px-3 py-2 font-sans font-medium text-slate-800">F – General Rated Purchases (Local)</td>
+                  <td className="px-3 py-2"><span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">16%</span></td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="px-3 py-2 font-bold text-slate-900">SEC_G_WITH_VAT_PIN1.csv</td>
+                  <td className="px-3 py-2 font-sans font-medium text-slate-800">G – Other Rated Purchases</td>
+                  <td className="px-3 py-2"><span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">8% (Petroleum / Fuel)</span></td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="px-3 py-2 font-bold text-slate-900">SEC_H_WITH_VAT_PIN1.csv</td>
+                  <td className="px-3 py-2 font-sans font-medium text-slate-800">H – Zero-Rated Purchases</td>
+                  <td className="px-3 py-2"><span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">0% (Zero-Rated)</span></td>
+                </tr>
+                <tr className="hover:bg-slate-50/50">
+                  <td className="px-3 py-2 font-bold text-slate-900">SEC_I_WITH_VAT_PIN1.csv</td>
+                  <td className="px-3 py-2 font-sans font-medium text-slate-800">I – Exempt Purchases</td>
+                  <td className="px-3 py-2"><span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">EXEMPT (Tax-Free)</span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
