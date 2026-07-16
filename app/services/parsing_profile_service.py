@@ -1,6 +1,5 @@
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
-from app.models.settings import SystemSetting
 from app.schemas.settings import KRAParsingProfileItem, KRAParsingProfilesConfig
 
 class ParsingProfileError(Exception):
@@ -36,10 +35,15 @@ class ParsingProfileService:
     _cached_version: int = 0
 
     @classmethod
-    def get_profiles(cls, db: Session) -> KRAParsingProfilesConfig:
-        """Fetches the parsing profiles from SystemSettings, using an in-memory cache based on the system setting version."""
+    def get_profiles(cls, db: Session, company_id: Optional[int] = None) -> KRAParsingProfilesConfig:
+        """Fetches the parsing profiles from the company's settings, using an in-memory
+        cache based on the setting version. Falls back to defaults when no company is given."""
         from app.services.settings_service import SettingsService
-        setting = SettingsService.get_or_create_system_settings(db)
+
+        if company_id is None:
+            return KRAParsingProfilesConfig(profiles=cls._get_default_profiles())
+
+        setting = SettingsService.get_or_create_company_settings(db, company_id)
 
         # If cache is valid, return it
         if cls._cached_profiles and cls._cached_version == setting.version:
@@ -61,9 +65,9 @@ class ParsingProfileService:
         return cls._cached_profiles
 
     @classmethod
-    def get_required_profile(cls, db: Session, section_prefix: str) -> KRAParsingProfileItem:
+    def get_required_profile(cls, db: Session, section_prefix: str, company_id: Optional[int] = None) -> KRAParsingProfileItem:
         """Looks up the parsing profile for a specific section (e.g., 'SEC_B')."""
-        config = cls.get_profiles(db)
+        config = cls.get_profiles(db, company_id)
         prefix_upper = section_prefix.strip().upper()
         if prefix_upper not in config.profiles:
             raise ParsingProfileError(f"Unknown KRA section '{prefix_upper}'. Configure a parsing profile before importing this file.")
@@ -74,13 +78,16 @@ class ParsingProfileService:
         return dict(DEFAULT_PARSING_PROFILES)
 
     @classmethod
-    def seed_default_profiles(cls, db: Session) -> None:
-        """Idempotently persist the default KRA parsing profiles into system_settings.
+    def seed_default_profiles(cls, db: Session, company_id: Optional[int] = None) -> None:
+        """Idempotently persist the default KRA parsing profiles into the company settings.
 
         Only fills the column when empty; never overwrites operator-customized values.
+        A None company_id is a no-op (no global settings row is maintained).
         """
+        if company_id is None:
+            return
         from app.services.settings_service import SettingsService
-        setting = SettingsService.get_or_create_system_settings(db)
+        setting = SettingsService.get_or_create_company_settings(db, company_id)
         if setting.kra_parsing_profiles:
             return
         config = KRAParsingProfilesConfig(

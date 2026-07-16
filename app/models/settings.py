@@ -1,7 +1,5 @@
 from datetime import datetime, timezone
 from enum import Enum
-from datetime import datetime, timezone
-from enum import Enum
 from typing import Any, Optional
 
 from sqlalchemy import (
@@ -52,10 +50,14 @@ class PurchaseCUField(str, Enum):
     INVOICE_NUMBER = "Reference1"
 
 
-class SAPConnection(Base):
-    __tablename__ = "sap_connections"
+class CompanySAPConnection(Base):
+    """Per-company SAP Service Layer connection. Replaces the legacy global
+    ``sap_connections`` table so every company manages its own SAP tenant."""
+
+    __tablename__ = "company_sap_connections"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False, default="Primary SAP Connection")
     base_url = Column(String(500), nullable=False)
     company_db = Column(String(100), nullable=False)
@@ -73,14 +75,19 @@ class SAPConnection(Base):
     )
     updated_by_id = Column(Integer, nullable=True)
 
+    company = relationship("Company")
     vat_mappings = relationship("VATMapping", back_populates="connection", cascade="all, delete-orphan")
 
 
-class SystemSetting(Base):
-    __tablename__ = "system_settings"
+class CompanySetting(Base):
+    """Per-company operational reconciliation settings. Replaces the legacy
+    global ``system_settings`` table for multi-tenant SaaS isolation."""
+
+    __tablename__ = "company_settings"
 
     id = Column(Integer, primary_key=True, index=True)
-    active_connection_id = Column(Integer, ForeignKey("sap_connections.id", ondelete="SET NULL"), nullable=True)
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    active_connection_id = Column(Integer, ForeignKey("company_sap_connections.id", ondelete="SET NULL"), nullable=True)
 
     amount_tolerance = Column(Numeric(10, 2), nullable=False, default=10.00)
     base_amount_policy = Column(
@@ -117,7 +124,8 @@ class SystemSetting(Base):
     )
     updated_by_id = Column(Integer, nullable=True)
 
-    active_connection = relationship("SAPConnection", foreign_keys=[active_connection_id])
+    company = relationship("Company")
+    active_connection = relationship("CompanySAPConnection", foreign_keys=[active_connection_id])
 
 
 class VATMapping(Base):
@@ -127,7 +135,7 @@ class VATMapping(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    connection_id = Column(Integer, ForeignKey("sap_connections.id", ondelete="CASCADE"), nullable=False)
+    connection_id = Column(Integer, ForeignKey("company_sap_connections.id", ondelete="CASCADE"), nullable=False)
     module = Column(SQLEnum(VatModule, native_enum=False, length=20), nullable=False)
     sap_code = Column(String(50), nullable=False)
     description = Column(String(200), nullable=False, default="")
@@ -142,13 +150,14 @@ class VATMapping(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    connection = relationship("SAPConnection", back_populates="vat_mappings")
+    connection = relationship("CompanySAPConnection", back_populates="vat_mappings")
 
 
 class SettingAuditLog(Base):
     __tablename__ = "setting_audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("company.id", ondelete="CASCADE"), nullable=True, index=True)
     user_id = Column(Integer, nullable=True)
     user_email = Column(String(255), nullable=True)
     action = Column(String(100), nullable=False)

@@ -56,6 +56,8 @@ def fixture_auth_headers(client):
         "email": "sales_tester@example.com",
     }
     client.post("/api/v1/auth/register", json=register_payload)
+    from conftest import seed_test_sap_connection
+    seed_test_sap_connection(client)
 
     login_payload = {
         "username": "sales_tester",

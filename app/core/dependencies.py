@@ -25,7 +25,6 @@ def get_sap_client(request: Request = None) -> SAPClient:
     return get_sap_client._fallback_client
 
 
-
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
@@ -68,12 +67,62 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
 
 
 def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role != "admin":
+    """Platform admin: role 'admin' and not bound to a single company."""
+    if current_user.role != "admin" or current_user.company_id is not None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
+            detail="Platform administrator privileges required",
         )
     return current_user
+
+
+def get_current_company(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> "Company":
+    """Resolve the company a user belongs to. Platform admins without a company
+    are rejected from company-scoped operations (they manage via explicit IDs)."""
+    from app.models.company import Company
+
+    if current_user.company_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account is not associated with a company.",
+        )
+    company = db.query(Company).filter(Company.id == current_user.company_id).first()
+    if company is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Associated company not found.",
+        )
+    return company
+
+
+def require_platform_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Platform admin: manages all companies and users. Must not be tied to a
+    single company so it can operate across tenants."""
+    if current_user.role != "admin" or current_user.company_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform administrator privileges required.",
+        )
+    return current_user
+
+
+def get_company_sap_client(
+    company: "Company" = Depends(get_current_company),
+    db: Session = Depends(get_db),
+) -> SAPClient:
+    """Build an SAPClient configured from the caller's company SAP connection."""
+    from app.services.settings_service import SettingsService
+
+    connection = SettingsService.get_active_connection(db, company.id)
+    if connection is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No SAP connection configured for your company.",
+        )
+    return SAPClient.from_connection(connection)
 
 
 def get_active_session(
@@ -85,7 +134,8 @@ def get_active_session(
 
     session = db.query(ReconciliationSession).filter(
         ReconciliationSession.id == session_id,
-        ReconciliationSession.user_id == current_user.id
+        ReconciliationSession.user_id == current_user.id,
+        ReconciliationSession.company_id == current_user.company_id,
     ).first()
     
     if session is None:

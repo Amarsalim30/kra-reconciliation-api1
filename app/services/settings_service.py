@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.models.settings import (
     BaseAmountPolicy,
-    SAPConnection,
+    CompanySAPConnection,
+    CompanySetting,
     SettingAuditLog,
-    SystemSetting,
     UnmappedVatPolicy,
     PurchaseCUField,
     VATMapping,
@@ -48,73 +48,47 @@ DEFAULT_BUILTIN_VAT_MAPPINGS = [
 ]
 
 
+DEFAULT_KRA_PARSING_PROFILES = {
+    "schema_version": 1,
+    "profiles": {
+        "SEC_B": {"pin_column": 0, "partner_name_column": 1, "invoice_number_column": 2, "invoice_date_column": 3, "cu_number_column": 4, "base_amount_column": 6},
+        "SEC_F": {"pin_column": 1, "partner_name_column": 2, "invoice_number_column": None, "invoice_date_column": 3, "cu_number_column": 4, "base_amount_column": 7},
+        "SEC_G": {"pin_column": 1, "partner_name_column": 2, "invoice_number_column": None, "invoice_date_column": 3, "cu_number_column": 4, "base_amount_column": 7},
+        "SEC_H": {"pin_column": 1, "partner_name_column": 2, "invoice_number_column": None, "invoice_date_column": 3, "cu_number_column": 4, "base_amount_column": 8},
+        "SEC_I": {"pin_column": 1, "partner_name_column": 2, "invoice_number_column": None, "invoice_date_column": 3, "cu_number_column": 4, "base_amount_column": 7},
+    },
+}
+
+
 class SettingsConflictError(Exception):
     """Raised on optimistic locking version mismatch."""
     pass
 
 
 class SettingsService:
+    # ------------------------------------------------------------------ #
+    # Per-company settings retrieval / creation
+    # ------------------------------------------------------------------ #
     @staticmethod
-    def get_or_create_system_settings(db: Session) -> SystemSetting:
-        setting = db.query(SystemSetting).first()
-        if not setting:
-            env_config = get_settings()
-            setting = SystemSetting(
-                id=1,
-                amount_tolerance=env_config.amount_tolerance,
+    def get_or_create_company_settings(db: Session, company_id: int) -> CompanySetting:
+        setting = (
+            db.query(CompanySetting)
+            .filter(CompanySetting.company_id == company_id)
+            .first()
+        )
+        if setting is None:
+            setting = CompanySetting(
+                company_id=company_id,
+                amount_tolerance=Decimal("10.00"),
                 base_amount_policy=BaseAmountPolicy.SKIP,
                 unmapped_vat_policy=UnmappedVatPolicy.NEEDS_REVIEW,
                 ignore_missing_cu=False,
                 include_credit_notes=True,
                 include_debit_notes=True,
                 skip_cancelled=True,
-                purchase_cu_source="U_CUINV",
+                purchase_cu_source=PurchaseCUField.KRA,
                 version=1,
-                kra_parsing_profiles={
-                    "schema_version": 1,
-                    "profiles": {
-                        "SEC_B": {
-                            "pin_column": 0,
-                            "partner_name_column": 1,
-                            "invoice_number_column": 2,
-                            "invoice_date_column": 3,
-                            "cu_number_column": 4,
-                            "base_amount_column": 6,
-                        },
-                        "SEC_F": {
-                            "pin_column": 1,
-                            "partner_name_column": 2,
-                            "invoice_number_column": None,
-                            "invoice_date_column": 3,
-                            "cu_number_column": 4,
-                            "base_amount_column": 7,
-                        },
-                        "SEC_G": {
-                            "pin_column": 1,
-                            "partner_name_column": 2,
-                            "invoice_number_column": None,
-                            "invoice_date_column": 3,
-                            "cu_number_column": 4,
-                            "base_amount_column": 7,
-                        },
-                        "SEC_H": {
-                            "pin_column": 1,
-                            "partner_name_column": 2,
-                            "invoice_number_column": None,
-                            "invoice_date_column": 3,
-                            "cu_number_column": 4,
-                            "base_amount_column": 8,
-                        },
-                        "SEC_I": {
-                            "pin_column": 1,
-                            "partner_name_column": 2,
-                            "invoice_number_column": None,
-                            "invoice_date_column": 3,
-                            "cu_number_column": 4,
-                            "base_amount_column": 7,
-                        },
-                    },
-                },
+                kra_parsing_profiles=DEFAULT_KRA_PARSING_PROFILES,
             )
             db.add(setting)
             db.commit()
@@ -122,14 +96,29 @@ class SettingsService:
         return setting
 
     @staticmethod
-    def get_active_connection(db: Session, system_setting: SystemSetting) -> Optional[SAPConnection]:
-        if system_setting.active_connection_id:
-            conn = db.query(SAPConnection).filter(SAPConnection.id == system_setting.active_connection_id).first()
+    def get_active_connection(db: Session, company_id: int) -> Optional[CompanySAPConnection]:
+        setting = SettingsService.get_or_create_company_settings(db, company_id)
+        if setting.active_connection_id:
+            conn = (
+                db.query(CompanySAPConnection)
+                .filter(CompanySAPConnection.id == setting.active_connection_id)
+                .first()
+            )
             if conn and conn.is_active:
                 return conn
-        # Fall back to any active connection
-        return db.query(SAPConnection).filter(SAPConnection.is_active == True).first()
+        # Fall back to first active connection for the company
+        return (
+            db.query(CompanySAPConnection)
+            .filter(
+                CompanySAPConnection.company_id == company_id,
+                CompanySAPConnection.is_active == True,  # noqa: E712
+            )
+            .first()
+        )
 
+    # ------------------------------------------------------------------ #
+    # Seeding helpers
+    # ------------------------------------------------------------------ #
     @classmethod
     def seed_default_vat_mappings(cls, db: Session, connection_id: int):
         existing_codes = {
@@ -157,28 +146,14 @@ class SettingsService:
 
     @classmethod
     def seed_default_kra_section_profiles(cls, db: Session):
-        """Seed per-section CSV column mappings for the known KRA ETIMS sections.
-
-        Idempotent: existing prefixes are left untouched. Column indexes are
-        verified against real KRA exports; VAT rates are best-guess and should be
-        confirmed by the operator in the UI.
-        """
         defaults = [
-            {"section_prefix": "SEC_B", "canonical_rate": "16",
-             "description": "Sales - standard rated"},
-            {"section_prefix": "SEC_F", "canonical_rate": "16",
-             "description": "Purchases - standard rated"},
-            {"section_prefix": "SEC_G", "canonical_rate": "16",
-             "description": "Purchases - standard rated"},
-            {"section_prefix": "SEC_H", "canonical_rate": "0",
-             "description": "Purchases - zero rated"},
-            {"section_prefix": "SEC_I", "canonical_rate": "8",
-             "description": "Purchases - reduced rated"},
+            {"section_prefix": "SEC_B", "canonical_rate": "16", "description": "Sales - standard rated"},
+            {"section_prefix": "SEC_F", "canonical_rate": "16", "description": "Purchases - standard rated"},
+            {"section_prefix": "SEC_G", "canonical_rate": "16", "description": "Purchases - standard rated"},
+            {"section_prefix": "SEC_H", "canonical_rate": "0", "description": "Purchases - zero rated"},
+            {"section_prefix": "SEC_I", "canonical_rate": "8", "description": "Purchases - reduced rated"},
         ]
-        existing = {
-            m.section_prefix.strip().upper()
-            for m in db.query(KRAVATMapping).all()
-        }
+        existing = {m.section_prefix.strip().upper() for m in db.query(KRAVATMapping).all()}
         to_add = []
         for d in defaults:
             if d["section_prefix"].upper() not in existing:
@@ -187,75 +162,46 @@ class SettingsService:
             db.add_all(to_add)
             db.commit()
 
+    # ------------------------------------------------------------------ #
+    # Composite (read) settings, scoped to a company
+    # ------------------------------------------------------------------ #
     @classmethod
-    def get_composite_settings(cls, db: Session) -> SettingsCompositeResponse:
-        system_setting = cls.get_or_create_system_settings(db)
-        active_conn = cls.get_active_connection(db, system_setting)
+    def get_composite_settings(cls, db: Session, company_id: int) -> SettingsCompositeResponse:
+        setting = cls.get_or_create_company_settings(db, company_id)
+        active_conn = cls.get_active_connection(db, company_id)
 
-        env_fallback = False
         sap_conn_resp: Optional[SAPConnectionResponse] = None
         vat_mappings_items: List[VATMappingItem] = []
 
         if active_conn:
             cls.seed_default_vat_mappings(db, active_conn.id)
-            sap_conn_resp = SAPConnectionResponse(
-                id=active_conn.id,
-                name=active_conn.name,
-                base_url=active_conn.base_url,
-                company_db=active_conn.company_db,
-                username=active_conn.username,
-                password_set=bool(active_conn.password),
-                verify_ssl=active_conn.verify_ssl,
-                is_active=active_conn.is_active,
-                version=active_conn.version,
-                created_at=active_conn.created_at,
-                updated_at=active_conn.updated_at,
-            )
+            sap_conn_resp = cls._connection_to_response(active_conn)
             raw_mappings = db.query(VATMapping).filter(VATMapping.connection_id == active_conn.id).all()
             vat_mappings_items = [VATMappingItem.model_validate(m) for m in raw_mappings]
-        else:
-            # Complete .env fallback
-            env_fallback = True
-            env_cfg = get_settings()
-            if env_cfg.sap_base_url:
-                sap_conn_resp = SAPConnectionResponse(
-                    id=0,
-                    name="Environment SAP (.env)",
-                    base_url=str(env_cfg.sap_base_url).rstrip("/"),
-                    company_db=env_cfg.sap_company_db,
-                    username=env_cfg.sap_username,
-                    password_set=bool(env_cfg.sap_password.get_secret_value()),
-                    verify_ssl=env_cfg.sap_verify_ssl,
-                    is_active=True,
-                    version=1,
-                    created_at=system_setting.updated_at,
-                    updated_at=system_setting.updated_at,
-                )
 
-        # KRA VAT + column mappings (seeded per-section)
         cls.seed_default_kra_section_profiles(db)
         raw_kra_mappings = db.query(KRAVATMapping).all()
         kra_vat_mappings_items = [KRAVATMappingItem.model_validate(m) for m in raw_kra_mappings]
 
-        # Tolerance warning check
         warning = None
-        if system_setting.amount_tolerance > Decimal("1000.00"):
-            warning = f"Warning: Amount tolerance (KES {system_setting.amount_tolerance}) exceeds KES 1,000.00. High variance will auto-match."
+        if setting.amount_tolerance > Decimal("1000.00"):
+            warning = f"Warning: Amount tolerance (KES {setting.amount_tolerance}) exceeds KES 1,000.00. High variance will auto-match."
 
         sys_resp = SystemSettingsResponse(
-            id=system_setting.id,
-            active_connection_id=system_setting.active_connection_id,
-            amount_tolerance=system_setting.amount_tolerance,
-            base_amount_policy=system_setting.base_amount_policy,
-            unmapped_vat_policy=system_setting.unmapped_vat_policy,
-            ignore_missing_cu=system_setting.ignore_missing_cu,
-            include_credit_notes=system_setting.include_credit_notes,
-            include_debit_notes=system_setting.include_debit_notes,
-            skip_cancelled=system_setting.skip_cancelled,
-            purchase_cu_source=system_setting.purchase_cu_source,
-            kra_parsing_profiles=system_setting.kra_parsing_profiles,
-            version=system_setting.version,
-            updated_at=system_setting.updated_at,
+            id=setting.id,
+            company_id=setting.company_id,
+            active_connection_id=setting.active_connection_id,
+            amount_tolerance=setting.amount_tolerance,
+            base_amount_policy=setting.base_amount_policy,
+            unmapped_vat_policy=setting.unmapped_vat_policy,
+            ignore_missing_cu=setting.ignore_missing_cu,
+            include_credit_notes=setting.include_credit_notes,
+            include_debit_notes=setting.include_debit_notes,
+            skip_cancelled=setting.skip_cancelled,
+            purchase_cu_source=setting.purchase_cu_source,
+            kra_parsing_profiles=setting.kra_parsing_profiles,
+            version=setting.version,
+            updated_at=setting.updated_at,
             warning=warning,
         )
 
@@ -264,26 +210,33 @@ class SettingsService:
             system_settings=sys_resp,
             vat_mappings=vat_mappings_items,
             kra_vat_mappings=kra_vat_mappings_items,
-            is_using_env_fallback=env_fallback,
+            is_using_env_fallback=False,
         )
 
+    # ------------------------------------------------------------------ #
+    # SAP connection management (per company)
+    # ------------------------------------------------------------------ #
     @classmethod
     def save_or_update_sap_connection(
-        cls, db: Session, payload: SAPConnectionUpdate, current_user: Optional[User] = None
+        cls,
+        db: Session,
+        company_id: int,
+        payload: SAPConnectionUpdate,
+        current_user: Optional[User] = None,
     ) -> SAPConnectionResponse:
-        system_setting = cls.get_or_create_system_settings(db)
-        active_conn = cls.get_active_connection(db, system_setting)
+        setting = cls.get_or_create_company_settings(db, company_id)
+        active_conn = cls.get_active_connection(db, company_id)
 
-        changes = {}
+        changes: Dict[str, Any] = {}
         user_id = current_user.id if current_user else None
         user_email = current_user.email if current_user else "system"
 
         if not active_conn:
-            # Create first SAP connection
             if not payload.base_url or not payload.company_db or not payload.username or not payload.password:
                 raise ValueError("base_url, company_db, username, and password are required for initial SAP setup.")
 
-            conn = SAPConnection(
+            conn = CompanySAPConnection(
+                company_id=company_id,
                 name=payload.name or "Primary SAP Connection",
                 base_url=payload.base_url,
                 company_db=payload.company_db,
@@ -298,29 +251,16 @@ class SettingsService:
             db.commit()
             db.refresh(conn)
 
-            system_setting.active_connection_id = conn.id
+            setting.active_connection_id = conn.id
             db.commit()
 
             cls.seed_default_vat_mappings(db, conn.id)
 
             changes["connection"] = {"old": None, "new": f"Created SAP connection '{conn.name}' ({conn.base_url})"}
-            cls.record_audit_log(db, user_id, user_email, "create_sap_connection", changes)
+            cls.record_audit_log(db, company_id, user_id, user_email, "create_sap_connection", changes)
 
-            return SAPConnectionResponse(
-                id=conn.id,
-                name=conn.name,
-                base_url=conn.base_url,
-                company_db=conn.company_db,
-                username=conn.username,
-                password_set=True,
-                verify_ssl=conn.verify_ssl,
-                is_active=conn.is_active,
-                version=conn.version,
-                created_at=conn.created_at,
-                updated_at=conn.updated_at,
-            )
+            return cls._connection_to_response(conn)
 
-        # Optimistic locking check
         if active_conn.version != payload.version:
             raise SettingsConflictError(
                 f"Optimistic lock conflict: Connection version is {active_conn.version}, but payload supplied {payload.version}."
@@ -329,23 +269,18 @@ class SettingsService:
         if payload.name is not None and payload.name != active_conn.name:
             changes["name"] = {"old": active_conn.name, "new": payload.name}
             active_conn.name = payload.name
-
         if payload.base_url is not None and payload.base_url != active_conn.base_url:
             changes["base_url"] = {"old": active_conn.base_url, "new": payload.base_url}
             active_conn.base_url = payload.base_url
-
         if payload.company_db is not None and payload.company_db != active_conn.company_db:
             changes["company_db"] = {"old": active_conn.company_db, "new": payload.company_db}
             active_conn.company_db = payload.company_db
-
         if payload.username is not None and payload.username != active_conn.username:
             changes["username"] = {"old": active_conn.username, "new": payload.username}
             active_conn.username = payload.username
-
         if payload.verify_ssl is not None and payload.verify_ssl != active_conn.verify_ssl:
             changes["verify_ssl"] = {"old": active_conn.verify_ssl, "new": payload.verify_ssl}
             active_conn.verify_ssl = payload.verify_ssl
-
         if payload.password:
             changes["password"] = {"old": "••••••••", "new": "•••••••• (Updated)"}
             active_conn.password = payload.password
@@ -355,34 +290,29 @@ class SettingsService:
             active_conn.updated_by_id = user_id
             db.commit()
             db.refresh(active_conn)
-            cls.record_audit_log(db, user_id, user_email, "update_sap_connection", changes)
+            cls.record_audit_log(db, company_id, user_id, user_email, "update_sap_connection", changes)
 
-        return SAPConnectionResponse(
-            id=active_conn.id,
-            name=active_conn.name,
-            base_url=active_conn.base_url,
-            company_db=active_conn.company_db,
-            username=active_conn.username,
-            password_set=bool(active_conn.password),
-            verify_ssl=active_conn.verify_ssl,
-            is_active=active_conn.is_active,
-            version=active_conn.version,
-            created_at=active_conn.created_at,
-            updated_at=active_conn.updated_at,
-        )
+        return cls._connection_to_response(active_conn)
 
+    # ------------------------------------------------------------------ #
+    # System settings management (per company)
+    # ------------------------------------------------------------------ #
     @classmethod
     def update_system_settings(
-        cls, db: Session, payload: SystemSettingsUpdate, current_user: Optional[User] = None
+        cls,
+        db: Session,
+        company_id: int,
+        payload: SystemSettingsUpdate,
+        current_user: Optional[User] = None,
     ) -> SystemSettingsResponse:
-        system_setting = cls.get_or_create_system_settings(db)
+        setting = cls.get_or_create_company_settings(db, company_id)
 
-        if system_setting.version != payload.version:
+        if setting.version != payload.version:
             raise SettingsConflictError(
-                f"Optimistic lock conflict: System settings version is {system_setting.version}, but payload supplied {payload.version}."
+                f"Optimistic lock conflict: System settings version is {setting.version}, but payload supplied {payload.version}."
             )
 
-        changes = {}
+        changes: Dict[str, Any] = {}
         user_id = current_user.id if current_user else None
         user_email = current_user.email if current_user else "system"
 
@@ -402,45 +332,53 @@ class SettingsService:
             new_val = getattr(payload, field_name)
             if hasattr(new_val, "model_dump"):
                 new_val = new_val.model_dump()
-            old_val = getattr(system_setting, field_name)
+            old_val = getattr(setting, field_name)
             if new_val != old_val:
                 changes[field_name] = {"old": str(old_val), "new": str(new_val)}
-                setattr(system_setting, field_name, new_val)
+                setattr(setting, field_name, new_val)
 
         if changes:
-            system_setting.version += 1
-            system_setting.updated_by_id = user_id
+            setting.version += 1
+            setting.updated_by_id = user_id
             db.commit()
-            db.refresh(system_setting)
-            cls.record_audit_log(db, user_id, user_email, "update_system_settings", changes, payload.reason)
+            db.refresh(setting)
+            cls.record_audit_log(db, company_id, user_id, user_email, "update_system_settings", changes, payload.reason)
 
         warning = None
-        if system_setting.amount_tolerance > Decimal("1000.00"):
-            warning = f"Warning: Amount tolerance (KES {system_setting.amount_tolerance}) exceeds KES 1,000.00. High variance will auto-match."
+        if setting.amount_tolerance > Decimal("1000.00"):
+            warning = f"Warning: Amount tolerance (KES {setting.amount_tolerance}) exceeds KES 1,000.00. High variance will auto-match."
 
         return SystemSettingsResponse(
-            id=system_setting.id,
-            active_connection_id=system_setting.active_connection_id,
-            amount_tolerance=system_setting.amount_tolerance,
-            base_amount_policy=system_setting.base_amount_policy,
-            unmapped_vat_policy=system_setting.unmapped_vat_policy,
-            ignore_missing_cu=system_setting.ignore_missing_cu,
-            include_credit_notes=system_setting.include_credit_notes,
-            include_debit_notes=system_setting.include_debit_notes,
-            skip_cancelled=system_setting.skip_cancelled,
-            purchase_cu_source=system_setting.purchase_cu_source,
-            kra_parsing_profiles=system_setting.kra_parsing_profiles,
-            version=system_setting.version,
-            updated_at=system_setting.updated_at,
+            id=setting.id,
+            company_id=setting.company_id,
+            active_connection_id=setting.active_connection_id,
+            amount_tolerance=setting.amount_tolerance,
+            base_amount_policy=setting.base_amount_policy,
+            unmapped_vat_policy=setting.unmapped_vat_policy,
+            ignore_missing_cu=setting.ignore_missing_cu,
+            include_credit_notes=setting.include_credit_notes,
+            include_debit_notes=setting.include_debit_notes,
+            skip_cancelled=setting.skip_cancelled,
+            purchase_cu_source=setting.purchase_cu_source,
+            kra_parsing_profiles=setting.kra_parsing_profiles,
+            version=setting.version,
+            updated_at=setting.updated_at,
             warning=warning,
         )
 
+    # ------------------------------------------------------------------ #
+    # VAT mappings (per company connection)
+    # ------------------------------------------------------------------ #
     @classmethod
     def save_vat_mappings(
-        cls, db: Session, payload: VATMappingsUpdatePayload, current_user: Optional[User] = None
+        cls,
+        db: Session,
+        company_id: int,
+        payload: VATMappingsUpdatePayload,
+        current_user: Optional[User] = None,
     ) -> List[VATMappingItem]:
-        system_setting = cls.get_or_create_system_settings(db)
-        active_conn = cls.get_active_connection(db, system_setting)
+        setting = cls.get_or_create_company_settings(db, company_id)
+        active_conn = cls.get_active_connection(db, company_id)
 
         conn_id = payload.connection_id or (active_conn.id if active_conn else None)
         if not conn_id:
@@ -451,7 +389,7 @@ class SettingsService:
             for m in db.query(VATMapping).filter(VATMapping.connection_id == conn_id).all()
         }
 
-        changes = {}
+        changes: Dict[str, Any] = {}
         user_id = current_user.id if current_user else None
         user_email = current_user.email if current_user else "system"
 
@@ -465,10 +403,7 @@ class SettingsService:
 
             if key in existing_db_mappings:
                 db_item = existing_db_mappings[key]
-                if (
-                    db_item.canonical_rate != item.canonical_rate
-                    or db_item.description != item.description
-                ):
+                if db_item.canonical_rate != item.canonical_rate or db_item.description != item.description:
                     changes[f"{item.module}:{code}"] = {
                         "old": f"{db_item.canonical_rate} ({db_item.description})",
                         "new": f"{item.canonical_rate} ({item.description})",
@@ -491,7 +426,6 @@ class SettingsService:
                     "new": f"{item.canonical_rate} ({item.description})",
                 }
 
-        # Check for deleted custom mappings
         for key, db_item in existing_db_mappings.items():
             if key not in submitted_keys:
                 if db_item.is_builtin:
@@ -504,27 +438,31 @@ class SettingsService:
 
         if changes:
             db.commit()
-            cls.record_audit_log(db, user_id, user_email, "update_vat_mappings", changes, payload.reason)
+            cls.record_audit_log(db, company_id, user_id, user_email, "update_vat_mappings", changes, payload.reason)
 
         updated = db.query(VATMapping).filter(VATMapping.connection_id == conn_id).all()
         return [VATMappingItem.model_validate(m) for m in updated]
 
+    # ------------------------------------------------------------------ #
+    # KRA VAT mappings (global reference data, shared across companies)
+    # ------------------------------------------------------------------ #
     @classmethod
     def save_kra_vat_mappings(
-        cls, db: Session, payload: KRAVATMappingsUpdatePayload, current_user: Optional[User] = None
+        cls,
+        db: Session,
+        payload: KRAVATMappingsUpdatePayload,
+        current_user: Optional[User] = None,
     ) -> List[KRAVATMappingItem]:
         existing_db_mappings = {
             m.section_prefix.strip().upper(): m
             for m in db.query(KRAVATMapping).all()
         }
 
-        changes = {}
+        changes: Dict[str, Any] = {}
         user_id = current_user.id if current_user else None
         user_email = current_user.email if current_user else "system"
 
-        column_fields = [
-            "description",
-        ]
+        column_fields = ["description"]
 
         submitted_keys = set()
         for item in payload.mappings:
@@ -560,7 +498,6 @@ class SettingsService:
                     "new": f"{item.canonical_rate} ({item.description})",
                 }
 
-        # Check for deleted custom mappings
         for prefix, db_item in existing_db_mappings.items():
             if prefix not in submitted_keys:
                 changes[f"KRA_VAT:{db_item.section_prefix}"] = {
@@ -571,34 +508,29 @@ class SettingsService:
 
         if changes:
             db.commit()
-            cls.record_audit_log(db, user_id, user_email, "update_kra_vat_mappings", changes, payload.reason)
+            company_id = current_user.company_id if current_user else None
+            cls.record_audit_log(db, company_id, user_id, user_email, "update_kra_vat_mappings", changes, payload.reason)
 
         updated = db.query(KRAVATMapping).all()
         return [KRAVATMappingItem.model_validate(m) for m in updated]
 
+    # ------------------------------------------------------------------ #
+    # Test connection
+    # ------------------------------------------------------------------ #
     @classmethod
-    def test_sap_connection(cls, db: Session, req: TestConnectionRequest) -> TestConnectionResponse:
-        system_setting = cls.get_or_create_system_settings(db)
-        active_conn = cls.get_active_connection(db, system_setting)
+    def test_sap_connection(
+        cls,
+        db: Session,
+        company_id: int,
+        req: TestConnectionRequest,
+    ) -> TestConnectionResponse:
+        active_conn = cls.get_active_connection(db, company_id)
 
         base_url = (req.base_url or (active_conn.base_url if active_conn else "")).strip().rstrip("/")
         company_db = (req.company_db or (active_conn.company_db if active_conn else "")).strip()
         username = (req.username or (active_conn.username if active_conn else "")).strip()
         password = req.password or (active_conn.password if active_conn else "")
         verify_ssl = req.verify_ssl if req.verify_ssl is not None else (active_conn.verify_ssl if active_conn else True)
-
-        if not base_url or not company_db or not username or not password:
-            # Fallback check on .env
-            env_cfg = get_settings()
-            if not base_url and env_cfg.sap_base_url:
-                base_url = str(env_cfg.sap_base_url).rstrip("/")
-            if not company_db:
-                company_db = env_cfg.sap_company_db
-            if not username:
-                username = env_cfg.sap_username
-            if not password:
-                password = env_cfg.sap_password.get_secret_value()
-            verify_ssl = env_cfg.sap_verify_ssl
 
         steps: Dict[str, StepResult] = {}
         start_time = time.time()
@@ -610,12 +542,10 @@ class SettingsService:
                 error_message="Missing SAP Server Base URL.",
             )
 
-        # Step 1: Host Reachable
         login_url = f"{base_url}/Login"
         client = httpx.Client(verify=verify_ssl, timeout=8.0)
 
         try:
-            # Ping login endpoint
             ping_resp = client.post(
                 login_url,
                 json={"CompanyDB": company_db, "UserName": username, "Password": password},
@@ -632,7 +562,6 @@ class SettingsService:
             steps["host_reachable"] = StepResult(status="fail", message=f"Connection attempt failed: {str(e)}")
             return TestConnectionResponse(connected=False, steps=steps, error_message=str(e))
 
-        # Step 2: Authentication & Company Check
         if ping_resp.status_code != 200:
             err_data = ping_resp.json() if ping_resp.headers.get("content-type", "").startswith("application/json") else {}
             err_msg = err_data.get("error", {}).get("message", {}).get("value", f"HTTP {ping_resp.status_code}")
@@ -642,7 +571,6 @@ class SettingsService:
         steps["authenticated"] = StepResult(status="pass", message=f"Authenticated as user '{username}'.")
         steps["company_valid"] = StepResult(status="pass", message=f"Database '{company_db}' accessible.")
 
-        # Step 3: Diagnostics query
         metadata = {
             "system_version": "SAP Business One Service Layer",
             "company_name": company_db,
@@ -662,9 +590,13 @@ class SettingsService:
 
         return TestConnectionResponse(connected=True, steps=steps, metadata=metadata)
 
+    # ------------------------------------------------------------------ #
+    # Audit log
+    # ------------------------------------------------------------------ #
     @staticmethod
     def record_audit_log(
         db: Session,
+        company_id: Optional[int],
         user_id: Optional[int],
         user_email: Optional[str],
         action: str,
@@ -672,6 +604,7 @@ class SettingsService:
         reason: Optional[str] = None,
     ):
         log = SettingAuditLog(
+            company_id=company_id,
             user_id=user_id,
             user_email=user_email,
             action=action,
@@ -682,5 +615,28 @@ class SettingsService:
         db.commit()
 
     @staticmethod
-    def get_audit_logs(db: Session, limit: int = 50) -> List[SettingAuditLog]:
-        return db.query(SettingAuditLog).order_by(SettingAuditLog.created_at.desc()).limit(limit).all()
+    def get_audit_logs(db: Session, company_id: Optional[int] = None, limit: int = 50) -> List[SettingAuditLog]:
+        query = db.query(SettingAuditLog)
+        if company_id is not None:
+            query = query.filter(SettingAuditLog.company_id == company_id)
+        return query.order_by(SettingAuditLog.created_at.desc()).limit(limit).all()
+
+    # ------------------------------------------------------------------ #
+    # Helpers
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def _connection_to_response(conn: CompanySAPConnection) -> SAPConnectionResponse:
+        return SAPConnectionResponse(
+            id=conn.id,
+            company_id=conn.company_id,
+            name=conn.name,
+            base_url=conn.base_url,
+            company_db=conn.company_db,
+            username=conn.username,
+            password_set=bool(conn.password),
+            verify_ssl=conn.verify_ssl,
+            is_active=conn.is_active,
+            version=conn.version,
+            created_at=conn.created_at,
+            updated_at=conn.updated_at,
+        )

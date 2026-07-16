@@ -7,8 +7,8 @@ from app.models.reconciliation_session import (
     SessionReconciliationResult,
 )
 from app.models.settings import (
-    SAPConnection,
-    SystemSetting,
+    CompanySAPConnection,
+    CompanySetting,
     VATMapping,
     SettingAuditLog,
 )
@@ -20,8 +20,8 @@ __all__ = [
     "ReconciliationSession",
     "SessionInvoice",
     "SessionReconciliationResult",
-    "SAPConnection",
-    "SystemSetting",
+    "CompanySAPConnection",
+    "CompanySetting",
     "VATMapping",
     "SettingAuditLog",
 ]

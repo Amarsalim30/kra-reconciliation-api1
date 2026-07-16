@@ -1,6 +1,49 @@
 import pytest
 from unittest.mock import patch
 
+from app.core.dependencies import get_db
+from app.models.company import Company
+from app.models.settings import CompanySAPConnection
+from app.models.user import User
+
+
+def seed_test_sap_connection(client):
+    """The per-company SAP model requires a CompanySAPConnection row for the
+    test company so get_company_sap_client can build a (mocked) client."""
+    gen = client.app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        company = db.query(Company).order_by(Company.id.asc()).first()
+        if company is None:
+            company = Company(name="Default Company")
+            db.add(company)
+            db.commit()
+            db.refresh(company)
+        existing = (
+            db.query(CompanySAPConnection)
+            .filter(CompanySAPConnection.company_id == company.id)
+            .first()
+        )
+        if existing is None:
+            db.add(
+                CompanySAPConnection(
+                    company_id=company.id,
+                    name="Test SAP",
+                    base_url="https://sap.test/b1s/v1",
+                    company_db="TESTDB",
+                    username="tester",
+                    password="secret",
+                    verify_ssl=False,
+                    is_active=True,
+                )
+            )
+            db.commit()
+    finally:
+        try:
+            next(gen)
+        except StopIteration:
+            pass
+
 
 @pytest.fixture(autouse=True)
 def mock_sap_client(request):

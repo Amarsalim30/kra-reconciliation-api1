@@ -2,7 +2,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, UploadFile
 
 from app.api.v1._session_helpers import load_sap_invoices, upload_kra_csvs
-from app.core.dependencies import get_current_user, get_sap_client, get_db
+from app.core.dependencies import get_company_sap_client, get_current_user, get_db
 from app.core.sap_client import SAPClient
 from app.models.user import User
 from app.schemas.invoice import (
@@ -20,7 +20,7 @@ def get_purchases(
     to_date: date = Query(..., alias="to", description="End date (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_user),
     db=Depends(get_db),
-    sap_client: SAPClient = Depends(get_sap_client),
+    sap_client: SAPClient = Depends(get_company_sap_client),
 ) -> InvoiceFetchResponse:
     """
     Fetch purchase invoices within a given date range from SAP `/PurchaseInvoices`.

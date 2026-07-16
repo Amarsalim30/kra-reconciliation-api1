@@ -14,6 +14,7 @@ from app.schemas.user import (
     UserLogin,
     UserResponse,
 )
+from app.schemas.company import CompanyCreate
 from app.services import auth_service, user_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -62,7 +63,22 @@ def register(body: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered",
         )
-    user = user_service.create_user(db, body)
+    # Self-serve onboarding: a registering user must belong to a company. If no
+    # company is supplied, associate them with the first existing company, or
+    # create a default one. This keeps every user company-scoped for SaaS isolation.
+    company_id = body.company_id
+    if company_id is None:
+        from app.models.company import Company
+        from app.services import company_service
+
+        company = db.query(Company).order_by(Company.id.asc()).first()
+        if company is None:
+            company = company_service.create_company(
+                db, CompanyCreate(name="Default Company")
+            )
+        company_id = company.id
+
+    user = user_service.create_user(db, UserCreate(**{**body.model_dump(), "company_id": company_id}))
     return user
 
 

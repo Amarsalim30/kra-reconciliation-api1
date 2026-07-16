@@ -31,6 +31,8 @@ class User(Base):
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
 
+    company: Mapped["Company | None"] = relationship("Company")
+
 
 # Late import to register model in SQLAlchemy registry without circular dependency
 from app.models.refresh_token import RefreshToken  # noqa: F401

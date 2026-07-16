@@ -6,9 +6,9 @@ from app.models.reconciliation_session import (
 from app.models.refresh_token import RefreshToken
 from app.models.settings import (
     BaseAmountPolicy,
-    SAPConnection,
+    CompanySAPConnection,
+    CompanySetting,
     SettingAuditLog,
-    SystemSetting,
     UnmappedVatPolicy,
     VATMapping,
     VatModule,
@@ -23,8 +23,8 @@ __all__ = [
     "ReconciliationSession",
     "SessionInvoice",
     "SessionReconciliationResult",
-    "SAPConnection",
-    "SystemSetting",
+    "CompanySAPConnection",
+    "CompanySetting",
     "VATMapping",
     "SettingAuditLog",
     "BaseAmountPolicy",

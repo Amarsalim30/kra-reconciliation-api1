@@ -14,8 +14,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize SAP client on app state for dependency injection
-    app.state.sap_client = SAPClient()
+    # SAP connections are now per-company; no global client is maintained.
     # Initialize export strategy registry
     app.state.export_registry = create_default_registry()
     

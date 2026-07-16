@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { UserRecord, UserCreatePayload, UserUpdatePayload, UserRole } from "@/types/company";
+import { useState, Fragment } from "react";
+import { UserRecord, UserCreatePayload, UserUpdatePayload, UserRole, CompanyProfile } from "@/types/company";
 import { fetchWithAuth } from "@/lib/api";
 import {
   Users,
@@ -18,10 +18,14 @@ import {
   ToggleLeft,
   ToggleRight,
   BadgeCheck,
+  Building2,
+  Globe,
+  Search,
 } from "lucide-react";
 
 interface UserManagementCardProps {
   users: UserRecord[];
+  companies?: CompanyProfile[];
   currentUserId: number;
   onSaved: () => void;
 }
@@ -47,7 +51,7 @@ const ROLE_META: Record<UserRole, { label: string; color: string; icon: React.Re
 function RoleBadge({ role }: { role: UserRole }) {
   const meta = ROLE_META[role] || ROLE_META.viewer;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${meta.color}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${meta.color}`}>
       {meta.icon}
       {meta.label}
     </span>
@@ -65,16 +69,18 @@ function formatDate(iso: string | null): string {
 
 // --- Create User Modal ---
 interface CreateUserModalProps {
+  companies: CompanyProfile[];
   onClose: () => void;
   onCreated: () => void;
 }
 
-function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
+function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<UserRole>("checker");
+  const [companyId, setCompanyId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,6 +95,7 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
         email: email || undefined,
         full_name: fullName || undefined,
         role,
+        company_id: companyId ? parseInt(companyId, 10) : undefined,
       };
       const res = await fetchWithAuth("/users", {
         method: "POST",
@@ -111,19 +118,19 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <UserPlus className="w-5 h-5 text-blue-600" />
-            <h3 className="font-bold text-slate-900 text-sm">Create New User</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Create New Team Account</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
         <form onSubmit={handleCreate} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-2">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-2.5">
               <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <div>{error}</div>
             </div>
@@ -137,7 +144,7 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="john.doe"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium placeholder:text-slate-400"
               />
             </div>
             <div className="space-y-1.5 col-span-2">
@@ -147,17 +154,17 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
               />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Email</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Email Address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="john@company.com"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
               />
             </div>
             <div className="space-y-1.5">
@@ -169,33 +176,55 @@ function CreateUserModal({ onClose, onCreated }: CreateUserModalProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 characters"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Role *</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Role Access *</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               >
                 <option value="checker">Checker</option>
                 <option value="viewer">Viewer</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
+            {/* Company Scope Selection */}
+            <div className="space-y-1.5 col-span-2">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                Assigned Company Entity Scope
+              </label>
+              <select
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="">Global Enterprise Scope (All Companies)</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.kra_pin ? `(${c.kra_pin})` : ""}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[11px] text-slate-500 block">
+                Assigning a specific company restricts user activity to that entity only.
+              </span>
+            </div>
           </div>
-          <div className="pt-2 flex justify-end gap-3 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
+          <div className="pt-3 flex justify-end gap-3 border-t border-slate-100">
+            <button type="button" onClick={onClose} className="px-4 py-2.5 text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors cursor-pointer">
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-              Create User
+              Create Account
             </button>
           </div>
         </form>
@@ -243,13 +272,13 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <KeyRound className="w-5 h-5 text-amber-500" />
-            <h3 className="font-bold text-slate-900 text-sm">Reset Password — {user.username}</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Reset Password — @{user.username}</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -259,7 +288,7 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
           )}
           {success && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Password reset successfully.
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Password reset successfully.
             </div>
           )}
           {!success && (
@@ -272,22 +301,22 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Min. 8 characters"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 placeholder:text-slate-400"
               />
             </div>
           )}
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:text-slate-900 text-sm font-medium">
+          <div className="pt-2 flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2.5 text-slate-600 hover:text-slate-900 text-sm font-medium cursor-pointer">
               {success ? "Close" : "Cancel"}
             </button>
             {!success && (
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                Reset
+                Reset Password
               </button>
             )}
           </div>
@@ -300,14 +329,16 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
 // --- Edit User Inline Row ---
 interface EditUserRowProps {
   user: UserRecord;
+  companies: CompanyProfile[];
   onSaved: () => void;
   onCancel: () => void;
 }
 
-function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
+function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
   const [role, setRole] = useState<UserRole>(user.role as UserRole);
   const [email, setEmail] = useState(user.email || "");
   const [fullName, setFullName] = useState(user.full_name || "");
+  const [companyId, setCompanyId] = useState<string>(user.company_id ? String(user.company_id) : "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -315,7 +346,12 @@ function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
     setSaving(true);
     setError(null);
     try {
-      const payload: UserUpdatePayload = { role, email: email || undefined, full_name: fullName || undefined };
+      const payload: UserUpdatePayload = {
+        role,
+        email: email || undefined,
+        full_name: fullName || undefined,
+        company_id: companyId ? parseInt(companyId, 10) : undefined,
+      };
       const res = await fetchWithAuth(`/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -335,19 +371,22 @@ function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
   };
 
   return (
-    <tr className="bg-blue-50/50 border-t border-blue-100">
-      <td className="px-4 py-3" colSpan={5}>
+    <tr className="bg-blue-50/40 border-t border-blue-100">
+      <td className="px-5 py-4" colSpan={6}>
         {error && (
-          <div className="mb-3 p-2 bg-rose-50 border border-rose-200 rounded text-rose-800 text-xs">{error}</div>
+          <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+            <div>{error}</div>
+          </div>
         )}
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-slate-600 uppercase">Full Name</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500"
             />
           </div>
           <div className="space-y-1">
@@ -356,19 +395,34 @@ function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:border-blue-500"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-slate-600 uppercase">Role</label>
+            <label className="text-[10px] font-semibold text-slate-600 uppercase">Role Access</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white text-xs text-slate-800 font-medium cursor-pointer focus:outline-none focus:border-blue-500"
             >
               <option value="checker">Checker</option>
               <option value="viewer">Viewer</option>
               <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-semibold text-slate-600 uppercase">Company Entity Scope</label>
+            <select
+              value={companyId}
+              onChange={(e) => setCompanyId(e.target.value)}
+              className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 bg-white text-xs text-slate-800 font-medium cursor-pointer focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Global Enterprise Scope</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -376,14 +430,14 @@ function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md flex items-center gap-1.5 disabled:opacity-60"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-            Save
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            Save Account
           </button>
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium rounded-md border border-slate-200 hover:bg-slate-50"
+            className="px-3 py-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -393,12 +447,33 @@ function EditUserRow({ user, onSaved, onCancel }: EditUserRowProps) {
   );
 }
 
-// --- Main Component ---
-export function UserManagementCard({ users, currentUserId, onSaved }: UserManagementCardProps) {
+// --- Main User Management Workspace Component ---
+export function UserManagementCard({ users, companies = [], currentUserId, onSaved }: UserManagementCardProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+
+  const companyMap = new Map<number, CompanyProfile>();
+  companies.forEach((c) => companyMap.set(c.id, c));
+
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesCompany =
+      selectedCompanyFilter === "all"
+        ? true
+        : selectedCompanyFilter === "global"
+          ? !u.company_id
+          : u.company_id === parseInt(selectedCompanyFilter, 10);
+
+    return matchesSearch && matchesCompany;
+  });
 
   const handleToggleActive = async (user: UserRecord) => {
     if (user.id === currentUserId) return;
@@ -411,7 +486,7 @@ export function UserManagementCard({ users, currentUserId, onSaved }: UserManage
       });
       onSaved();
     } catch {
-      // silently fail; list will stay stale until next refresh
+      // stay silent on network error; parent refresh handles update
     } finally {
       setTogglingId(null);
     }
@@ -423,6 +498,7 @@ export function UserManagementCard({ users, currentUserId, onSaved }: UserManage
     <>
       {showCreateModal && (
         <CreateUserModal
+          companies={companies}
           onClose={() => setShowCreateModal(false)}
           onCreated={onSaved}
         />
@@ -435,154 +511,202 @@ export function UserManagementCard({ users, currentUserId, onSaved }: UserManage
         />
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+        {/* Workspace Header */}
+        <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
-              <Users className="w-5 h-5 text-slate-500" />
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 shrink-0">
+              <Users className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Team Members</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {users.length} user{users.length !== 1 ? "s" : ""} · Manage roles and access levels
-              </p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900">Multi-Company Team Access</h2>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  {users.length} Active User{users.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Manage member credentials, role scopes, and multi-entity access rights</p>
             </div>
           </div>
+
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
-            Invite User
+            <UserPlus className="w-4 h-4" /> Invite Team Member
           </button>
         </div>
 
-        {/* Role Legend */}
-        <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-4 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Roles:</span>
-          {(Object.entries(ROLE_META) as [UserRole, typeof ROLE_META[UserRole]][]).map(([role, meta]) => (
-            <span key={role} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${meta.color}`}>
-              {meta.icon} {meta.label}
-            </span>
-          ))}
-          <span className="text-[11px] text-slate-400 ml-auto">
-            Admin: full access · Checker: reconciliation · Viewer: read-only
-          </span>
+        {/* Search & Company Filter Controls Bar */}
+        <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search users by name, username, or email..."
+              className="w-full pl-10 pr-4 py-2 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <Building2 className="w-4 h-4 text-slate-400 shrink-0 hidden sm:block" />
+            <select
+              value={selectedCompanyFilter}
+              onChange={(e) => setSelectedCompanyFilter(e.target.value)}
+              className="w-full sm:w-56 px-3 py-2 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-medium cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            >
+              <option value="all">All Entity Scopes ({users.length})</option>
+              <option value="global">Global Enterprise Scope</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Table */}
+        {/* Directory Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">User</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Last Login</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">User Account</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Role Access</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Company Scope</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Last Activity</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {users.map((user) => (
-                <>
-                  <tr
-                    key={user.id}
-                    className={`hover:bg-slate-50/70 transition-colors ${!user.is_active ? "opacity-60" : ""}`}
-                  >
-                    {/* User */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                          user.role === "admin"
-                            ? "bg-violet-100 text-violet-800"
-                            : user.role === "checker"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}>
-                          {(user.full_name || user.username)[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
-                            {user.full_name || user.username}
-                            {user.id === currentUserId && (
-                              <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">You</span>
-                            )}
+              {filteredUsers.map((user) => {
+                const assignedCompany = user.company_id ? companyMap.get(user.company_id) : null;
+
+                return (
+                  <Fragment key={user.id}>
+                    <tr
+                      className={`hover:bg-slate-50/70 transition-colors ${!user.is_active ? "opacity-60" : ""}`}
+                    >
+                      {/* User Column */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${user.role === "admin"
+                                ? "bg-violet-100 text-violet-800"
+                                : user.role === "checker"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                          >
+                            {(user.full_name || user.username)[0].toUpperCase()}
                           </div>
-                          <div className="text-xs text-slate-500">@{user.username} {user.email ? `· ${user.email}` : ""}</div>
+                          <div>
+                            <div className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
+                              {user.full_name || user.username}
+                              {user.id === currentUserId && (
+                                <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 font-mono">
+                              @{user.username} {user.email ? `· ${user.email}` : ""}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Role */}
-                    <td className="px-4 py-3">
-                      <RoleBadge role={user.role as UserRole} />
-                    </td>
+                      {/* Role Column */}
+                      <td className="px-5 py-3.5">
+                        <RoleBadge role={user.role as UserRole} />
+                      </td>
 
-                    {/* Status Toggle */}
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggleActive(user)}
-                        disabled={user.id === currentUserId || togglingId === user.id}
-                        title={user.id === currentUserId ? "You cannot deactivate your own account" : undefined}
-                        className="flex items-center gap-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
-                      >
-                        {togglingId === user.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-                        ) : user.is_active ? (
-                          <ToggleRight className="w-5 h-5 text-emerald-500" />
+                      {/* Company Scope Column */}
+                      <td className="px-5 py-3.5">
+                        {assignedCompany ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                            <Building2 className="w-3 h-3 text-blue-600 shrink-0" />
+                            {assignedCompany.name}
+                          </span>
                         ) : (
-                          <ToggleLeft className="w-5 h-5 text-slate-400" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                            <Globe className="w-3 h-3 text-slate-500 shrink-0" />
+                            All
+                          </span>
                         )}
-                        <span className={user.is_active ? "text-emerald-700" : "text-slate-500"}>
-                          {user.is_active ? "Active" : "Inactive"}
-                        </span>
-                      </button>
-                    </td>
+                      </td>
 
-                    {/* Last Login */}
-                    <td className="px-4 py-3 text-xs text-slate-500">
-                      {formatDate(user.last_login_at)}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
+                      {/* Status Column */}
+                      <td className="px-5 py-3.5">
                         <button
-                          onClick={() => setEditingId(editingId === user.id ? null : user.id)}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
-                          title="Edit user"
+                          onClick={() => handleToggleActive(user)}
+                          disabled={user.id === currentUserId || togglingId === user.id}
+                          title={user.id === currentUserId ? "You cannot deactivate your own account" : undefined}
+                          className="flex items-center gap-1.5 text-xs font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
                         >
-                          {editingId === user.id ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                          {togglingId === user.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                          ) : user.is_active ? (
+                            <ToggleRight className="w-5 h-5 text-emerald-500" />
+                          ) : (
+                            <ToggleLeft className="w-5 h-5 text-slate-400" />
+                          )}
+                          <span className={user.is_active ? "text-emerald-700 font-medium" : "text-slate-500"}>
+                            {user.is_active ? "Active" : "Inactive"}
+                          </span>
                         </button>
-                        <button
-                          onClick={() => setResetUserId(user.id)}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
-                          title="Reset password"
-                        >
-                          <KeyRound className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
 
-                  {/* Inline Edit Row */}
-                  {editingId === user.id && (
-                    <EditUserRow
-                      key={`edit-${user.id}`}
-                      user={user}
-                      onSaved={() => { setEditingId(null); onSaved(); }}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  )}
-                </>
-              ))}
+                      {/* Last Login Column */}
+                      <td className="px-5 py-3.5 text-xs text-slate-500">
+                        {formatDate(user.last_login_at)}
+                      </td>
 
-              {users.length === 0 && (
+                      {/* Actions Column */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingId(editingId === user.id ? null : user.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            title="Edit account scope and role"
+                          >
+                            {editingId === user.id ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => setResetUserId(user.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                            title="Reset password"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Inline Edit Row */}
+                    {editingId === user.id && (
+                      <EditUserRow
+                        key={`edit-${user.id}`}
+                        user={user}
+                        companies={companies}
+                        onSaved={() => {
+                          setEditingId(null);
+                          onSaved();
+                        }}
+                        onCancel={() => setEditingId(null)}
+                      />
+                    )}
+                  </Fragment>
+                );
+              })}
+
+              {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-slate-400 text-sm">
-                    No users found. Click &quot;Invite User&quot; to add the first team member.
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 text-sm">
+                    No team accounts found matching your filter criteria.
                   </td>
                 </tr>
               )}

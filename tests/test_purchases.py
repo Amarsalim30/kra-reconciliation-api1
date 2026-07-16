@@ -54,6 +54,8 @@ def fixture_auth_headers(client):
         "email": "purchases_tester@example.com",
     }
     client.post("/api/v1/auth/register", json=register_payload)
+    from conftest import seed_test_sap_connection
+    seed_test_sap_connection(client)
 
     login_payload = {
         "username": "purchases_tester",
@@ -119,6 +121,7 @@ def test_upload_purchases_success(client: TestClient, auth_headers, db_session):
     # Create active purchases session
     session = ReconciliationSession(
         user_id=1,
+        company_id=1,
         from_date=date(2026, 3, 1),
         to_date=date(2026, 3, 30),
         session_type=ReconciliationType.PURCHASES,
@@ -158,6 +161,7 @@ def test_upload_purchases_cross_session_validation_error(client: TestClient, aut
     # Create active SALES session
     session = ReconciliationSession(
         user_id=1,
+        company_id=1,
         from_date=date(2026, 3, 1),
         to_date=date(2026, 3, 30),
         session_type=ReconciliationType.SALES,
@@ -183,6 +187,7 @@ def test_upload_purchases_cross_session_validation_error(client: TestClient, aut
     # Try uploading to sales/upload using a purchases session
     purchases_session = ReconciliationSession(
         user_id=1,
+        company_id=1,
         from_date=date(2026, 3, 1),
         to_date=date(2026, 3, 30),
         session_type=ReconciliationType.PURCHASES,

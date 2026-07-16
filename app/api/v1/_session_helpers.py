@@ -52,6 +52,7 @@ def load_sap_invoices(
     db.commit()
 
     session = ReconciliationSession(
+        company_id=current_user.company_id,
         user_id=current_user.id,
         from_date=from_date,
         to_date=to_date,
@@ -61,7 +62,7 @@ def load_sap_invoices(
     db.add(session)
     db.commit()
 
-    system_setting = SettingsService.get_or_create_system_settings(db)
+    system_setting = SettingsService.get_or_create_company_settings(db, current_user.company_id)
     invoices = invoice_service.get_invoices(
         from_date,
         to_date,
@@ -100,7 +101,7 @@ def upload_kra_csvs(
             detail=f"Active session type is not for {reconciliation_type.value.capitalize()} reconciliation.",
         )
 
-    all_invoices, file_statuses = kra_service.parse_multiple_kra_csvs(files, db)
+    all_invoices, file_statuses = kra_service.parse_multiple_kra_csvs(files, db, company_id=current_user.company_id)
 
     if all_invoices:
         db.query(SessionInvoice).filter(

@@ -23,19 +23,36 @@ class SAPClient:
         ReconciliationType.PURCHASES: "PurchaseInvoices"
     }
 
-    def __init__(self):
-        settings = get_settings()
-        self.base_url = str(settings.sap_base_url).rstrip("/") if settings.sap_base_url else ""
-        self.username = settings.sap_username
-        self.password = settings.sap_password.get_secret_value() if settings.sap_password else ""
-        self.company_db = settings.sap_company_db
-        self.verify_ssl = settings.sap_verify_ssl
+    def __init__(
+        self,
+        base_url: str = "",
+        username: str = "",
+        password: str = "",
+        company_db: str = "",
+        verify_ssl: bool = True,
+    ):
+        self.base_url = str(base_url).rstrip("/") if base_url else ""
+        self.username = username
+        self.password = password
+        self.company_db = company_db
+        self.verify_ssl = verify_ssl
 
         # Initialize httpx Client
         self.client = httpx.Client(verify=self.verify_ssl, timeout=30.0)
         self.session_id = None
         self.cookies = {}
         self.session_expiry = None
+
+    @classmethod
+    def from_connection(cls, connection) -> "SAPClient":
+        """Build a client from a per-company SAP connection record."""
+        return cls(
+            base_url=connection.base_url,
+            username=connection.username,
+            password=connection.password,
+            company_db=connection.company_db,
+            verify_ssl=connection.verify_ssl,
+        )
 
     def login(self) -> None:
         """

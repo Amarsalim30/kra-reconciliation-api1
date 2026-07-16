@@ -43,8 +43,11 @@ def get_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
-def list_users(db: Session) -> list[User]:
-    return db.query(User).order_by(User.created_at.asc()).all()
+def list_users(db: Session, company_id: int | None = None) -> list[User]:
+    query = db.query(User)
+    if company_id is not None:
+        query = query.filter(User.company_id == company_id)
+    return query.order_by(User.created_at.asc()).all()
 
 
 def update_user(db: Session, user_id: int, payload: UserUpdate) -> Optional[User]:

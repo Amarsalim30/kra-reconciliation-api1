@@ -45,6 +45,7 @@ class SAPConnectionUpdate(BaseModel):
 
 class SAPConnectionResponse(SAPConnectionBase):
     id: int
+    company_id: int
     password_set: bool = True
     is_active: bool
     version: int
@@ -74,6 +75,7 @@ class SystemSettingsUpdate(SystemSettingsBase):
 
 class SystemSettingsResponse(SystemSettingsBase):
     id: int
+    company_id: int
     active_connection_id: Optional[int] = None
     version: int
     updated_at: datetime

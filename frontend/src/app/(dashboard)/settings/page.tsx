@@ -267,6 +267,7 @@ export default function SettingsPage() {
           {activeTab === "users" && isAdmin && (
             <UserManagementCard
               users={users}
+              companies={companies}
               currentUserId={currentUserId ?? 0}
               onSaved={handleCompanySaved}
             />

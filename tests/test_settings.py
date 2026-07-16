@@ -19,7 +19,12 @@ def fixture_db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
-        # Seed test user
+        # Seed a default company and a company-scoped test user.
+        from app.models.company import Company
+        company = Company(name="Default Company")
+        db.add(company)
+        db.commit()
+        db.refresh(company)
         user = User(
             username="admin_tester",
             email="admin@example.com",
@@ -58,7 +63,7 @@ def test_get_and_update_settings(client: TestClient, db_session):
     headers = {"Authorization": f"Bearer {token}"}
 
     # 1. GET settings
-    response = client.get("/api/v1/settings", headers=headers)
+    response = client.get("/api/v1/settings?company_id=1", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "system_settings" in data
@@ -77,7 +82,7 @@ def test_get_and_update_settings(client: TestClient, db_session):
         "version": sys_settings["version"],
         "reason": "Test tolerance update to 15.50",
     }
-    update_res = client.put("/api/v1/settings/system-settings", json=sys_update_payload, headers=headers)
+    update_res = client.put("/api/v1/settings/system-settings?company_id=1", json=sys_update_payload, headers=headers)
     assert update_res.status_code == 200
     updated_sys = update_res.json()
     assert updated_sys["amount_tolerance"] == "15.50"
@@ -94,14 +99,14 @@ def test_get_and_update_settings(client: TestClient, db_session):
         "verify_ssl": False,
         "version": 1,
     }
-    sap_res = client.put("/api/v1/settings/sap-connection", json=sap_payload, headers=headers)
+    sap_res = client.put("/api/v1/settings/sap-connection?company_id=1", json=sap_payload, headers=headers)
     assert sap_res.status_code == 200
     updated_sap = sap_res.json()
     assert updated_sap["company_db"] == "TEST_DB_KE"
     assert updated_sap["password_set"] is True
 
     # 4. Save VAT Mappings
-    curr_settings = client.get("/api/v1/settings", headers=headers).json()
+    curr_settings = client.get("/api/v1/settings?company_id=1", headers=headers).json()
     existing_mappings = curr_settings.get("vat_mappings", [])
     
     updated_mappings_list = list(existing_mappings)
@@ -119,13 +124,13 @@ def test_get_and_update_settings(client: TestClient, db_session):
         "reason": "Add custom VAT mapping",
         "mappings": updated_mappings_list,
     }
-    vat_res = client.put("/api/v1/settings/vat-mappings", json=vat_payload, headers=headers)
+    vat_res = client.put("/api/v1/settings/vat-mappings?company_id=1", json=vat_payload, headers=headers)
     assert vat_res.status_code == 200
     vat_data = vat_res.json()
     assert len(vat_data) == len(existing_mappings) + 1
 
     # 5. Check Audit Logs
-    audit_res = client.get("/api/v1/settings/audit-logs", headers=headers)
+    audit_res = client.get("/api/v1/settings/audit-logs?company_id=1", headers=headers)
     assert audit_res.status_code == 200
     logs = audit_res.json()
     assert len(logs) >= 3

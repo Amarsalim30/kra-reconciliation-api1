@@ -23,7 +23,7 @@ def _kw_in_cell(keyword: str, cell: str) -> bool:
     return keyword in _cell_lower(cell)
 
 
-def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
+def parse_kra_csv(file: UploadFile, db: Session, company_id: int | None = None) -> InvoiceUploadResponse:
     """
     Parses a KRA CSV file, performs schema and type normalization,
     and returns a response detailing successful parses and aggregated validation errors.
@@ -102,7 +102,7 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
 
     from app.services.parsing_profile_service import ParsingProfileService, ParsingProfileError
     try:
-        profile = ParsingProfileService.get_required_profile(db, section_prefix)
+        profile = ParsingProfileService.get_required_profile(db, section_prefix, company_id=company_id)
     except ParsingProfileError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -227,13 +227,13 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
 
 
 def parse_multiple_kra_csvs(
-    files: list[UploadFile], db: Session
+    files: list[UploadFile], db: Session, company_id: int | None = None
 ) -> tuple[list[Invoice], list[FileUploadStatus]]:
     """Parse multiple KRA CSV uploads, returning the combined invoices and per-file status."""
     all_invoices: list[Invoice] = []
     file_statuses: list[FileUploadStatus] = []
     for file in files:
-        upload_res = parse_kra_csv(file, db)
+        upload_res = parse_kra_csv(file, db, company_id=company_id)
         all_invoices.extend(upload_res.invoices)
         file_statuses.append(
             FileUploadStatus(

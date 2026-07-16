@@ -73,6 +73,8 @@ def fixture_auth_headers(client):
         "email": "export_tester@example.com",
     }
     client.post("/api/v1/auth/register", json=register_payload)
+    from conftest import seed_test_sap_connection
+    seed_test_sap_connection(client)
 
     login_payload = {
         "username": "export_tester",
@@ -388,6 +390,7 @@ def test_export_empty_session(client, auth_headers, db_session):
 
     session = ReconSession(
         user_id=user.id,
+        company_id=1,
         from_date=date(2026, 3, 1),
         to_date=date(2026, 3, 31),
         is_compared=True,
@@ -421,6 +424,7 @@ def test_export_large_dataset_correctness(client, auth_headers, db_session):
     # Create a session
     session = ReconciliationSession(
         user_id=1,
+        company_id=1,
         from_date=date(2026, 3, 1),
         to_date=date(2026, 3, 31),
         is_compared=True,
@@ -532,6 +536,7 @@ def test_export_missing_summary_handling(client, auth_headers, db_session):
     # Create session marked as compared, but comparison_results is empty/missing summary
     session = ReconciliationSession(
         user_id=user.id,
+        company_id=1,
         from_date=date(2026, 3, 1),
         to_date=date(2026, 3, 31),
         is_compared=True,

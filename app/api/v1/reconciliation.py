@@ -89,7 +89,11 @@ def compare_session_invoices(
 
     # 4. Run reconciliation match algorithm inside single database transaction context
     try:
-        summary, results = reconciliation_service.reconcile_invoices(sap_invoices, kra_invoices)
+        from app.services.settings_service import SettingsService
+        company_setting = SettingsService.get_or_create_company_settings(db, current_user.company_id)
+        summary, results = reconciliation_service.reconcile_invoices(
+            sap_invoices, kra_invoices, amount_tolerance=company_setting.amount_tolerance
+        )
         
         # Clear any stale results for this session (if run again somehow)
         db.query(SessionReconciliationResult).filter(
