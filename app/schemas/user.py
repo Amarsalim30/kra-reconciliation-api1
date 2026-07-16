@@ -10,6 +10,7 @@ class UserCreate(BaseModel):
     email: str | None = Field(default=None, description="Email address")
     full_name: str | None = Field(default=None, description="Display name")
     role: str = Field(default="checker", description="User role: admin, checker, or viewer")
+    company_id: int | None = Field(default=None, description="Associated company ID")
 
 
 class UserUpdate(BaseModel):
@@ -17,6 +18,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+    company_id: Optional[int] = None
 
 
 class UserPasswordReset(BaseModel):
@@ -34,6 +36,7 @@ class UserResponse(BaseModel):
     email: str | None = None
     full_name: str | None = None
     role: str
+    company_id: int | None = None
     is_active: bool
     last_login_at: datetime | None = None
     created_at: datetime

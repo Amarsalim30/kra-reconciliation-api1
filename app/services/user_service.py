@@ -17,6 +17,7 @@ def create_user(db: Session, user_in: UserCreate) -> User:
         full_name=user_in.full_name,
         password_hash=hash_password(user_in.password),
         role=user_in.role,
+        company_id=user_in.company_id,
     )
     db.add(user)
     db.commit()
@@ -58,6 +59,8 @@ def update_user(db: Session, user_id: int, payload: UserUpdate) -> Optional[User
         if payload.role not in ALLOWED_ROLES:
             raise ValueError(f"Invalid role '{payload.role}'. Allowed: {sorted(ALLOWED_ROLES)}")
         user.role = payload.role
+    if payload.company_id is not None:
+        user.company_id = payload.company_id
     if payload.is_active is not None:
         user.is_active = payload.is_active
     db.commit()

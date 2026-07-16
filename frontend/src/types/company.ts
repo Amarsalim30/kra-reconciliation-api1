@@ -6,6 +6,7 @@ export interface UserRecord {
   email: string | null;
   full_name: string | null;
   role: UserRole;
+  company_id?: number | null;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -18,12 +19,14 @@ export interface UserCreatePayload {
   email?: string;
   full_name?: string;
   role: UserRole;
+  company_id?: number | null;
 }
 
 export interface UserUpdatePayload {
   email?: string;
   full_name?: string;
   role?: UserRole;
+  company_id?: number | null;
   is_active?: boolean;
 }
 
@@ -40,6 +43,14 @@ export interface CompanyProfile {
   fiscal_year_start_month: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface CompanyCreatePayload {
+  name: string;
+  kra_pin?: string;
+  timezone?: string;
+  currency?: string;
+  fiscal_year_start_month?: number;
 }
 
 export interface CompanyUpdatePayload {

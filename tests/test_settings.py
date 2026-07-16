@@ -129,3 +129,52 @@ def test_get_and_update_settings(client: TestClient, db_session):
     assert audit_res.status_code == 200
     logs = audit_res.json()
     assert len(logs) >= 3
+
+
+def test_multi_company_management(client: TestClient, db_session):
+    login_res = client.post("/api/v1/auth/login", json={"username": "admin_tester", "password": "securepass123"})
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. List all companies (should include initial primary company ID 1)
+    res = client.get("/api/v1/company/all", headers=headers)
+    assert res.status_code == 200
+    companies = res.json()
+    assert len(companies) >= 1
+    assert companies[0]["id"] == 1
+
+    # 2. Create a new company
+    new_company_payload = {
+        "name": "Safari Logistics Ltd",
+        "kra_pin": "P059998887Z",
+        "currency": "KES",
+        "timezone": "Africa/Nairobi",
+        "fiscal_year_start_month": 1,
+    }
+    create_res = client.post("/api/v1/company", json=new_company_payload, headers=headers)
+    assert create_res.status_code == 201
+    created = create_res.json()
+    assert created["name"] == "Safari Logistics Ltd"
+    assert created["kra_pin"] == "P059998887Z"
+    new_id = created["id"]
+
+    # 3. List all again
+    res2 = client.get("/api/v1/company/all", headers=headers)
+    assert res2.status_code == 200
+    all_companies = res2.json()
+    assert len(all_companies) == len(companies) + 1
+
+    # 4. Update the created company
+    update_res = client.put(f"/api/v1/company/{new_id}", json={"name": "Safari Logistics KE Ltd"}, headers=headers)
+    assert update_res.status_code == 200
+    assert update_res.json()["name"] == "Safari Logistics KE Ltd"
+
+    # 5. Prevent deleting primary company (ID 1)
+    del_primary = client.delete("/api/v1/company/1", headers=headers)
+    assert del_primary.status_code == 400
+
+    # 6. Delete created company
+    del_res = client.delete(f"/api/v1/company/{new_id}", headers=headers)
+    assert del_res.status_code == 204
+

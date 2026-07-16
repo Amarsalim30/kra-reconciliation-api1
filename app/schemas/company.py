@@ -4,6 +4,16 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class CompanyCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200, description="Company legal name")
+    kra_pin: Optional[str] = Field(default=None, max_length=50, description="Company KRA PIN e.g. P051234567Q")
+    timezone: str = Field(default="Africa/Nairobi", max_length=50, description="IANA timezone e.g. Africa/Nairobi")
+    currency: str = Field(default="KES", max_length=10, description="ISO currency code e.g. KES")
+    fiscal_year_start_month: int = Field(
+        default=1, ge=1, le=12, description="Month (1-12) when the fiscal year starts"
+    )
+
+
 class CompanyUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=200, description="Company legal name")
     kra_pin: Optional[str] = Field(default=None, max_length=50, description="Company KRA PIN e.g. P051234567Q")

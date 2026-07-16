@@ -49,7 +49,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("sap-connection");
 
   // Company & Users state
-  const [company, setCompany] = useState<CompanyProfile | null>(null);
+  const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>("checker");
@@ -82,10 +82,10 @@ export default function SettingsPage() {
   const loadCompanyData = useCallback(async () => {
     try {
       const [companyRes, usersRes] = await Promise.all([
-        fetchWithAuth("/company"),
+        fetchWithAuth("/company/all"),
         fetchWithAuth("/users"),
       ]);
-      if (companyRes.ok) setCompany(await companyRes.json());
+      if (companyRes.ok) setCompanies(await companyRes.json());
       if (usersRes.ok) setUsers(await usersRes.json());
     } catch {
       // non-critical — tab will show loading state
@@ -147,7 +147,7 @@ export default function SettingsPage() {
     {
       title: "Organization & Access",
       items: [
-        { id: "company-profile", label: "Company Profile", icon: <Building2 className="w-4 h-4" />, adminOnly: true },
+        { id: "company-profile", label: "Multi-Company Management", icon: <Building2 className="w-4 h-4" />, adminOnly: true },
         { id: "users", label: "User Management", icon: <Users className="w-4 h-4" />, adminOnly: true },
       ],
     },
@@ -261,14 +261,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "company-profile" && isAdmin && (
-            company ? (
-              <CompanyProfileCard company={company} onSaved={handleCompanySaved} />
-            ) : (
-              <div className="bg-white border border-slate-200 rounded-xl p-12 flex items-center justify-center gap-3 text-slate-400 shadow-sm">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm font-medium">Loading company profile...</span>
-              </div>
-            )
+            <CompanyProfileCard companies={companies} onSaved={handleCompanySaved} />
           )}
 
           {activeTab === "users" && isAdmin && (
