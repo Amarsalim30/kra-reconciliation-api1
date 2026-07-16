@@ -11,7 +11,12 @@ from app.database.base import Base
 from app.database.database import get_db
 from app.main import app
 
+import os
+
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+if os.path.exists("./test.db"):
+    os.remove("./test.db")
+
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
@@ -51,7 +56,7 @@ def test_auth_flow():
 
     # 2. Login with form data (OAuth2PasswordRequestForm)
     response = client.post(
-        "/api/v1/auth/login",
+        "/api/v1/auth/token",
         data={"username": "testuser", "password": "strongpassword123"},
     )
     print("Login response status:", response.status_code)
