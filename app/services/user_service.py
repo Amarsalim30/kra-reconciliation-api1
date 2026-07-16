@@ -1,14 +1,20 @@
+from datetime import datetime, timezone
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password, verify_password
 from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
+
+ALLOWED_ROLES = {"admin", "checker", "viewer"}
 
 
 def create_user(db: Session, user_in: UserCreate) -> User:
     user = User(
         username=user_in.username,
         email=user_in.email,
+        full_name=user_in.full_name,
         password_hash=hash_password(user_in.password),
         role=user_in.role,
     )
@@ -22,6 +28,9 @@ def authenticate_user(db: Session, username: str, password: str) -> User | None:
     user = db.query(User).filter(User.username == username).first()
     if user is None or not verify_password(password, user.password_hash):
         return None
+    # Track last login
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
     return user
 
 
@@ -31,3 +40,36 @@ def get_by_username(db: Session, username: str) -> User | None:
 
 def get_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
+
+
+def list_users(db: Session) -> list[User]:
+    return db.query(User).order_by(User.created_at.asc()).all()
+
+
+def update_user(db: Session, user_id: int, payload: UserUpdate) -> Optional[User]:
+    user = get_by_id(db, user_id)
+    if user is None:
+        return None
+    if payload.email is not None:
+        user.email = payload.email
+    if payload.full_name is not None:
+        user.full_name = payload.full_name
+    if payload.role is not None:
+        if payload.role not in ALLOWED_ROLES:
+            raise ValueError(f"Invalid role '{payload.role}'. Allowed: {sorted(ALLOWED_ROLES)}")
+        user.role = payload.role
+    if payload.is_active is not None:
+        user.is_active = payload.is_active
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def reset_password(db: Session, user_id: int, new_password: str) -> Optional[User]:
+    user = get_by_id(db, user_id)
+    if user is None:
+        return None
+    user.password_hash = hash_password(new_password)
+    db.commit()
+    db.refresh(user)
+    return user

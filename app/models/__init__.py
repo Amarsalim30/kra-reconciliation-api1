@@ -13,9 +13,11 @@ from app.models.settings import (
     VATMapping,
     VatModule,
 )
+from app.models.company import Company
 from app.models.user import User
 
 __all__ = [
+    "Company",
     "User",
     "RefreshToken",
     "ReconciliationSession",
