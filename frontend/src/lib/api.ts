@@ -36,7 +36,10 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     headers,
   });
 
-  if (response.status === 401 || response.status === 403) {
+  // Only a 401 means the auth session is actually invalid/expired. Other
+  // 4xx (e.g. 403 "no company", 404 "no SAP connection") are domain errors
+  // and must NOT log the user out — the caller surfaces them instead.
+  if (response.status === 401) {
     removeToken();
     if (typeof window !== "undefined" && window.location.pathname !== "/login") {
       window.location.href = "/login";

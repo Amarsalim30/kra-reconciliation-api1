@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ToastProvider";
 import { usePagination } from "@/hooks/usePagination";
 import { Invoice, ReconciliationResult, ReconciliationSummary } from "../types";
 import {
@@ -13,6 +15,8 @@ import { AsyncStatus, WorkspaceUIState } from "./types";
 import { getWorkflowStep, getSessionStatus, isReadyToCompare, getMetrics } from "./selectors";
 
 export function useWorkspace(type: "sales" | "purchases") {
+  const router = useRouter();
+  const { notify } = useToast();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [fileStatuses, setFileStatuses] = useState<FileUploadStatus[]>([]);
@@ -86,6 +90,23 @@ export function useWorkspace(type: "sales" | "purchases") {
       setUiState(prev => ({ ...prev, sap: { status: AsyncStatus.Loaded } }));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred loading SAP data.";
+
+      // A company without a configured SAP connection (or a user with no
+      // company) cannot reach SAP. Surface this and send the user to Settings
+      // instead of bouncing them to the login screen.
+      const upper = errorMessage.toUpperCase();
+      if (
+        upper.includes("NO SAP CONNECTION CONFIGURED") ||
+        upper.includes("NOT ASSOCIATED WITH A COMPANY")
+      ) {
+        notify(
+          "No SAP connection is configured for your company. Add one in Settings to fetch data.",
+          "error"
+        );
+        router.push("/settings");
+        return;
+      }
+
       setUiState(prev => ({ ...prev, sap: { status: AsyncStatus.Error, error: errorMessage } }));
     }
   };

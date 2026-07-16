@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { VATMappingItem, VatModule } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import {
@@ -19,13 +19,18 @@ import {
 interface VATMappingEditorProps {
   connectionId: number | null;
   mappings: VATMappingItem[];
+  selectedCompanyId?: number | null;
   onSaved: () => void;
 }
 
-export function VATMappingEditor({ connectionId, mappings: initialMappings, onSaved }: VATMappingEditorProps) {
+export function VATMappingEditor({ connectionId, mappings: initialMappings, selectedCompanyId, onSaved }: VATMappingEditorProps) {
   const [mappings, setMappings] = useState<VATMappingItem[]>(initialMappings);
   const [activeModule, setActiveModule] = useState<VatModule>("purchases");
   const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    setMappings(initialMappings);
+  }, [initialMappings]);
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -117,7 +122,8 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
         })),
       };
 
-      const res = await fetchWithAuth("/settings/vat-mappings", {
+      const url = `/settings/vat-mappings${selectedCompanyId ? `?company_id=${selectedCompanyId}` : ""}`;
+      const res = await fetchWithAuth(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

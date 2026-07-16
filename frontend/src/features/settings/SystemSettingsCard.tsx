@@ -17,10 +17,11 @@ import {
 
 interface SystemSettingsCardProps {
   settings: SystemSettings;
+  selectedCompanyId?: number | null;
   onSaved: () => void;
 }
 
-export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProps) {
+export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: SystemSettingsCardProps) {
   const [amountTolerance, setAmountTolerance] = useState(settings.amount_tolerance);
   const [baseAmountPolicy, setBaseAmountPolicy] = useState<BaseAmountPolicy>(
     settings.base_amount_policy
@@ -31,6 +32,13 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   const [purchaseCuSource, setPurchaseCuSource] = useState<PurchaseCUField>(
     settings.purchase_cu_source
   );
+
+  useEffect(() => {
+    setAmountTolerance(settings.amount_tolerance);
+    setBaseAmountPolicy(settings.base_amount_policy);
+    setUnmappedVatPolicy(settings.unmapped_vat_policy);
+    setPurchaseCuSource(settings.purchase_cu_source);
+  }, [settings]);
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,7 +62,8 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
         version: settings.version,
       };
 
-      const res = await fetchWithAuth("/settings/system-settings", {
+      const url = `/settings/system-settings${selectedCompanyId ? `?company_id=${selectedCompanyId}` : ""}`;
+      const res = await fetchWithAuth(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

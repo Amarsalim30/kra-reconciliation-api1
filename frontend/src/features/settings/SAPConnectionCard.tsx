@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SAPConnection, TestConnectionResponse } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
 import {
@@ -22,20 +22,36 @@ import {
 
 interface SAPConnectionCardProps {
   connection: SAPConnection | null;
+  selectedCompanyId?: number | null;
+  companyName?: string;
   onSaved: () => void;
 }
 
 export function SAPConnectionCard({
   connection,
+  selectedCompanyId,
+  companyName,
   onSaved,
 }: SAPConnectionCardProps) {
-  const [name, setName] = useState(connection?.name || "SAP Service layer");
+  const [name, setName] = useState(connection?.name || "Primary SAP Connection");
   const [baseUrl, setBaseUrl] = useState(connection?.base_url || "");
   const [companyDb, setCompanyDb] = useState(connection?.company_db || "");
   const [username, setUsername] = useState(connection?.username || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [verifySsl, setVerifySsl] = useState(connection?.verify_ssl ?? true);
+
+  useEffect(() => {
+    setName(connection?.name || "Primary SAP Connection");
+    setBaseUrl(connection?.base_url || "");
+    setCompanyDb(connection?.company_db || "");
+    setUsername(connection?.username || "");
+    setPassword("");
+    setVerifySsl(connection?.verify_ssl ?? true);
+    setTestResult(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  }, [connection]);
 
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -48,7 +64,8 @@ export function SAPConnectionCard({
     setTestResult(null);
     setErrorMessage(null);
     try {
-      const res = await fetchWithAuth("/settings/test-sap", {
+      const url = `/settings/test-sap${selectedCompanyId ? `?company_id=${selectedCompanyId}` : ""}`;
+      const res = await fetchWithAuth(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -88,7 +105,8 @@ export function SAPConnectionCard({
         payload.password = password;
       }
 
-      const res = await fetchWithAuth("/settings/sap-connection", {
+      const url = `/settings/sap-connection${selectedCompanyId ? `?company_id=${selectedCompanyId}` : ""}`;
+      const res = await fetchWithAuth(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -128,22 +146,32 @@ export function SAPConnectionCard({
               SAP Business One Connection
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Configure Service Layer connection string and credentials.
+              Service Layer parameters & credentials{companyName ? ` for ${companyName}` : ""}
             </p>
           </div>
         </div>
 
-        {connection && (
-          <div className="text-right">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {connection.password_set ? "Credentials Configured" : "Unauthenticated"}
-            </span>
-          </div>
+        {connection ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Connected
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Unconfigured
+          </span>
         )}
       </div>
 
       <form onSubmit={handleSaveConnection} className="p-6 space-y-6">
+        {!connection && (
+          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center gap-2.5 font-medium">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+            <div>
+              No SAP connection currently exists for {companyName || "this company"}. Enter parameters below to establish integration.
+            </div>
+          </div>
+        )}
+
         {errorMessage && (
           <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-3">
             <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />

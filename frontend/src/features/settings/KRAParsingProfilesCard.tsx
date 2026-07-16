@@ -14,6 +14,7 @@ import {
 
 interface KRAParsingProfilesCardProps {
   settings: SystemSettings;
+  selectedCompanyId?: number | null;
   onSaved: () => void;
 }
 
@@ -37,7 +38,7 @@ const KRA_DEFAULT_COLUMNS: Record<string, number> = {
 
 const availableSections = ["SEC_B", "SEC_F", "SEC_G", "SEC_H", "SEC_I"];
 
-export function KRAParsingProfilesCard({ settings, onSaved }: KRAParsingProfilesCardProps) {
+export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }: KRAParsingProfilesCardProps) {
   const [kraParsingProfiles, setKraParsingProfiles] = useState<KRAParsingProfilesConfig>(
     settings.kra_parsing_profiles || { schema_version: 1, profiles: {} }
   );
@@ -95,7 +96,8 @@ export function KRAParsingProfilesCard({ settings, onSaved }: KRAParsingProfiles
         version: settings.version,
       };
 
-      const res = await fetchWithAuth("/settings/system-settings", {
+      const url = `/settings/system-settings${selectedCompanyId ? `?company_id=${selectedCompanyId}` : ""}`;
+      const res = await fetchWithAuth(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

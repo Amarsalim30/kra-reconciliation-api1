@@ -22,6 +22,7 @@ import {
   Building2,
   Users,
   FileSpreadsheet,
+  ChevronDown,
 } from "lucide-react";
 
 type ActiveTab =
@@ -51,29 +52,23 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("sap-connection");
 
-  // Company & Users state
+  // Multi-Company & Users state
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>("checker");
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
-  const loadSettings = useCallback(async () => {
+  const loadSettingsForCompany = useCallback(async (targetCompanyId?: number | null) => {
     setLoading(true);
     setError(null);
     try {
-      const [settingsRes, meRes] = await Promise.all([
-        fetchWithAuth("/settings"),
-        fetchWithAuth("/auth/me"),
-      ]);
-      if (!settingsRes.ok) throw new Error("Failed to load enterprise settings parameters.");
-      const compositeData: SettingsComposite = await settingsRes.json();
+      const queryParam = targetCompanyId ? `?company_id=${targetCompanyId}` : "";
+      const res = await fetchWithAuth(`/settings${queryParam}`);
+      if (!res.ok) throw new Error("Failed to load enterprise settings parameters.");
+      const compositeData: SettingsComposite = await res.json();
       setData(compositeData);
-
-      if (meRes.ok) {
-        const me = await meRes.json();
-        setCurrentUserId(me.id);
-        setCurrentUserRole(me.role);
-      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg || "Failed to retrieve configuration settings.");
@@ -81,6 +76,66 @@ export default function SettingsPage() {
       setLoading(false);
     }
   }, []);
+
+  // Initial Bootstrap: fetch User profile & Companies list
+  useEffect(() => {
+    let isMounted = true;
+    async function init() {
+      try {
+        const [meRes, companyRes] = await Promise.all([
+          fetchWithAuth("/auth/me"),
+          fetchWithAuth("/company/all"),
+        ]);
+
+        let userCompId: number | null = null;
+        let userRole = "checker";
+        let isAdminFlag = false;
+
+        if (meRes.ok) {
+          const me = await meRes.json();
+          if (isMounted) {
+            setCurrentUserId(me.id);
+            setCurrentUserRole(me.role);
+            userRole = me.role;
+            userCompId = me.company_id ?? null;
+            isAdminFlag = me.company_id === null;
+            setIsPlatformAdmin(isAdminFlag);
+          }
+        }
+
+        let fetchedCompanies: CompanyProfile[] = [];
+        if (companyRes.ok) {
+          fetchedCompanies = await companyRes.json();
+          if (isMounted) setCompanies(fetchedCompanies);
+        }
+
+        // Determine target company id
+        let initialTargetId = userCompId;
+        if (isAdminFlag && fetchedCompanies.length > 0) {
+          initialTargetId = fetchedCompanies[0].id;
+        }
+
+        if (isMounted) {
+          setSelectedCompanyId(initialTargetId);
+          loadSettingsForCompany(initialTargetId);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError("Failed to initialize enterprise settings workspace.");
+          setLoading(false);
+        }
+      }
+    }
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, [loadSettingsForCompany]);
+
+  const handleCompanySelectChange = (newCompId: number) => {
+    setSelectedCompanyId(newCompId);
+    loadSettingsForCompany(newCompId);
+  };
 
   const loadCompanyData = useCallback(async () => {
     try {
@@ -95,14 +150,7 @@ export default function SettingsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadSettings();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [loadSettings]);
-
-  // Load company/users data when tab becomes active or after admin actions
+  // Reload company list when company tab is opened or company updated
   useEffect(() => {
     if (activeTab === "company-profile" || activeTab === "users") {
       const timer = setTimeout(() => {
@@ -114,7 +162,14 @@ export default function SettingsPage() {
 
   const handleCompanySaved = useCallback(() => {
     loadCompanyData();
-  }, [loadCompanyData]);
+    if (selectedCompanyId) {
+      loadSettingsForCompany(selectedCompanyId);
+    }
+  }, [loadCompanyData, selectedCompanyId, loadSettingsForCompany]);
+
+  const handleSettingsSaved = useCallback(() => {
+    loadSettingsForCompany(selectedCompanyId);
+  }, [loadSettingsForCompany, selectedCompanyId]);
 
   if (loading && !data) {
     return (
@@ -134,8 +189,8 @@ export default function SettingsPage() {
         </div>
         <p className="text-sm">{error || "Unable to reach settings endpoint."}</p>
         <button
-          onClick={loadSettings}
-          className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors flex items-center gap-2"
+          onClick={() => loadSettingsForCompany(selectedCompanyId)}
+          className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors flex items-center gap-2 cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
           Retry Connection
@@ -144,7 +199,8 @@ export default function SettingsPage() {
     );
   }
 
-  const isAdmin = currentUserRole === "admin";
+  const isAdmin = currentUserRole === "admin" || isPlatformAdmin;
+  const currentSelectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
   const sections: NavSection[] = [
     {
@@ -180,7 +236,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex-1 max-w-7xl mx-auto w-full space-y-6 pb-12 px-4 md:px-6">
-      {/* Top Title Bar */}
+      {/* Header with Company Scope Switcher */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
@@ -191,6 +247,32 @@ export default function SettingsPage() {
             SAP infrastructure · Reconciliation rules · KRA mappings · Team access
           </p>
         </div>
+
+        {/* Target Entity Switcher for Admins */}
+        {isPlatformAdmin && companies.length > 0 && (
+          <div className="flex items-center gap-2.5 bg-white border border-slate-200 p-2 rounded-xl shadow-xs">
+            <div className="p-1.5 bg-slate-100 rounded-lg">
+              <Building2 className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Company Context</span>
+              <div className="relative">
+                <select
+                  value={selectedCompanyId ?? ""}
+                  onChange={(e) => handleCompanySelectChange(Number(e.target.value))}
+                  className="bg-transparent text-xs font-semibold text-slate-800 pr-6 py-0.5 appearance-none focus:outline-none cursor-pointer"
+                >
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.kra_pin || "No PIN"})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -238,36 +320,41 @@ export default function SettingsPage() {
           {activeTab === "sap-connection" && (
             <SAPConnectionCard
               connection={data.sap_connection}
-              onSaved={loadSettings}
+              selectedCompanyId={selectedCompanyId}
+              companyName={currentSelectedCompany?.name}
+              onSaved={handleSettingsSaved}
             />
           )}
 
           {activeTab === "recon-rules" && (
             <SystemSettingsCard
               settings={data.system_settings}
-              onSaved={loadSettings}
+              selectedCompanyId={selectedCompanyId}
+              onSaved={handleSettingsSaved}
             />
           )}
 
           {activeTab === "sap-vat-mappings" && (
             <VATMappingEditor
-              connectionId={data.sap_connection?.id || 0}
+              connectionId={data.sap_connection?.id || null}
               mappings={data.vat_mappings}
-              onSaved={loadSettings}
+              selectedCompanyId={selectedCompanyId}
+              onSaved={handleSettingsSaved}
             />
           )}
 
           {activeTab === "kra-section-profiles" && (
             <KRAParsingProfilesCard
               settings={data.system_settings}
-              onSaved={loadSettings}
+              selectedCompanyId={selectedCompanyId}
+              onSaved={handleSettingsSaved}
             />
           )}
 
           {activeTab === "kra-vat-mappings" && (
             <KRAVATMappingEditor
               mappings={data.kra_vat_mappings}
-              onSaved={loadSettings}
+              onSaved={handleSettingsSaved}
             />
           )}
 
@@ -288,4 +375,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
