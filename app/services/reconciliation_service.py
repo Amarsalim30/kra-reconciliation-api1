@@ -136,8 +136,8 @@ def reconcile_invoices(
                     amount_match=False,
                     vat_match=False,
                     date_match=True,
-                    partner_name_matches=check_partner_name_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
-                    pin_matches=check_pin_matches(record.original_invoice if is_sap else None, record.original_invoice if not is_sap else None),
+                    partner_name_matches=False,
+                    pin_matches=False,
                     differences=[
                         Difference(
                             field=DifferenceField.BASE_AMOUNT,
@@ -306,7 +306,7 @@ def reconcile_invoices(
             vat_match=False,
             date_match=True,
             partner_name_matches=False,
-            pin_matches=True,
+            pin_matches=False,
             differences=[],
             sap_source_index=sap_idx,
             kra_source_index=None
@@ -322,7 +322,7 @@ def reconcile_invoices(
             vat_match=False,
             date_match=True,
             partner_name_matches=False,
-            pin_matches=True,
+            pin_matches=False,
             differences=[],
             sap_source_index=None,
             kra_source_index=kra_idx

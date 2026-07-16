@@ -2,12 +2,14 @@ export enum AsyncStatus {
   Idle = "Idle",
   Loading = "Loading",
   Loaded = "Loaded",
-  Error = "Error"
+  Error = "Error",
+  Empty = "Empty"
 }
 
 export type AsyncState = {
   status: AsyncStatus;
   error?: string;
+  emptyReason?: "SAP" | "KRA";
 };
 
 export type WorkspaceUIState = {

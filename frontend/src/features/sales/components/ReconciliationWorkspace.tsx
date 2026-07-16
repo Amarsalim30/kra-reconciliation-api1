@@ -93,6 +93,8 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
                type={type}
                summary={summary}
                resultsPagination={resultsPagination}
+               comparisonStatus={uiState.comparison.status}
+               emptyReason={uiState.comparison.emptyReason}
                onBack={() => setNavState("workspace")}
              />
           ) : (

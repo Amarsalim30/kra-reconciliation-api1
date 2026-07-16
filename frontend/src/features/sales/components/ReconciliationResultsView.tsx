@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import { ReconciliationResult, ReconciliationSummary } from "../types";
 import { ResultsTable } from "./ResultsTable";
-import { Download, ArrowLeft, AlertTriangle } from "lucide-react";
+import { Download, ArrowLeft, AlertTriangle, Inbox } from "lucide-react";
 import { exportReconciliationZip } from "../api/exportApi";
+import { AsyncStatus } from "../workspace/types";
 
 interface ReconciliationResultsViewProps {
   sessionId: string;
@@ -17,6 +18,8 @@ interface ReconciliationResultsViewProps {
     isInitialLoading: boolean;
     loadNextPage: () => void;
   };
+  comparisonStatus?: AsyncStatus;
+  emptyReason?: "SAP" | "KRA";
   onBack: () => void;
 }
 
@@ -25,6 +28,8 @@ export function ReconciliationResultsView({
   type, 
   summary, 
   resultsPagination, 
+  comparisonStatus,
+  emptyReason,
   onBack 
 }: ReconciliationResultsViewProps) {
   const [exporting, setExporting] = useState(false);
@@ -95,15 +100,41 @@ export function ReconciliationResultsView({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-1">
-        <ResultsTable 
-          results={resultsPagination.items} 
-          summary={summary} 
-          hasMore={resultsPagination.hasMore}
-          isLoadingMore={resultsPagination.isLoadingMore || resultsPagination.isInitialLoading}
-          onLoadMore={resultsPagination.loadNextPage}
-        />
-      </div>
+      {comparisonStatus === AsyncStatus.Empty ? (
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-10 text-center">
+          <div className="flex flex-col items-center gap-3 text-slate-500">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <Inbox className="w-6 h-6 text-slate-400" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-700">
+              {emptyReason === "SAP"
+                ? "No SAP invoices to compare"
+                : "No KRA invoices to compare"}
+            </h3>
+            <p className="text-sm max-w-md">
+              {emptyReason === "SAP"
+                ? "No SAP invoices were loaded for the selected date range. Load SAP data first, then upload the matching KRA CSV before comparing."
+                : "No KRA CSV has been uploaded for this session. Upload the KRA CSV file, then run the comparison again."}
+            </p>
+            <button
+              onClick={onBack}
+              className="mt-2 text-blue-600 hover:text-blue-800 font-medium text-sm"
+            >
+              Return to Workspace
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-1">
+          <ResultsTable 
+            results={resultsPagination.items} 
+            summary={summary} 
+            hasMore={resultsPagination.hasMore}
+            isLoadingMore={resultsPagination.isLoadingMore || resultsPagination.isInitialLoading}
+            onLoadMore={resultsPagination.loadNextPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

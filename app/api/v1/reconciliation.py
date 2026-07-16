@@ -74,7 +74,13 @@ def compare_session_invoices(
         for i in invoices if i.source == InvoiceSource.KRA
     ]
 
-    # Validate that KRA upload has occurred
+    # Validate that both sides have data before comparing
+    if not sap_invoices:
+         raise HTTPException(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail="SAP invoice load is required before starting reconciliation comparison."
+         )
+
     if not kra_invoices:
          raise HTTPException(
              status_code=status.HTTP_400_BAD_REQUEST,
