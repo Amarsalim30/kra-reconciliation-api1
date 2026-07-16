@@ -5,6 +5,7 @@ import { WorkflowStep, AsyncStatus, WorkspaceUIState } from "../workspace/types"
 import { DataTable, Column } from "@/components/DataTable";
 import { Invoice } from "../types";
 import { downloadTemplate } from "../api/exportApi";
+import { FileUploadStatus } from "../api/reconciliation";
 import { 
   Database, 
   FileSpreadsheet, 

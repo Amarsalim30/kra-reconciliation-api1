@@ -18,6 +18,14 @@ async def lifespan(app: FastAPI):
     app.state.sap_client = SAPClient()
     # Initialize export strategy registry
     app.state.export_registry = create_default_registry()
+    
+    # Validate parsing profiles on startup (Fail fast) and seed defaults if empty
+    from app.database.database import SessionLocal
+    from app.services.parsing_profile_service import ParsingProfileService
+    with SessionLocal() as db:
+        ParsingProfileService.seed_default_profiles(db)
+        ParsingProfileService.get_profiles(db)
+        
     yield
 
 

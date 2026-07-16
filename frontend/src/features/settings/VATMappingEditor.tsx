@@ -333,10 +333,10 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, onSa
         {/* Action Button */}
         <div className="pt-4 border-t border-slate-200 flex justify-end">
           <button
-            type="button"
+            type="submit"
             onClick={handleSaveMappings}
             disabled={saving}
-            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Tax Mappings

@@ -14,20 +14,19 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  AlertTriangle,
   Loader2,
   Save,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 interface SAPConnectionCardProps {
   connection: SAPConnection | null;
-  isEnvFallback: boolean;
   onSaved: () => void;
 }
 
 export function SAPConnectionCard({
   connection,
-  isEnvFallback,
   onSaved,
 }: SAPConnectionCardProps) {
   const [name, setName] = useState(connection?.name || "Primary SAP Connection");
@@ -35,6 +34,7 @@ export function SAPConnectionCard({
   const [companyDb, setCompanyDb] = useState(connection?.company_db || "");
   const [username, setUsername] = useState(connection?.username || "");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [verifySsl, setVerifySsl] = useState(connection?.verify_ssl ?? true);
 
   const [saving, setSaving] = useState(false);
@@ -123,22 +123,16 @@ export function SAPConnectionCard({
           </div>
           <div>
             <h2 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
-              SAP Business One Infrastructure Connection
-              {isEnvFallback && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-normal border border-amber-500/30">
-                  Fallback Active (.env)
-                </span>
-              )}
+              SAP Business One Connection
             </h2>
             <p className="text-xs text-slate-400">
-              Configure Service Layer connection string, database, and credential parameters.
+              Configure Service Layer connection string and credentials.
             </p>
           </div>
         </div>
 
         {connection && (
           <div className="text-right">
-            <span className="text-xs text-slate-400 block">Version v{connection.version}</span>
             <span className="text-[11px] text-emerald-400 font-mono font-medium">
               {connection.password_set ? "Credentials Configured" : "Unauthenticated"}
             </span>
@@ -164,7 +158,7 @@ export function SAPConnectionCard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              Connection Identifier Name
+              Connection Name
             </label>
             <input
               type="text"
@@ -225,21 +219,29 @@ export function SAPConnectionCard({
             <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-slate-500" />
-                Password Credential
+                Password
               </span>
-              {connection?.password_set && (
-                <span className="text-[11px] text-slate-500 normal-case font-normal">
-                  Password configured. Leave empty to maintain existing key.
-                </span>
-              )}
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={connection?.password_set ? "•••••••• (Unchanged)" : "Enter Service Layer Password"}
-              className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={connection?.password_set ? "•••••••• (Unchanged)" : "Enter Service Layer Password"}
+                className="w-full pl-3.5 pr-10 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="md:col-span-2 pt-2 flex items-center justify-between border-t border-slate-100">
@@ -286,7 +288,7 @@ export function SAPConnectionCard({
             ) : (
               <Save className="w-4 h-4" />
             )}
-            Save Infrastructure Settings
+            Save Configuration
           </button>
         </div>
       </form>

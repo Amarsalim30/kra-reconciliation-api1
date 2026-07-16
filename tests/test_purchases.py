@@ -22,6 +22,9 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def fixture_db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
+    from app.models.settings import KRAVATMapping, VatRateCategory
+    db.add(KRAVATMapping(section_prefix="SEC_F", canonical_value=VatRateCategory.VAT_16))
+    db.commit()
     try:
         yield db
     finally:
@@ -125,14 +128,14 @@ def test_upload_purchases_success(client: TestClient, auth_headers, db_session):
     db_session.commit()
 
     csv_content = (
-        "Supplier PIN,Supplier Name,Invoice Number,Invoice Date,CU Number,VAT Group,Line Total\n"
-        "SUPP-PIN-1,Supplier A,5001,10/03/2026,CU-PURCH-1,A16,2000.00\n"
+        "Local,Supplier PIN,Supplier Name,Invoice Date,CU Number,Extra1,Extra2,Line Total\n"
+        "Local,SUPP-PIN-1,Supplier A,10/03/2026,CU-PURCH-1,A,B,2000.00\n"
     )
     
     response = client.post(
         f"/api/v1/purchases/upload?session_id={session.id}",
         headers=auth_headers,
-        files=[("files", ("purchases.csv", csv_content, "text/csv"))]
+        files=[("files", ("SEC_F_purchases.csv", csv_content, "text/csv"))]
     )
     assert response.status_code == 200
     data = response.json()
@@ -147,7 +150,7 @@ def test_upload_purchases_success(client: TestClient, auth_headers, db_session):
     ).all()
     assert len(saved) == 1
     assert saved[0].partner_name == "Supplier A"
-    assert saved[0].invoice_number == "5001"
+    assert saved[0].invoice_number == ""
     assert saved[0].base_amount == Decimal("2000.00")
 
 
@@ -172,7 +175,7 @@ def test_upload_purchases_cross_session_validation_error(client: TestClient, aut
     response = client.post(
         f"/api/v1/purchases/upload?session_id={session.id}",
         headers=auth_headers,
-        files=[("files", ("purchases.csv", csv_content, "text/csv"))]
+        files=[("files", ("SEC_F_purchases.csv", csv_content, "text/csv"))]
     )
     assert response.status_code == 400
     assert "Active session type is not for Purchases reconciliation" in response.json()["detail"]

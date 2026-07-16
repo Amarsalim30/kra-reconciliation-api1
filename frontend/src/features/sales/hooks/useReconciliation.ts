@@ -62,7 +62,7 @@ export function useReconciliation(type: "sales" | "purchases") {
     sapPagination.reset();
     kraPagination.reset();
     resultsPagination.reset();
-    setFileName("");
+    setFileStatuses([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

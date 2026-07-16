@@ -15,6 +15,14 @@ from app.services.normalization import normalize_invoice_data
 from app.services.settings_service import SettingsService
 
 
+def _cell_lower(cell: str) -> str:
+    return (cell or "").strip().lower()
+
+
+def _kw_in_cell(keyword: str, cell: str) -> bool:
+    return keyword in _cell_lower(cell)
+
+
 def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
     """
     Parses a KRA CSV file, performs schema and type normalization,
@@ -66,59 +74,101 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
     # 4. Parse CSV
     f = io.StringIO(content)
     reader = csv.reader(f)
-    try:
-        raw_headers = next(reader)
-    except StopIteration:
+    rows = list(reader)
+    if not rows:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="CSV file contains no data."
         )
 
-    headers = [h.strip() for h in raw_headers]
+    # KRA exports are typically headerless. Tolerate an optional header row when the
+    # first row's cells match known header keywords (deterministic, bounded check).
+    HEADER_KEYWORDS = ("pin", "invoice", "date", "vat", "amount", "customer", "partner", "supplier", "cu")
+    if any(_kw_in_cell(kw, cell) for cell in (rows[0] or []) for kw in HEADER_KEYWORDS):
+        data_rows = rows[1:]
+    else:
+        data_rows = rows
 
-    # Map headers dynamically using DB settings
-    system_setting = SettingsService.get_or_create_system_settings(db)
+    headers = [h.strip() for h in (rows[0] or [])]
+
+    import re
+    match = re.match(r"^(SEC_[A-Z])", filename.upper())
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Filename '{filename}' must start with a valid KRA section prefix (e.g. SEC_B_...). Please rename the file correctly."
+        )
+    section_prefix = match.group(1)
+
+    from app.services.parsing_profile_service import ParsingProfileService, ParsingProfileError
+    try:
+        profile = ParsingProfileService.get_required_profile(db, section_prefix)
+    except ParsingProfileError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    # Lookup VAT mapping independently
+    vat_mapping = db.query(KRAVATMapping).filter(KRAVATMapping.section_prefix == section_prefix).first()
+    if not vat_mapping:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No VAT mapping configured for KRA section '{section_prefix}'. Please configure it in settings."
+        )
+
+    from app.services.vat_normalizer import CANONICAL_RATE_DISPLAY_MAP
+    # VAT Group must match the SAP representation (e.g. "16", "0", "8"), since
+    # reconciliation joins on cu_number + vat_group. Use the display map, not the
+    # canonical enum name ("VAT_16" would never match SAP's "16").
+    file_vat_rate = CANONICAL_RATE_DISPLAY_MAP.get(vat_mapping.canonical_value, "EXEMPT")
+
+    # Build the logical-field -> column-index map from the matched profile.
+    # VAT Group is not read from a column (the KRA column is unreliable across
+    # sections); it is always derived from the section prefix (file_vat_rate).
     field_to_index = {
-        "pin": system_setting.kra_csv_pin_column,
-        "partner_name": system_setting.kra_csv_partner_name_column,
-        "invoice_number": system_setting.kra_csv_invoice_number_column,
-        "invoice_date": system_setting.kra_csv_invoice_date_column,
-        "cu_number": system_setting.kra_csv_cu_number_column,
-        "vat_group": system_setting.kra_csv_vat_group_column,
-        "base_amount": system_setting.kra_csv_base_amount_column,
+        "pin": profile.pin_column,
+        "partner_name": profile.partner_name_column,
+        "invoice_number": profile.invoice_number_column,
+        "invoice_date": profile.invoice_date_column,
+        "cu_number": profile.cu_number_column,
+        "base_amount": profile.base_amount_column,
     }
-
-    # VAT Section Mapping via filename prefix
-    file_vat_rate = None
-    all_vat_mappings = db.query(KRAVATMapping).all()
-    for mapping in all_vat_mappings:
-        if filename.upper().startswith(mapping.section_prefix.upper()):
-            file_vat_rate = mapping.canonical_value.value
-            break
+    # logical field -> profile column attribute (for human-readable error headers)
+    field_to_attr = {
+        "pin": "pin_column",
+        "partner_name": "partner_name_column",
+        "invoice_number": "invoice_number_column",
+        "invoice_date": "invoice_date_column",
+        "cu_number": "cu_number_column",
+        "base_amount": "base_amount_column",
+    }
 
     invoices: list[Invoice] = []
     errors: list[CSVValidationErrorDetail] = []
     total_rows = 0
 
-    for row_idx, row in enumerate(reader, start=2):
+    for row_idx, row in enumerate(data_rows, start=2):
         if not row or not any(cell.strip() for cell in row):
             continue
 
         total_rows += 1
         row_values = {}
-        row_error_occurred = False
 
-        for field in field_to_index.keys():
-            idx = field_to_index[field]
-            if idx < len(row):
+        for field, idx in field_to_index.items():
+            if idx is None or idx < 0:
+                # Section has no such column (e.g. purchases without invoice number)
+                row_values[field] = ""
+            elif idx < len(row):
                 row_values[field] = row[idx]
             else:
                 # Missing column index in the row
                 row_values[field] = ""
-                
-        # Override VAT Group if derived from filename
-        if file_vat_rate:
-            row_values["vat_group"] = file_vat_rate
+
+        # VAT Group is always derived from the section profile (filename prefix) —
+        # the KRA column is unreliable across sections (rate, label, or empty), so the
+        # deterministic prefix mapping is the single source of truth.
+        row_values["vat_group"] = file_vat_rate
 
         try:
             normalized = normalize_invoice_data(
@@ -129,7 +179,8 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
                 cu_number=row_values["cu_number"],
                 vat_group=row_values["vat_group"],
                 base_amount=row_values["base_amount"],
-                allow_negative=True
+                allow_negative=True,
+                invoice_number_optional=True,
             )
             invoice = Invoice(**normalized, source=InvoiceSource.KRA)
             invoices.append(invoice)
@@ -137,12 +188,14 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
             msg = str(ve)
             msg_lower = msg.lower()
             col_name = None
-            
+
             def safe_header(field_key):
                 idx = field_to_index.get(field_key)
+                attr = field_to_attr.get(field_key)
+                label = attr or field_key
                 if idx is not None and idx < len(headers):
-                    return headers[idx]
-                return field_key
+                    return f"{headers[idx]} (col {idx})"
+                return label
 
             if "pin" in msg_lower:
                 col_name = safe_header("pin")
@@ -155,7 +208,7 @@ def parse_kra_csv(file: UploadFile, db: Session) -> InvoiceUploadResponse:
             elif "cu number" in msg_lower:
                 col_name = safe_header("cu_number")
             elif "vat group" in msg_lower:
-                col_name = safe_header("vat_group")
+                col_name = "VAT Group (Filename prefix)"
             elif "base amount" in msg_lower:
                 col_name = safe_header("base_amount")
 

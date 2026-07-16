@@ -50,11 +50,16 @@ def normalize_invoice_data(
     cu_number: str | None,
     vat_group: str | int | float | None,
     base_amount: str | float | Decimal | None,
-    allow_negative: bool = False
+    allow_negative: bool = False,
+    invoice_number_optional: bool = False
 ) -> dict:
     """
     Normalizes raw invoice fields and returns a dictionary matching the Invoice structure.
     Raises ValueError for fields that cannot be normalized.
+
+    `invoice_number_optional` allows an empty/absent invoice number (used for KRA
+    purchase imports where the section has no invoice-number column). The SAP path
+    keeps the default (required) behaviour.
     """
     # 1. PIN (Allow empty string as fallback)
     norm_pin = "" if pin is None else str(pin).strip()
@@ -63,11 +68,13 @@ def normalize_invoice_data(
     norm_partner_name = "" if partner_name is None else str(partner_name).strip()
 
     # 3. Invoice Number
-    if invoice_number is None:
-        raise ValueError("Invoice Number is required")
-    norm_invoice_number = str(invoice_number).strip()
-    if not norm_invoice_number:
-        raise ValueError("Invoice Number cannot be empty")
+    if invoice_number is None or not str(invoice_number).strip():
+        if invoice_number_optional:
+            norm_invoice_number = ""
+        else:
+            raise ValueError("Invoice Number is required")
+    else:
+        norm_invoice_number = str(invoice_number).strip()
 
     # 4. Invoice Date
     if invoice_date is None:

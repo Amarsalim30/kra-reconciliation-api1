@@ -7,12 +7,10 @@ import { SAPConnectionCard } from "@/features/settings/SAPConnectionCard";
 import { SystemSettingsCard } from "@/features/settings/SystemSettingsCard";
 import { VATMappingEditor } from "@/features/settings/VATMappingEditor";
 import { KRAVATMappingEditor } from "@/features/settings/KRAVATMappingEditor";
-import { AuditLogDrawer } from "@/features/settings/AuditLogDrawer";
 import {
   Server,
   Sliders,
   Tag,
-  History,
   Loader2,
   AlertCircle,
   ShieldCheck,
@@ -23,7 +21,7 @@ export default function SettingsPage() {
   const [data, setData] = useState<SettingsComposite | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"sap" | "system" | "vat" | "audit">("sap");
+  const [activeTab, setActiveTab] = useState<"sap" | "system" | "vat">("sap");
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -84,16 +82,9 @@ export default function SettingsPage() {
             <ShieldCheck className="w-6 h-6 text-blue-600" />
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage SAP infrastructure endpoints, reconciliation amount tolerances, canonical VAT tax codes, and audit logs.
+            Manage SAP infrastructure endpoints, reconciliation amount tolerances, and canonical VAT tax codes.
           </p>
         </div>
-
-        {data.is_using_env_fallback && (
-          <div className="px-3.5 py-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs font-medium flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            Active Mode: Default Environment Fallback (.env)
-          </div>
-        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -102,7 +93,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab("sap")}
           className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
             activeTab === "sap"
-              ? "border-blue-600 text-blue-600 bg-blue-50/50"
+              ? "border-blue-700 text-blue-700 bg-blue-50/50"
               : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
@@ -114,7 +105,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab("system")}
           className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
             activeTab === "system"
-              ? "border-indigo-600 text-indigo-600 bg-indigo-50/50"
+              ? "border-blue-700 text-blue-700 bg-blue-50/50"
               : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
@@ -126,24 +117,12 @@ export default function SettingsPage() {
           onClick={() => setActiveTab("vat")}
           className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
             activeTab === "vat"
-              ? "border-emerald-600 text-emerald-600 bg-emerald-50/50"
+              ? "border-blue-700 text-blue-700 bg-blue-50/50"
               : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
           <Tag className="w-4 h-4" />
           VAT Code Normalizer
-        </button>
-
-        <button
-          onClick={() => setActiveTab("audit")}
-          className={`px-4 py-2.5 rounded-t-lg font-semibold text-sm transition-all flex items-center gap-2 border-b-2 ${
-            activeTab === "audit"
-              ? "border-sky-600 text-sky-600 bg-sky-50/50"
-              : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <History className="w-4 h-4" />
-          Audit Change History
         </button>
       </div>
 
@@ -152,7 +131,6 @@ export default function SettingsPage() {
         {activeTab === "sap" && (
           <SAPConnectionCard
             connection={data.sap_connection}
-            isEnvFallback={data.is_using_env_fallback}
             onSaved={loadSettings}
           />
         )}
@@ -177,8 +155,6 @@ export default function SettingsPage() {
             />
           </div>
         )}
-
-        {activeTab === "audit" && <AuditLogDrawer />}
       </div>
     </div>
   );

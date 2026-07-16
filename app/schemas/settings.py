@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+import re
 
 from app.models.settings import (
     BaseAmountPolicy,
@@ -63,29 +64,7 @@ class SystemSettingsBase(BaseModel):
     include_debit_notes: bool = Field(default=True)
     skip_cancelled: bool = Field(default=True)
     purchase_cu_source: PurchaseCUField = Field(default=PurchaseCUField.KRA)
-
-    kra_csv_pin_column: int = Field(default=0, ge=0)
-    kra_csv_partner_name_column: int = Field(default=1, ge=0)
-    kra_csv_invoice_number_column: int = Field(default=2, ge=0)
-    kra_csv_invoice_date_column: int = Field(default=3, ge=0)
-    kra_csv_cu_number_column: int = Field(default=4, ge=0)
-    kra_csv_vat_group_column: int = Field(default=5, ge=0)
-    kra_csv_base_amount_column: int = Field(default=6, ge=0)
-
-    @model_validator(mode="after")
-    def _check_kra_columns_unique(self) -> "SystemSettingsBase":
-        columns = [
-            self.kra_csv_pin_column,
-            self.kra_csv_partner_name_column,
-            self.kra_csv_invoice_number_column,
-            self.kra_csv_invoice_date_column,
-            self.kra_csv_cu_number_column,
-            self.kra_csv_vat_group_column,
-            self.kra_csv_base_amount_column,
-        ]
-        if len(set(columns)) != len(columns):
-            raise ValueError("KRA CSV column indexes must be unique; two or more fields map to the same column.")
-        return self
+    kra_parsing_profiles: Optional["KRAParsingProfilesConfig"] = Field(None, description="Internal JSON representation of profiles")
 
 
 class SystemSettingsUpdate(SystemSettingsBase):
@@ -123,10 +102,51 @@ class VATMappingsUpdatePayload(BaseModel):
     reason: Optional[str] = None
 
 
+class KRAParsingProfileItem(BaseModel):
+    pin_column: int = Field(ge=0)
+    partner_name_column: int = Field(ge=0)
+    invoice_number_column: Optional[int] = Field(default=None, ge=0)
+    invoice_date_column: int = Field(ge=0)
+    cu_number_column: int = Field(ge=0)
+    base_amount_column: int = Field(ge=0)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
+
+    @model_validator(mode="after")
+    def validate_unique_indexes(self) -> "KRAParsingProfileItem":
+        indexes = []
+        for field_name in ["pin_column", "partner_name_column", "invoice_number_column", "invoice_date_column", "cu_number_column", "base_amount_column"]:
+            val = getattr(self, field_name, None)
+            if val is not None:
+                indexes.append(val)
+        if len(indexes) != len(set(indexes)):
+            raise ValueError("Duplicate column indexes are not allowed in a parsing profile")
+        return self
+
+
+class KRAParsingProfilesConfig(BaseModel):
+    schema_version: Literal[1] = 1
+    profiles: Dict[str, KRAParsingProfileItem]
+
+    @field_validator("profiles")
+    @classmethod
+    def validate_section_keys(cls, v: Dict[str, KRAParsingProfileItem]) -> Dict[str, KRAParsingProfileItem]:
+        for k in v.keys():
+            if not re.match(r"^SEC_[A-Z]$", k):
+                raise ValueError(f"Invalid section identifier: {k}. Must match ^SEC_[A-Z]$")
+        return v
+
+
 class KRAVATMappingItem(BaseModel):
     id: Optional[int] = None
     section_prefix: str = Field(..., min_length=1, max_length=50)
     canonical_value: VatRateCategory
+    description: str = ""
 
     class Config:
         from_attributes = True

@@ -31,16 +31,24 @@ export interface SystemSettings {
   include_debit_notes: boolean;
   skip_cancelled: boolean;
   purchase_cu_source: PurchaseCUField;
-  kra_csv_pin_column: number;
-  kra_csv_partner_name_column: number;
-  kra_csv_invoice_number_column: number;
-  kra_csv_invoice_date_column: number;
-  kra_csv_cu_number_column: number;
-  kra_csv_vat_group_column: number;
-  kra_csv_base_amount_column: number;
+  kra_parsing_profiles?: KRAParsingProfilesConfig | null;
   version: number;
   updated_at: string;
   warning?: string | null;
+}
+
+export interface KRAParsingProfileItem {
+  pin_column: number;
+  partner_name_column: number;
+  invoice_number_column: number | null;
+  invoice_date_column: number;
+  cu_number_column: number;
+  base_amount_column: number;
+}
+
+export interface KRAParsingProfilesConfig {
+  schema_version: number;
+  profiles: Record<string, KRAParsingProfileItem>;
 }
 
 export interface VATMappingItem {
@@ -56,6 +64,7 @@ export interface KRAVATMappingItem {
   id?: number;
   section_prefix: string;
   canonical_value: VatRateCategory;
+  description?: string;
 }
 
 export interface SettingsComposite {

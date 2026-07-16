@@ -13,8 +13,6 @@ import {
   Loader2,
   CheckCircle2,
   ShieldAlert,
-  HelpCircle,
-  History,
 } from "lucide-react";
 
 interface SystemSettingsCardProps {
@@ -30,24 +28,30 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
   const [unmappedVatPolicy, setUnmappedVatPolicy] = useState<UnmappedVatPolicy>(
     settings.unmapped_vat_policy
   );
-  const [ignoreMissingCu, setIgnoreMissingCu] = useState(settings.ignore_missing_cu);
-  const [includeCreditNotes, setIncludeCreditNotes] = useState(settings.include_credit_notes);
-  const [includeDebitNotes, setIncludeDebitNotes] = useState(settings.include_debit_notes);
-  const [skipCancelled, setSkipCancelled] = useState(settings.skip_cancelled);
   const [purchaseCuSource, setPurchaseCuSource] = useState<PurchaseCUField>(
     settings.purchase_cu_source
   );
   
-  // KRA CSV Mapping Fields
-  const [kraPinCol, setKraPinCol] = useState(settings.kra_csv_pin_column);
-  const [kraPartnerCol, setKraPartnerCol] = useState(settings.kra_csv_partner_name_column);
-  const [kraInvNoCol, setKraInvNoCol] = useState(settings.kra_csv_invoice_number_column);
-  const [kraDateCol, setKraDateCol] = useState(settings.kra_csv_invoice_date_column);
-  const [kraCuCol, setKraCuCol] = useState(settings.kra_csv_cu_number_column);
-  const [kraVatCol, setKraVatCol] = useState(settings.kra_csv_vat_group_column);
-  const [kraBaseCol, setKraBaseCol] = useState(settings.kra_csv_base_amount_column);
+  const [kraParsingProfiles, setKraParsingProfiles] = useState(
+    settings.kra_parsing_profiles || { schema_version: 1, profiles: {} }
+  );
+  const [activeProfileTab, setActiveProfileTab] = useState("SEC_B");
+  const availableSections = ["SEC_B", "SEC_F", "SEC_G", "SEC_H", "SEC_I"];
 
-  const [reason, setReason] = useState("");
+  const handleProfileChange = (section: string, field: string, value: string) => {
+    const numValue = value === "" ? null : parseInt(value, 10);
+    setKraParsingProfiles(prev => ({
+      ...prev,
+      profiles: {
+        ...prev.profiles,
+        [section]: {
+          ...prev.profiles[section],
+          [field]: numValue
+        }
+      }
+    }));
+  };
+
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -67,20 +71,9 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
         amount_tolerance: amountTolerance,
         base_amount_policy: baseAmountPolicy,
         unmapped_vat_policy: unmappedVatPolicy,
-        ignore_missing_cu: ignoreMissingCu,
-        include_credit_notes: includeCreditNotes,
-        include_debit_notes: includeDebitNotes,
-        skip_cancelled: skipCancelled,
         purchase_cu_source: purchaseCuSource,
-        kra_csv_pin_column: kraPinCol,
-        kra_csv_partner_name_column: kraPartnerCol,
-        kra_csv_invoice_number_column: kraInvNoCol,
-        kra_csv_invoice_date_column: kraDateCol,
-        kra_csv_cu_number_column: kraCuCol,
-        kra_csv_vat_group_column: kraVatCol,
-        kra_csv_base_amount_column: kraBaseCol,
+        kra_parsing_profiles: kraParsingProfiles,
         version: settings.version,
-        reason: reason.trim() || undefined,
       };
 
       const res = await fetchWithAuth("/settings/system-settings", {
@@ -99,7 +92,6 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
         throw new Error(errData.detail || "Failed to update system settings.");
       }
 
-      setReason("");
       setSuccessMessage("Operational reconciliation rules updated successfully!");
       onSaved();
     } catch (err: any) {
@@ -115,7 +107,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
       <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
-            <Sliders className="w-5 h-5 text-indigo-400" />
+            <Sliders className="w-5 h-5 text-blue-400" />
           </div>
           <div>
             <h2 className="text-base font-semibold tracking-tight text-white">
@@ -233,125 +225,93 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
             </div>
           </div>
 
-        {/* Ingestion Flags */}
+        {/* KRA CSV Parsing Profiles */}
         <div className="space-y-3 pt-3 border-t border-slate-100">
-          <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            Document Ingestion & Filter Controls
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ignoreMissingCu}
-                onChange={(e) => setIgnoreMissingCu(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 mt-0.5"
-              />
-              <div>
-                <span className="text-xs font-semibold text-slate-900 block">Ingest Invoices Missing Control Unit (CU)</span>
-                <span className="text-[11px] text-slate-500 block">
-                  Assigns MISSING_CU_NUMBER status instead of excluding from session.
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-              <input
-                type="checkbox"
-                checked={skipCancelled}
-                onChange={(e) => setSkipCancelled(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 mt-0.5"
-              />
-              <div>
-                <span className="text-xs font-semibold text-slate-900 block">Automatically Skip Cancelled SAP Documents</span>
-                <span className="text-[11px] text-slate-500 block">
-                  Excludes SAP documents marked as Cancelled (Cancelled = tYES).
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeCreditNotes}
-                onChange={(e) => setIncludeCreditNotes(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 mt-0.5"
-              />
-              <div>
-                <span className="text-xs font-semibold text-slate-900 block">Include SAP Credit Notes</span>
-                <span className="text-[11px] text-slate-500 block">
-                  Ingests A/R and A/P Credit Memos into reconciliation matches.
-                </span>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeDebitNotes}
-                onChange={(e) => setIncludeDebitNotes(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 mt-0.5"
-              />
-              <div>
-                <span className="text-xs font-semibold text-slate-900 block">Include SAP Debit Notes</span>
-                <span className="text-[11px] text-slate-500 block">
-                  Ingests Debit Notes during transaction processing.
-                </span>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* KRA CSV Column Mapping */}
-        <div className="space-y-3 pt-3 border-t border-slate-100">
-          <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            KRA CSV Column Indexes (0-based)
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">PIN Number</label>
-              <input type="number" min={0} value={kraPinCol} onChange={(e) => setKraPinCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Partner Name</label>
-              <input type="number" min={0} value={kraPartnerCol} onChange={(e) => setKraPartnerCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Invoice Number</label>
-              <input type="number" min={0} value={kraInvNoCol} onChange={(e) => setKraInvNoCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Invoice Date</label>
-              <input type="number" min={0} value={kraDateCol} onChange={(e) => setKraDateCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">CU Number</label>
-              <input type="number" min={0} value={kraCuCol} onChange={(e) => setKraCuCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">VAT Group</label>
-              <input type="number" min={0} value={kraVatCol} onChange={(e) => setKraVatCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Base Amount</label>
-              <input type="number" min={0} value={kraBaseCol} onChange={(e) => setKraBaseCol(parseInt(e.target.value) || 0)} className="w-full px-3 py-1.5 rounded border border-slate-300 text-sm" />
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                KRA CSV Parsing Profiles
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Map the 0-based column index for each KRA section.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Change Rationale Input (Audit requirement) */}
-        <div className="space-y-1.5 pt-3 border-t border-slate-100">
-          <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <History className="w-3.5 h-3.5 text-slate-500" />
-            Reason for Configuration Change (Audit Note)
-          </label>
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Updated threshold per Q3 tax compliance review"
-            className="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-          />
+          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+            <div className="flex bg-slate-50 border-b border-slate-200 overflow-x-auto">
+              {availableSections.map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  onClick={() => setActiveProfileTab(sec)}
+                  className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                    activeProfileTab === sec
+                      ? "border-blue-700 text-blue-700 bg-white"
+                      : "border-transparent text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {sec}
+                </button>
+              ))}
+            </div>
+            
+            <div className="p-4 bg-white">
+              {availableSections.map((sec) => (
+                <div key={sec} className={activeProfileTab === sec ? "block" : "hidden"}>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {["pin_column", "partner_name_column", "invoice_number_column", "invoice_date_column", "cu_number_column", "base_amount_column"].map((field) => (
+                      <div key={field} className="space-y-1.5">
+                        <label className="text-xs font-medium text-slate-700 capitalize">
+                          {field.replace(/_/g, " ")}
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={(kraParsingProfiles.profiles as Record<string, any>)[sec]?.[field] ?? ""}
+                          onChange={e => handleProfileChange(sec, field, e.target.value)}
+                          placeholder="-"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Lightweight Preview */}
+                  <div className="mt-6 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                      <FileCheck className="w-3.5 h-3.5" />
+                      Example Data Mapping (Column 0, 1, 2...)
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs font-mono text-slate-500">
+                        <thead>
+                          <tr className="bg-slate-200/50">
+                            {[0,1,2,3,4,5,6,7].map(col => {
+                              const mappedField = Object.entries((kraParsingProfiles.profiles as Record<string, any>)[sec] || {}).find(([, val]) => val === col);
+                              const fieldName = mappedField ? mappedField[0].replace("_column", "") : `Col ${col}`;
+                              return (
+                                <th key={col} className="px-2 py-1 font-semibold text-slate-700 whitespace-nowrap border-b border-slate-200">
+                                  {fieldName}
+                                </th>
+                              );
+                            })}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            {[0,1,2,3,4,5,6,7].map(col => (
+                              <td key={col} className="px-2 py-1.5 whitespace-nowrap text-[11px]">Data...</td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Action Button */}
@@ -359,7 +319,7 @@ export function SystemSettingsCard({ settings, onSaved }: SystemSettingsCardProp
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Operational Rules

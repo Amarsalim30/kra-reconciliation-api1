@@ -1,6 +1,7 @@
 import pytest
 from datetime import date
 from decimal import Decimal
+import io
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -22,6 +23,9 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def fixture_db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
+    from app.models.settings import KRAVATMapping, VatRateCategory
+    db.add(KRAVATMapping(section_prefix="SEC_B", canonical_value=VatRateCategory.VAT_16))
+    db.commit()
     try:
         yield db
     finally:
@@ -175,7 +179,7 @@ def test_parse_kra_csv_aggregate_errors(db_session):
     content = (
         b"Pin Number,Customer Name,Invoice Number,Invoice Date,CU Number,VAT Group,Base Amount\n"
         b"P051393568M,Autoports,IN1080,invalid-date,|0190439340000000455,16,1118894.84\n"
-        b"P051137818X,GRAIN LTD,IN1081,11/03/2026,|0190439340000000456,,3977701.88\n" # Missing VAT Group
+        b"P051137818X,GRAIN LTD,IN1081,11/03/2026,|0190439340000000456,16,\n" # Missing Base Amount
         b"P051137818X,GRAIN LTD,IN1080,11/03/2026,|0190439340000000456,16,3977701.88\n" # Duplicate Invoice Number IN1080
     )
     mock_file = MockUploadFile("SEC_B_errors.csv", content)
@@ -190,8 +194,63 @@ def test_parse_kra_csv_aggregate_errors(db_session):
     assert "Invalid date format" in response.errors[0].message
     
     assert response.errors[1].row == 3
-    assert "VAT Group" in response.errors[1].column
-    assert "VAT Group is required" in response.errors[1].message
+    assert "Base Amount" in response.errors[1].column
+    assert "Base Amount is required" in response.errors[1].message
+
+
+def test_parse_kra_csv_per_section_profile(db_session):
+    """Each KRA section is its own schema; the profile drives column mapping."""
+    from app.models.settings import KRAVATMapping, VatRateCategory
+
+    # Purchases section: leading 'Local' column shifts indexes +1, amount at col 7,
+    # no invoice-number column.
+    db_session.add(KRAVATMapping(
+        section_prefix="SEC_F", canonical_value=VatRateCategory.VAT_16
+    ))
+    # Variant where the amount sits at col 8 (e.g. SEC_H layout).
+    db_session.add(KRAVATMapping(
+        section_prefix="SEC_H", canonical_value=VatRateCategory.ZERO_RATED
+    ))
+    db_session.commit()
+
+    class MockUploadFile:
+        def __init__(self, filename, content):
+            self.filename = filename
+            self.file = io.BytesIO(content)
+
+    sec_f = (
+        b"Local,P051123223G,Naivas Limited,04/06/2026,|0040564030002614283,ETIMS/TIMS purchases,,1211.19,,\n"
+    )
+    res_f = kra_service.parse_kra_csv(MockUploadFile("SEC_F_WITH_VAT_PIN1.CSV", sec_f), db_session)
+    assert res_f.parsed == 1
+    inv = res_f.invoices[0]
+    assert inv.pin == "P051123223G"
+    assert inv.partner_name == "Naivas Limited"
+    assert inv.invoice_number == ""  # section has no invoice-number column
+    assert inv.base_amount == Decimal("1211.19")
+
+    sec_h = (
+        b"Local,P051123223G,Naivas Limited,03/06/2026,|0040076760001535423,,ETIMS/TIMS purchases,,619.00\n"
+    )
+    res_h = kra_service.parse_kra_csv(MockUploadFile("SEC_H_WITH_VAT_PIN1.CSV", sec_h), db_session)
+    assert res_h.parsed == 1
+    assert res_h.invoices[0].base_amount == Decimal("619.00")
+    # VAT Group resolved from filename prefix (display form "0" matches SAP).
+    assert res_h.invoices[0].vat_group == "0"
+
+
+def test_parse_kra_csv_unknown_section_400(db_session):
+    import pytest
+    from fastapi import HTTPException
+
+    class MockUploadFile:
+        def __init__(self, filename, content):
+            self.filename = filename
+            self.file = io.BytesIO(content)
+
+    with pytest.raises(HTTPException) as exc:
+        kra_service.parse_kra_csv(MockUploadFile("UNKNOWN.csv", b"a,b,c\n1,2,3\n"), db_session)
+    assert exc.value.status_code == 400
 
 
 # --- Endpoint Integration Tests ---
@@ -214,7 +273,7 @@ def test_get_sales_success(client, auth_headers):
 
 
 def test_upload_sales_unauthenticated(client):
-    files = [("files", ("test.csv", b"some-csv-data", "text/csv"))]
+    files = [("files", ("SEC_B_test.csv", b"some-csv-data", "text/csv"))]
     response = client.post("/api/v1/sales/upload?session_id=dummy-id", files=files)
     assert response.status_code == 401
 

@@ -110,14 +110,7 @@ class SystemSetting(Base):
         comment="SAP field holding the CU number on Purchase Invoices (e.g. U_CUINV, NumAtCard, Comments, JournalMemo, Reference1)",
     )
 
-    # KRA CSV Column Settings
-    kra_csv_pin_column = Column(Integer, nullable=False, default=0)
-    kra_csv_partner_name_column = Column(Integer, nullable=False, default=1)
-    kra_csv_invoice_number_column = Column(Integer, nullable=False, default=2)
-    kra_csv_invoice_date_column = Column(Integer, nullable=False, default=3)
-    kra_csv_cu_number_column = Column(Integer, nullable=False, default=4)
-    kra_csv_vat_group_column = Column(Integer, nullable=False, default=5)
-    kra_csv_base_amount_column = Column(Integer, nullable=False, default=6)
+    kra_parsing_profiles = Column(JSON, nullable=True, comment="JSON configuration mapping KRA section prefixes to CSV parsing rules")
 
     version = Column(Integer, nullable=False, default=1)
     updated_at = Column(
@@ -174,6 +167,7 @@ class KRAVATMapping(Base):
     id = Column(Integer, primary_key=True, index=True)
     section_prefix = Column(String(50), unique=True, index=True, nullable=False, comment="E.g., SEC_B")
     canonical_value = Column(SQLEnum(VatRateCategory, native_enum=False, length=50), nullable=False)
+    description = Column(String(200), nullable=False, default="")
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,

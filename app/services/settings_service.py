@@ -69,14 +69,52 @@ class SettingsService:
                 include_debit_notes=True,
                 skip_cancelled=True,
                 purchase_cu_source="U_CUINV",
-                kra_csv_pin_column=0,
-                kra_csv_partner_name_column=1,
-                kra_csv_invoice_number_column=2,
-                kra_csv_invoice_date_column=3,
-                kra_csv_cu_number_column=4,
-                kra_csv_vat_group_column=5,
-                kra_csv_base_amount_column=6,
                 version=1,
+                kra_parsing_profiles={
+                    "schema_version": 1,
+                    "profiles": {
+                        "SEC_B": {
+                            "pin_column": 0,
+                            "partner_name_column": 1,
+                            "invoice_number_column": 2,
+                            "invoice_date_column": 3,
+                            "cu_number_column": 4,
+                            "base_amount_column": 6,
+                        },
+                        "SEC_F": {
+                            "pin_column": 1,
+                            "partner_name_column": 2,
+                            "invoice_number_column": None,
+                            "invoice_date_column": 3,
+                            "cu_number_column": 4,
+                            "base_amount_column": 7,
+                        },
+                        "SEC_G": {
+                            "pin_column": 1,
+                            "partner_name_column": 2,
+                            "invoice_number_column": None,
+                            "invoice_date_column": 3,
+                            "cu_number_column": 4,
+                            "base_amount_column": 7,
+                        },
+                        "SEC_H": {
+                            "pin_column": 1,
+                            "partner_name_column": 2,
+                            "invoice_number_column": None,
+                            "invoice_date_column": 3,
+                            "cu_number_column": 4,
+                            "base_amount_column": 8,
+                        },
+                        "SEC_I": {
+                            "pin_column": 1,
+                            "partner_name_column": 2,
+                            "invoice_number_column": None,
+                            "invoice_date_column": 3,
+                            "cu_number_column": 4,
+                            "base_amount_column": 7,
+                        },
+                    },
+                },
             )
             db.add(setting)
             db.commit()
@@ -113,6 +151,38 @@ class SettingsService:
                         is_system_generated=True,
                     )
                 )
+        if to_add:
+            db.add_all(to_add)
+            db.commit()
+
+    @classmethod
+    def seed_default_kra_section_profiles(cls, db: Session):
+        """Seed per-section CSV column mappings for the known KRA ETIMS sections.
+
+        Idempotent: existing prefixes are left untouched. Column indexes are
+        verified against real KRA exports; VAT rates are best-guess and should be
+        confirmed by the operator in the UI.
+        """
+        defaults = [
+            {"section_prefix": "SEC_B", "canonical_value": VatRateCategory.VAT_16,
+             "description": "Sales - standard rated"},
+            {"section_prefix": "SEC_F", "canonical_value": VatRateCategory.VAT_16,
+             "description": "Purchases - standard rated"},
+            {"section_prefix": "SEC_G", "canonical_value": VatRateCategory.VAT_16,
+             "description": "Purchases - standard rated"},
+            {"section_prefix": "SEC_H", "canonical_value": VatRateCategory.ZERO_RATED,
+             "description": "Purchases - zero rated"},
+            {"section_prefix": "SEC_I", "canonical_value": VatRateCategory.VAT_8,
+             "description": "Purchases - reduced rated"},
+        ]
+        existing = {
+            m.section_prefix.strip().upper()
+            for m in db.query(KRAVATMapping).all()
+        }
+        to_add = []
+        for d in defaults:
+            if d["section_prefix"].upper() not in existing:
+                to_add.append(KRAVATMapping(**d))
         if to_add:
             db.add_all(to_add)
             db.commit()
@@ -162,7 +232,8 @@ class SettingsService:
                     updated_at=system_setting.updated_at,
                 )
 
-        # KRA VAT Mappings
+        # KRA VAT + column mappings (seeded per-section)
+        cls.seed_default_kra_section_profiles(db)
         raw_kra_mappings = db.query(KRAVATMapping).all()
         kra_vat_mappings_items = [KRAVATMappingItem.model_validate(m) for m in raw_kra_mappings]
 
@@ -182,13 +253,6 @@ class SettingsService:
             include_debit_notes=system_setting.include_debit_notes,
             skip_cancelled=system_setting.skip_cancelled,
             purchase_cu_source=system_setting.purchase_cu_source,
-            kra_csv_pin_column=system_setting.kra_csv_pin_column,
-            kra_csv_partner_name_column=system_setting.kra_csv_partner_name_column,
-            kra_csv_invoice_number_column=system_setting.kra_csv_invoice_number_column,
-            kra_csv_invoice_date_column=system_setting.kra_csv_invoice_date_column,
-            kra_csv_cu_number_column=system_setting.kra_csv_cu_number_column,
-            kra_csv_vat_group_column=system_setting.kra_csv_vat_group_column,
-            kra_csv_base_amount_column=system_setting.kra_csv_base_amount_column,
             version=system_setting.version,
             updated_at=system_setting.updated_at,
             warning=warning,
@@ -330,17 +394,13 @@ class SettingsService:
             "include_debit_notes",
             "skip_cancelled",
             "purchase_cu_source",
-            "kra_csv_pin_column",
-            "kra_csv_partner_name_column",
-            "kra_csv_invoice_number_column",
-            "kra_csv_invoice_date_column",
-            "kra_csv_cu_number_column",
-            "kra_csv_vat_group_column",
-            "kra_csv_base_amount_column",
+            "kra_parsing_profiles",
         ]
 
         for field_name in fields_to_check:
             new_val = getattr(payload, field_name)
+            if hasattr(new_val, "model_dump"):
+                new_val = new_val.model_dump()
             old_val = getattr(system_setting, field_name)
             if new_val != old_val:
                 changes[field_name] = {"old": str(old_val), "new": str(new_val)}
@@ -368,13 +428,6 @@ class SettingsService:
             include_debit_notes=system_setting.include_debit_notes,
             skip_cancelled=system_setting.skip_cancelled,
             purchase_cu_source=system_setting.purchase_cu_source,
-            kra_csv_pin_column=system_setting.kra_csv_pin_column,
-            kra_csv_partner_name_column=system_setting.kra_csv_partner_name_column,
-            kra_csv_invoice_number_column=system_setting.kra_csv_invoice_number_column,
-            kra_csv_invoice_date_column=system_setting.kra_csv_invoice_date_column,
-            kra_csv_cu_number_column=system_setting.kra_csv_cu_number_column,
-            kra_csv_vat_group_column=system_setting.kra_csv_vat_group_column,
-            kra_csv_base_amount_column=system_setting.kra_csv_base_amount_column,
             version=system_setting.version,
             updated_at=system_setting.updated_at,
             warning=warning,
@@ -466,6 +519,10 @@ class SettingsService:
         user_id = current_user.id if current_user else None
         user_email = current_user.email if current_user else "system"
 
+        column_fields = [
+            "description",
+        ]
+
         submitted_keys = set()
         for item in payload.mappings:
             prefix = item.section_prefix.strip().upper()
@@ -473,23 +530,31 @@ class SettingsService:
                 raise ValueError(f"Duplicate KRA VAT section prefix '{prefix}'.")
             submitted_keys.add(prefix)
 
+            field_changes = {}
             if prefix in existing_db_mappings:
                 db_item = existing_db_mappings[prefix]
                 if db_item.canonical_value != item.canonical_value:
+                    field_changes["canonical_value"] = (str(db_item.canonical_value), str(item.canonical_value))
+                for cf in column_fields:
+                    new_val = getattr(item, cf)
+                    if getattr(db_item, cf) != new_val:
+                        field_changes[cf] = (str(getattr(db_item, cf)), str(new_val))
+                        setattr(db_item, cf, new_val)
+                if field_changes:
                     changes[f"KRA_VAT:{prefix}"] = {
-                        "old": str(db_item.canonical_value),
-                        "new": str(item.canonical_value),
+                        "old": ", ".join(f"{k}={v[0]}" for k, v in field_changes.items()),
+                        "new": ", ".join(f"{k}={v[1]}" for k, v in field_changes.items()),
                     }
-                    db_item.canonical_value = item.canonical_value
             else:
                 new_mapping = KRAVATMapping(
                     section_prefix=prefix,
                     canonical_value=item.canonical_value,
+                    description=item.description,
                 )
                 db.add(new_mapping)
                 changes[f"KRA_VAT:{prefix}"] = {
                     "old": None,
-                    "new": str(item.canonical_value),
+                    "new": f"{item.canonical_value} ({item.description})",
                 }
 
         # Check for deleted custom mappings
