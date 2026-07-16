@@ -3,6 +3,9 @@ export type BaseAmountPolicy = "skip" | "reject_session" | "treat_as_zero";
 export type UnmappedVatPolicy = "reject_invoice" | "needs_review";
 export type VatModule = "sales" | "purchases";
 
+// SAP field holding the Purchase Invoice CU number. Values are the exact SAP field names.
+export type PurchaseCUField = "U_CUINV" | "NumAtCard" | "Comments" | "JournalMemo" | "Reference1";
+
 export interface SAPConnection {
   id: number;
   name: string;
@@ -27,6 +30,7 @@ export interface SystemSettings {
   include_credit_notes: boolean;
   include_debit_notes: boolean;
   skip_cancelled: boolean;
+  purchase_cu_source: PurchaseCUField;
   version: number;
   updated_at: string;
   warning?: string | null;

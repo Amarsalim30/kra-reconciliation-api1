@@ -1,3 +1,4 @@
+import subprocess
 from decimal import Decimal
 from enum import Enum
 from functools import lru_cache
@@ -9,6 +10,26 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.core.exceptions import SAPConfigurationError
 
 
+def _current_branch() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=Path(__file__).resolve().parent.parent.parent,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except Exception:
+        return ""
+
+
+_branch = _current_branch()
+_env_files: list[Path] = [Path(".env")]
+if _branch:
+    _branch_env = Path(f".env.{_branch}")
+    if _branch_env.exists():
+        _env_files.append(_branch_env)
+
+
 class BaseAmountPolicy(str, Enum):
     SKIP = "skip"
     REJECT = "reject"
@@ -17,7 +38,7 @@ class BaseAmountPolicy(str, Enum):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=Path(".env"),
+        env_file=_env_files,
         env_file_encoding="utf-8",
         case_sensitive=True,
     )

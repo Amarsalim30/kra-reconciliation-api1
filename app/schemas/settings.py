@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from app.models.settings import (
     BaseAmountPolicy,
+    PurchaseCUField,
     UnmappedVatPolicy,
     VatModule,
     VatRateCategory,
@@ -61,6 +62,7 @@ class SystemSettingsBase(BaseModel):
     include_credit_notes: bool = Field(default=True)
     include_debit_notes: bool = Field(default=True)
     skip_cancelled: bool = Field(default=True)
+    purchase_cu_source: PurchaseCUField = Field(default=PurchaseCUField.KRA)
 
 
 class SystemSettingsUpdate(SystemSettingsBase):
