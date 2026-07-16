@@ -95,27 +95,24 @@ export function WorkspaceView({
               <React.Fragment key={step}>
                 <div className="flex items-center gap-2.5 min-w-0">
                   {/* Circle */}
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-all duration-200 ${
-                    done
-                      ? "bg-emerald-500 text-white"
-                      : active
-                        ? "bg-blue-600 text-white ring-4 ring-blue-100"
-                        : "bg-slate-100 text-slate-400 border border-slate-200"
-                  }`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-all duration-200 ${done
+                    ? "bg-emerald-500 text-white"
+                    : active
+                      ? "bg-blue-600 text-white ring-4 ring-blue-100"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                    }`}>
                     {done ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
                   </div>
                   {/* Label */}
-                  <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${
-                    done ? "text-emerald-600" : active ? "text-blue-700" : "text-slate-400"
-                  }`}>
+                  <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${done ? "text-emerald-600" : active ? "text-blue-700" : "text-slate-400"
+                    }`}>
                     {label}
                   </span>
                 </div>
                 {/* Connector */}
                 {!isLast && (
-                  <div className={`flex-1 h-px mx-3 rounded-full transition-colors ${
-                    workflowStep > step ? "bg-emerald-300" : "bg-slate-200"
-                  }`} />
+                  <div className={`flex-1 h-px mx-3 rounded-full transition-colors ${workflowStep > step ? "bg-emerald-300" : "bg-slate-200"
+                    }`} />
                 )}
               </React.Fragment>
             );
@@ -126,53 +123,108 @@ export function WorkspaceView({
       {/* ── Data Source Controls ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        {/* SAP Data Card */}
-        <div className={`bg-white border rounded-xl shadow-sm p-5 flex flex-col gap-4 transition-all duration-200 ${
-          sapLoaded ? "border-emerald-200 ring-1 ring-emerald-100" : "border-slate-200"
-        }`}>
+        {/* SAP ERP Data Card */}
+        <div className={`bg-white border rounded-xl shadow-sm p-5 flex flex-col gap-4 transition-all duration-200 ${sapLoaded ? "border-slate-300 ring-1 ring-slate-100" : "border-slate-200"
+          }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${sapLoaded ? "bg-emerald-50" : "bg-slate-100"}`}>
-                <Database className={`w-4 h-4 ${sapLoaded ? "text-emerald-600" : "text-slate-500"}`} />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${sapLoaded ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"}`}>
+                <Database className="w-4 h-4" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-900">SAP ERP Data</p>
                 <p className="text-[11px] text-slate-400 leading-none mt-0.5">
-                  {sapLoaded ? `${sapPagination.totalItems ?? 0} invoices loaded` : "No data loaded"}
+                  {sapLoaded ? `${sapPagination.totalItems ?? 0} invoices loaded` : "Select date range & load"}
                 </p>
               </div>
             </div>
             {sapLoaded && <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500 shrink-0" />}
           </div>
 
-          {/* Date Range Row */}
+          {/* Quick Period Presets */}
+          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Quick Range</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const f = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+                  const t = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+                  setFromDate(f);
+                  setToDate(t);
+                }}
+                className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              >
+                This Month
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const f = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
+                  const t = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
+                  setFromDate(f);
+                  setToDate(t);
+                }}
+                className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              >
+                Last Month
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const f = new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+                  const t = now.toISOString().split("T")[0];
+                  setFromDate(f);
+                  setToDate(t);
+                }}
+                className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+              >
+                YTD
+              </button>
+            </div>
+          </div>
+
+          {/* Date Range Inputs Row */}
           <div className="flex items-end gap-3">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> From
+                <Calendar className="w-3 h-3 text-slate-400" /> From
               </label>
               <input
                 type="date"
                 value={fromDate}
+                onClick={(e) => {
+                  try {
+                    (e.currentTarget as HTMLInputElement).showPicker?.();
+                  } catch { }
+                }}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 hover:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
+                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-mono bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
               />
             </div>
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> To
+                <Calendar className="w-3 h-3 text-slate-400" /> To
               </label>
               <input
                 type="date"
                 value={toDate}
+                onClick={(e) => {
+                  try {
+                    (e.currentTarget as HTMLInputElement).showPicker?.();
+                  } catch { }
+                }}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 hover:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
+                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-mono bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
               />
             </div>
             <button
               onClick={handleLoadSap}
               disabled={uiState.sap.status === AsyncStatus.Loading}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-sm disabled:opacity-50 whitespace-nowrap h-[34px] cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all shadow-sm disabled:opacity-50 whitespace-nowrap h-[32px] cursor-pointer shrink-0"
             >
               {uiState.sap.status === AsyncStatus.Loading
                 ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
@@ -183,9 +235,8 @@ export function WorkspaceView({
         </div>
 
         {/* KRA Data Card */}
-        <div className={`bg-white border rounded-xl shadow-sm p-5 flex flex-col gap-4 transition-all duration-200 ${
-          kraLoaded ? "border-slate-200 ring-1 ring-slate-100" : "border-slate-200"
-        }`}>
+        <div className={`bg-white border rounded-xl shadow-sm p-5 flex flex-col gap-4 transition-all duration-200 ${kraLoaded ? "border-slate-200 ring-1 ring-slate-100" : "border-slate-200"
+          }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kraLoaded ? "bg-slate-100" : "bg-slate-100"}`}>
@@ -217,13 +268,12 @@ export function WorkspaceView({
             />
             <label
               htmlFor="csv-upload"
-              className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer h-[34px] w-full ${
-                !sapLoaded
-                  ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-                  : kraLoaded
-                    ? "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
-                    : "bg-slate-900 border-transparent text-white hover:bg-slate-800 shadow-sm"
-              }`}
+              className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer h-[34px] w-full ${!sapLoaded
+                ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                : kraLoaded
+                  ? "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+                  : "bg-slate-900 border-transparent text-white hover:bg-slate-800 shadow-sm"
+                }`}
             >
               {uiState.kra.status === AsyncStatus.Loading
                 ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
