@@ -4,6 +4,7 @@ import { useState, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { UserRecord, UserCreatePayload, UserUpdatePayload, UserRole, CompanyProfile } from "@/types/company";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/components/ToastProvider";
 import {
   Users,
   UserPlus,
@@ -84,7 +85,7 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
   const [role, setRole] = useState<UserRole>("checker");
   const [companyId, setCompanyId] = useState<string>("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { notify } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -93,7 +94,6 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       const payload: UserCreatePayload = {
         username,
@@ -116,7 +116,7 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "An error occurred.");
+      notify(msg || "An error occurred.", "error");
     } finally {
       setSaving(false);
     }
@@ -137,12 +137,6 @@ function CreateUserModal({ companies, onClose, onCreated }: CreateUserModalProps
           </button>
         </div>
         <form onSubmit={handleCreate} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>{error}</div>
-            </div>
-          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5 col-span-2">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Username *</label>
@@ -253,8 +247,8 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
   const [mounted, setMounted] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const { notify } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -263,7 +257,6 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       const res = await fetchWithAuth(`/users/${user.id}/reset-password`, {
         method: "POST",
@@ -278,7 +271,7 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
       onReset();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "An error occurred.");
+      notify(msg || "An error occurred.", "error");
     } finally {
       setSaving(false);
     }
@@ -299,9 +292,6 @@ function ResetPasswordModal({ user, onClose, onReset }: ResetPasswordModalProps)
           </button>
         </div>
         <form onSubmit={handleReset} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm">{error}</div>
-          )}
           {success && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Password reset successfully.
@@ -358,11 +348,10 @@ function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
   const [fullName, setFullName] = useState(user.full_name || "");
   const [companyId, setCompanyId] = useState<string>(user.company_id ? String(user.company_id) : "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { notify } = useToast();
 
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
     try {
       const payload: UserUpdatePayload = {
         username: username.trim() || undefined,
@@ -383,7 +372,7 @@ function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "An error occurred.");
+      notify(msg || "An error occurred.", "error");
     } finally {
       setSaving(false);
     }
@@ -392,12 +381,6 @@ function EditUserRow({ user, companies, onSaved, onCancel }: EditUserRowProps) {
   return (
     <tr className="bg-blue-50/40 border-t border-blue-100">
       <td className="px-5 py-4" colSpan={6}>
-        {error && (
-          <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-            <div>{error}</div>
-          </div>
-        )}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-slate-600 uppercase">Username *</label>

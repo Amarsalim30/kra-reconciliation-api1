@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { SAPConnection, TestConnectionResponse } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/components/ToastProvider";
 import {
   Server,
   Key,
@@ -49,20 +50,16 @@ export function SAPConnectionCard({
     setPassword("");
     setVerifySsl(connection?.verify_ssl ?? true);
     setTestResult(null);
-    setErrorMessage(null);
-    setSuccessMessage(null);
   }, [connection]);
 
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestConnectionResponse | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { notify } = useToast();
 
   const handleTestConnection = async () => {
     setTesting(true);
     setTestResult(null);
-    setErrorMessage(null);
     try {
       const url = `/settings/test-sap${selectedCompanyId ? `?company_id=${selectedCompanyId}` : ""}`;
       const res = await fetchWithAuth(url, {
@@ -80,7 +77,7 @@ export function SAPConnectionCard({
       setTestResult(data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setErrorMessage(msg || "Failed to initiate SAP diagnostic test.");
+      notify(msg || "Failed to initiate SAP diagnostic test.", "error");
     } finally {
       setTesting(false);
     }
@@ -89,8 +86,6 @@ export function SAPConnectionCard({
   const handleSaveConnection = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const payload: Record<string, unknown> = {
@@ -123,11 +118,11 @@ export function SAPConnectionCard({
       }
 
       setPassword("");
-      setSuccessMessage("SAP connection configuration saved successfully!");
+      notify("SAP connection configuration saved successfully!", "success");
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setErrorMessage(msg || "An error occurred while saving.");
+      notify(msg || "An error occurred while saving.", "error");
     } finally {
       setSaving(false);
     }
@@ -169,20 +164,6 @@ export function SAPConnectionCard({
             <div>
               No SAP connection currently exists for {companyName || "this company"}. Enter parameters below to establish integration.
             </div>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            <div className="flex-1">{errorMessage}</div>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div>{successMessage}</div>
           </div>
         )}
 

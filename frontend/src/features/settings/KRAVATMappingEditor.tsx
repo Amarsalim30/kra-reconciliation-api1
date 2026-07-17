@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { KRAVATMappingItem } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/components/ToastProvider";
 import {
   Save,
   Plus,
@@ -49,8 +50,7 @@ export function KRAVATMappingEditor({ mappings: initialMappings, selectedCompany
   }, [initialMappings]);
   const [showGuide, setShowGuide] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const { notify } = useToast();
   const [reason, setReason] = useState("");
 
   const handleAdd = (defaultPrefix = "", defaultRate = "16") => {
@@ -78,19 +78,17 @@ export function KRAVATMappingEditor({ mappings: initialMappings, selectedCompany
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
-    setSuccess(false);
 
     const prefixes = new Set();
     for (const m of mappings) {
       if (!m.section_prefix.trim()) {
-        setError("Section prefix cannot be empty.");
+        notify("Section prefix cannot be empty.", "error");
         setSaving(false);
         return;
       }
       const upper = m.section_prefix.trim().toUpperCase();
       if (prefixes.has(upper)) {
-        setError(`Duplicate prefix '${upper}' found in mappings.`);
+        notify(`Duplicate prefix '${upper}' found in mappings.`, "error");
         setSaving(false);
         return;
       }
@@ -118,11 +116,11 @@ export function KRAVATMappingEditor({ mappings: initialMappings, selectedCompany
       }
 
       setReason("");
-      setSuccess(true);
+      notify("KRA VAT mappings saved successfully!", "success");
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "An error occurred saving KRA VAT mappings.");
+      notify(msg || "An error occurred saving KRA VAT mappings.", "error");
     } finally {
       setSaving(false);
     }
@@ -189,21 +187,6 @@ export function KRAVATMappingEditor({ mappings: initialMappings, selectedCompany
           </div>
         )}
 
-        {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-            <div>{error}</div>
-          </div>
-        )}
-
-        {success && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <div>Mappings saved successfully.</div>
-          </div>
-        )}
-
-        {/* Dynamic Mapping Rows Table */}
         <div className="border border-slate-200 rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">

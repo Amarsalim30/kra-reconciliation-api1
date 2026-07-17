@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CompanyProfile, CompanyCreatePayload, CompanyUpdatePayload } from "@/types/company";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/components/ToastProvider";
 import {
   Building2,
   Plus,
@@ -61,7 +62,7 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
   const [timezone, setTimezone] = useState("Africa/Nairobi");
   const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { notify } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -70,7 +71,6 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       const payload: CompanyCreatePayload = {
         name,
@@ -92,7 +92,7 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "An error occurred while creating company.");
+      notify(msg || "An error occurred while creating company.", "error");
     } finally {
       setSaving(false);
     }
@@ -117,13 +117,6 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
         </div>
 
         <form onSubmit={handleCreate} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>{error}</div>
-            </div>
-          )}
-
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Company Legal Name *</label>
             <input
@@ -227,7 +220,7 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
   const [currency, setCurrency] = useState(company.currency);
   const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(company.fiscal_year_start_month);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { notify } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -236,7 +229,6 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       const payload: CompanyUpdatePayload = {
         name,
@@ -258,7 +250,7 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "An error occurred.");
+      notify(msg || "An error occurred.", "error");
     } finally {
       setSaving(false);
     }
@@ -280,13 +272,6 @@ function EditCompanyModal({ company, onClose, onSaved }: EditCompanyModalProps) 
         </div>
 
         <form onSubmit={handleUpdate} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>{error}</div>
-            </div>
-          )}
-
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Company Legal Name *</label>
             <input
@@ -380,7 +365,7 @@ export function CompanyProfileCard({ companies = [], onSaved }: CompanyProfileCa
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyProfile | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const { notify } = useToast();
 
   const filteredCompanies = companies.filter(
     (c) =>
@@ -393,18 +378,17 @@ export function CompanyProfileCard({ companies = [], onSaved }: CompanyProfileCa
     if (!confirm(`Are you sure you want to delete company profile "${company.name}"?`)) return;
 
     setDeletingId(company.id);
-    setActionMessage(null);
     try {
       const res = await fetchWithAuth(`/company/${company.id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || "Failed to delete company profile.");
       }
-      setActionMessage(`Company "${company.name}" deleted successfully.`);
+      notify(`Company "${company.name}" deleted successfully.`, "success");
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      alert(msg || "Failed to delete company profile.");
+      notify(msg || "Failed to delete company profile.", "error");
     } finally {
       setDeletingId(null);
     }
@@ -455,13 +439,6 @@ export function CompanyProfileCard({ companies = [], onSaved }: CompanyProfileCa
 
         {/* Filter Bar & Action Banners */}
         <div className="p-6 space-y-4">
-          {actionMessage && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm flex items-center gap-2.5">
-              <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
-              <div>{actionMessage}</div>
-            </div>
-          )}
-
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input

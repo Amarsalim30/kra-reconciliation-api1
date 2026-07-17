@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { BaseAmountPolicy, PurchaseCUField, SystemSettings, UnmappedVatPolicy } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/components/ToastProvider";
 import {
   Sliders,
   AlertTriangle,
@@ -41,8 +42,7 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
   }, [settings]);
 
   const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { notify } = useToast();
 
   const numericTolerance = parseFloat(amountTolerance) || 0;
   const showToleranceWarning = numericTolerance > 1000.0;
@@ -50,8 +50,6 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
   const handleSaveSystemSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const payload = {
@@ -79,11 +77,11 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
         throw new Error(errData.detail || "Failed to update system settings.");
       }
 
-      setSuccessMessage("Operational reconciliation rules updated successfully!");
+      notify("Operational reconciliation rules updated successfully!", "success");
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setErrorMessage(msg || "An error occurred while saving system settings.");
+      notify(msg || "An error occurred while saving system settings.", "error");
     } finally {
       setSaving(false);
     }
@@ -109,20 +107,6 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
       </div>
 
       <form onSubmit={handleSaveSystemSettings} className="p-6 space-y-6">
-        {errorMessage && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-sm flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            <div className="flex-1">{errorMessage}</div>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-sm flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div>{successMessage}</div>
-          </div>
-        )}
-
         {/* Amount Tolerance Card */}
         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
           <div className="flex items-center justify-between">

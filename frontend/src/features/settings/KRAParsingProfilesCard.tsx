@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { KRAParsingProfilesConfig, SystemSettings } from "@/types/settings";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/components/ToastProvider";
 import {
   FileSpreadsheet,
   Save,
@@ -78,14 +79,11 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
   };
 
   const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { notify } = useToast();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       const payload = {
@@ -110,11 +108,11 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
         throw new Error(errData.detail || "Failed to update KRA CSV parsing profiles.");
       }
 
-      setSuccessMessage("KRA CSV parsing profiles saved successfully!");
+      notify("KRA CSV parsing profiles saved successfully!", "success");
       onSaved();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setErrorMessage(msg || "An error occurred while saving profiles.");
+      notify(msg || "An error occurred while saving profiles.", "error");
     } finally {
       setSaving(false);
     }
@@ -149,20 +147,6 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
       </div>
 
       <form onSubmit={handleSave} className="p-6 space-y-6">
-        {errorMessage && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-            <div>{errorMessage}</div>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <div>{successMessage}</div>
-          </div>
-        )}
-
         {/* Section Tabs */}
         <div className="border border-slate-200 rounded-lg overflow-hidden">
           <div className="flex bg-slate-50 border-b border-slate-200 p-1 gap-1 overflow-x-auto">
