@@ -93,6 +93,7 @@ class VATMappingItem(BaseModel):
     canonical_rate: str = Field(..., max_length=20)
     is_builtin: bool = False
     is_system_generated: bool = False
+    created_at: Optional[datetime] = None
 
     @field_validator("canonical_rate", mode="before")
     @classmethod

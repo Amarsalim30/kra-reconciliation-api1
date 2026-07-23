@@ -6,12 +6,8 @@ import { fetchWithAuth } from "@/lib/api";
 import { useToast } from "@/components/ToastProvider";
 import {
   Plus,
-  Trash2,
-  Lock,
   Save,
   Loader2,
-  CheckCircle2,
-  ShieldAlert,
   Tag,
   ShoppingBag,
   ShoppingCart,
@@ -27,7 +23,6 @@ interface VATMappingEditorProps {
 export function VATMappingEditor({ connectionId, mappings: initialMappings, selectedCompanyId, onSaved }: VATMappingEditorProps) {
   const [mappings, setMappings] = useState<VATMappingItem[]>(initialMappings);
   const [activeModule, setActiveModule] = useState<VatModule>("purchases");
-  const [reason, setReason] = useState("");
 
   useEffect(() => {
     setMappings(initialMappings);
@@ -94,22 +89,12 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
     setNewCategory("16");
   };
 
-  const handleDeleteCode = (sapCode: string) => {
-    const target = mappings.find((m) => m.module === activeModule && m.sap_code.toUpperCase() === sapCode.toUpperCase());
-    if (target?.is_builtin) {
-      notify(`Cannot delete built-in system tax code '${sapCode}'.`, "error");
-      return;
-    }
-    setMappings(mappings.filter((m) => !(m.module === activeModule && m.sap_code.toUpperCase() === sapCode.toUpperCase())));
-  };
-
   const handleSaveMappings = async () => {
     setSaving(true);
 
     try {
       const payload = {
         connection_id: connectionId || undefined,
-        reason: reason.trim() || undefined,
         mappings: mappings.map((m) => ({
           module: m.module,
           sap_code: m.sap_code,
@@ -131,7 +116,6 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
         throw new Error(errData.detail || "Failed to update tax code mappings.");
       }
 
-      setReason("");
       notify("Canonical VAT tax code mappings updated successfully!", "success");
       onSaved();
     } catch (err: unknown) {
@@ -216,8 +200,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
                 <th className="py-3 px-4">SAP Tax Code</th>
                 <th className="py-3 px-4">Description</th>
                 <th className="py-3 px-4">KRA Rate</th>
-                <th className="py-3 px-4 text-center">Built-in Guard</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4">Created Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -242,29 +225,10 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
                       className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 font-semibold text-slate-800 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-300"
                     />
                   </td>
-                  <td className="py-3 px-4 text-center">
-                    {item.is_builtin ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                        <Lock className="w-3 h-3 text-slate-400" />
-                        Built-in
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        Custom
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    {!item.is_builtin && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCode(item.sap_code)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer"
-                        title="Remove custom code"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                  <td className="py-3 px-4 text-xs font-medium text-slate-500">
+                    {item.created_at
+                      ? new Date(item.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                      : "Built-in System Default"}
                   </td>
                 </tr>
               ))}
@@ -311,20 +275,6 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
             </button>
           </div>
         </form>
-
-        {/* Audit rationale note */}
-        <div className="space-y-1.5 pt-3 border-t border-slate-100">
-          <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            Reason for VAT Mapping Update
-          </label>
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Added custom VAT group code for specialized petroleum imports"
-            className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
-          />
-        </div>
 
         {/* Action Button */}
         <div className="pt-4 border-t border-slate-200 flex justify-end">

@@ -57,6 +57,7 @@ export interface VATMappingItem {
   description: string;
   canonical_rate: string;
   is_builtin: boolean;
+  created_at?: string;
 }
 
 export interface KRAVATMappingItem {
