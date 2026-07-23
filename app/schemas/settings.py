@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Literal
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 import re
 
 from app.models.settings import (
@@ -44,6 +44,8 @@ class SAPConnectionUpdate(BaseModel):
 
 
 class SAPConnectionResponse(SAPConnectionBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     company_id: int
     password_set: bool = True
@@ -51,9 +53,6 @@ class SAPConnectionResponse(SAPConnectionBase):
     version: int
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class SystemSettingsBase(BaseModel):
@@ -74,6 +73,8 @@ class SystemSettingsUpdate(SystemSettingsBase):
 
 
 class SystemSettingsResponse(SystemSettingsBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     company_id: int
     active_connection_id: Optional[int] = None
@@ -81,11 +82,10 @@ class SystemSettingsResponse(SystemSettingsBase):
     updated_at: datetime
     warning: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
 
 class VATMappingItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: Optional[int] = None
     module: VatModule
     sap_code: str = Field(..., min_length=1, max_length=50)
@@ -98,9 +98,6 @@ class VATMappingItem(BaseModel):
     @classmethod
     def validate_rate(cls, v: Any) -> str:
         return normalize_vat_rate(v)
-
-    class Config:
-        from_attributes = True
 
 
 class VATMappingsUpdatePayload(BaseModel):
@@ -150,6 +147,8 @@ class KRAParsingProfilesConfig(BaseModel):
 
 
 class KRAVATMappingItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: Optional[int] = None
     section_prefix: str = Field(..., min_length=1, max_length=50)
     canonical_rate: str = Field(..., max_length=20)
@@ -159,9 +158,6 @@ class KRAVATMappingItem(BaseModel):
     @classmethod
     def validate_rate(cls, v: Any) -> str:
         return normalize_vat_rate(v)
-
-    class Config:
-        from_attributes = True
 
 
 class KRAVATMappingsUpdatePayload(BaseModel):
@@ -199,6 +195,8 @@ class TestConnectionResponse(BaseModel):
 
 
 class SettingAuditLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: Optional[int]
     user_email: Optional[str]
@@ -206,6 +204,3 @@ class SettingAuditLogResponse(BaseModel):
     changes_json: Dict[str, Any]
     reason: Optional[str]
     created_at: datetime
-
-    class Config:
-        from_attributes = True

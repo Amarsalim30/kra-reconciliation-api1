@@ -242,3 +242,44 @@ def test_partial_system_settings_update(client: TestClient, db_session):
     assert updated_sys2["version"] == updated_sys["version"] + 1
 
 
+def test_settings_rbac_forbidden_for_standard_user(client: TestClient, db_session):
+    # Seed standard (non-admin) user
+    standard_user = User(
+        username="standard_user",
+        email="standard@example.com",
+        password_hash=hash_password("userpass123"),
+        is_active=True,
+        role="user",
+    )
+    db_session.add(standard_user)
+    db_session.commit()
+
+    # Login as standard user
+    login_res = client.post("/api/v1/auth/login", json={"username": "standard_user", "password": "userpass123"})
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # GET settings should succeed for reading
+    get_res = client.get("/api/v1/settings?company_id=1", headers=headers)
+    assert get_res.status_code == 200
+
+    # PUT system-settings should return 403 Forbidden
+    sys_update_res = client.put(
+        "/api/v1/settings/system-settings?company_id=1",
+        json={"amount_tolerance": "20.00", "version": 1},
+        headers=headers,
+    )
+    assert sys_update_res.status_code == 403
+    assert "Administrator privileges required" in sys_update_res.json()["detail"]
+
+    # PUT sap-connection should return 403 Forbidden
+    sap_res = client.put(
+        "/api/v1/settings/sap-connection?company_id=1",
+        json={"base_url": "https://sap.test.com:50000/b1s/v1", "version": 1},
+        headers=headers,
+    )
+    assert sap_res.status_code == 403
+
+
+

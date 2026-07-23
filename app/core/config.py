@@ -75,6 +75,27 @@ class Settings(BaseSettings):
         alias="KRA_HEADER_MAPPING"
     )
 
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        alias="CORS_ORIGINS",
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: object) -> list[str]:
+        if isinstance(v, str):
+            import json
+            v_trimmed = v.strip()
+            if v_trimmed.startswith("["):
+                try:
+                    return json.loads(v_trimmed)
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v_trimmed.split(",") if origin.strip()]
+        if isinstance(v, list):
+            return v
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
     @field_validator("sap_base_url", mode="before")
     @classmethod
     def empty_str_to_none(cls, v: object) -> object:

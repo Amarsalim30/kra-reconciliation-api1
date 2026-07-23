@@ -63,7 +63,7 @@ async def sap_config_exception_handler(request: Request, exc: SAPConfigurationEr
 # Enable CORS for frontend requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,10 +72,37 @@ app.add_middleware(
 app.include_router(api_v1_router, prefix="/api/v1")
 
 
-
 @app.get("/")
 async def root() -> dict[str, str]:
     return {
         "status": "running",
         "service": settings.app_name,
     }
+
+
+@app.get("/health")
+def health_check() -> dict[str, str]:
+    from sqlalchemy import text
+    from app.database.database import SessionLocal
+
+    db_status = "healthy"
+    try:
+        with SessionLocal() as db:
+            db.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "database": db_status,
+                "version": settings.app_version,
+            },
+        )
+
+    return {
+        "status": "healthy",
+        "database": db_status,
+        "version": settings.app_version,
+    }
+

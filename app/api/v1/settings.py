@@ -25,6 +25,15 @@ from app.services.settings_service import SettingsConflictError, SettingsService
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
 
+def require_admin_role(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required to modify system settings.",
+        )
+    return current_user
+
+
 def _resolve_settings_company(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -69,7 +78,7 @@ def update_sap_connection(
     payload: SAPConnectionUpdate,
     company: Company = Depends(_resolve_settings_company),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin_role),
 ):
     """Create or update a company's SAP Service Layer connection."""
     try:
@@ -85,7 +94,7 @@ def update_system_settings(
     payload: SystemSettingsUpdate,
     company: Company = Depends(_resolve_settings_company),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin_role),
 ):
     """Update a company's operational reconciliation rules and tolerances."""
     try:
@@ -101,7 +110,7 @@ def update_vat_mappings(
     payload: VATMappingsUpdatePayload,
     company: Company = Depends(_resolve_settings_company),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin_role),
 ):
     """Update a company's module-level SAP VAT code mappings."""
     try:
@@ -114,7 +123,7 @@ def update_vat_mappings(
 def update_kra_vat_mappings(
     payload: KRAVATMappingsUpdatePayload,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin_role),
 ):
     """Update the shared KRA CSV Section Prefix to VAT rate mappings."""
     try:
@@ -128,7 +137,7 @@ def test_sap_connection(
     payload: TestConnectionRequest,
     company: Company = Depends(_resolve_settings_company),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin_role),
 ):
     """Test SAP Service Layer connectivity using the company's connection or form parameters."""
     return SettingsService.test_sap_connection(db, company.id, payload)
