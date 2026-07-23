@@ -41,7 +41,6 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DATABASE_URL="sqlite:////app/data/kra_reconciliation.db" \
-    SECRET_KEY="production_secret_key_change_in_env_32bytes" \
     CORS_ORIGINS="*"
 
 # Install Nginx and curl
