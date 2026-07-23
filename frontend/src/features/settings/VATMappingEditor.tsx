@@ -177,17 +177,15 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
             type="button"
             onClick={() => setActiveModule("purchases")}
             aria-pressed={activeModule === "purchases"}
-            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${
-              activeModule === "purchases"
+            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${activeModule === "purchases"
                 ? "bg-white text-blue-700 shadow-sm border-slate-200"
                 : "text-slate-600 border-transparent hover:text-slate-950"
-            }`}
+              }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             Purchases (Input VAT)
-            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-              activeModule === "purchases" ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"
-            }`}>
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeModule === "purchases" ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"
+              }`}>
               {mappings.filter((m) => m.module === "purchases").length}
             </span>
           </button>
@@ -196,17 +194,15 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
             type="button"
             onClick={() => setActiveModule("sales")}
             aria-pressed={activeModule === "sales"}
-            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${
-              activeModule === "sales"
+            className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${activeModule === "sales"
                 ? "bg-white text-blue-700 shadow-sm border-slate-200"
                 : "text-slate-600 border-transparent hover:text-slate-950"
-            }`}
+              }`}
           >
             <ShoppingCart className="w-3.5 h-3.5" />
             Sales (Output VAT)
-            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-              activeModule === "sales" ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"
-            }`}>
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeModule === "sales" ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"
+              }`}>
               {mappings.filter((m) => m.module === "sales").length}
             </span>
           </button>
@@ -219,7 +215,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
                 <th className="py-3 px-4">SAP Tax Code</th>
                 <th className="py-3 px-4">Description</th>
-                <th className="py-3 px-4">Canonical Rate</th>
+                <th className="py-3 px-4">KRA Rate</th>
                 <th className="py-3 px-4 text-center">Built-in Guard</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
