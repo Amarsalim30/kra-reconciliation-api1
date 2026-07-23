@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -9,8 +9,15 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, description="Password, minimum 8 characters")
     email: str | None = Field(default=None, description="Email address")
     full_name: str | None = Field(default=None, description="Display name")
-    role: str = Field(default="checker", description="User role: admin, checker, or viewer")
+    role: str = Field(default="checker", description="User role: admin or checker")
     company_id: int | None = Field(default=None, description="Associated company ID")
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in {"admin", "checker"}:
+            raise ValueError("Role must be 'admin' or 'checker'")
+        return v
 
 
 class UserUpdate(BaseModel):
@@ -20,6 +27,13 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     company_id: Optional[int] = None
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in {"admin", "checker"}:
+            raise ValueError("Role must be 'admin' or 'checker'")
+        return v
 
 
 class UserPasswordReset(BaseModel):

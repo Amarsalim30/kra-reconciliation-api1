@@ -117,11 +117,23 @@ def test_user_management_and_password_reset(client, db_session):
         json={
             "username": "c1_new_member",
             "password": "password12345",
-            "role": "viewer",
+            "role": "checker",
         },
         headers=headers_c1,
     )
     assert create_res.status_code == 201
+
+    # 3b. Creating user with removed 'viewer' role should fail validation
+    invalid_role_res = client.post(
+        "/api/v1/users",
+        json={
+            "username": "c1_invalid_role",
+            "password": "password12345",
+            "role": "viewer",
+        },
+        headers=headers_c1,
+    )
+    assert invalid_role_res.status_code == 422
     # 4. Company 1 Admin updates username of C1 worker (Should Succeed)
     update_res = client.patch(
         f"/api/v1/users/{c1_worker.id}",

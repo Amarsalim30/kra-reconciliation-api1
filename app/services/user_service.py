@@ -7,7 +7,7 @@ from app.core.security import hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
-ALLOWED_ROLES = {"admin", "checker", "viewer"}
+ALLOWED_ROLES = {"admin", "checker"}
 
 
 def create_user(db: Session, user_in: UserCreate) -> User:
