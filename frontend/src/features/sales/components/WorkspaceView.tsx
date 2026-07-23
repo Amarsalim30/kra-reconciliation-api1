@@ -98,13 +98,13 @@ export function WorkspaceView({
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-all duration-200 ${done
                     ? "bg-emerald-500 text-white"
                     : active
-                      ? "bg-blue-600 text-white ring-4 ring-blue-100"
+                      ? "bg-[#0e1734] text-white ring-4 ring-slate-200"
                       : "bg-slate-100 text-slate-400 border border-slate-200"
                     }`}>
                     {done ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
                   </div>
                   {/* Label */}
-                  <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${done ? "text-emerald-600" : active ? "text-blue-700" : "text-slate-400"
+                  <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${done ? "text-emerald-600" : active ? "text-[#0e1734]" : "text-slate-400"
                     }`}>
                     {label}
                   </span>
@@ -305,8 +305,8 @@ export function WorkspaceView({
       {readyToCompare && (
         <div className="bg-white rounded-xl p-4 flex items-center justify-between shadow-sm border border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-              <GitCompareArrows className="w-5 h-5 text-blue-600" />
+            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+              <GitCompareArrows className="w-5 h-5 text-[#0e1734]" />
             </div>
             <div>
               <p className="text-sm font-bold text-slate-900">Ready to Reconcile</p>
@@ -318,7 +318,7 @@ export function WorkspaceView({
           <button
             onClick={handleCompare}
             disabled={uiState.comparison.status === AsyncStatus.Loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-lg text-sm font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60 whitespace-nowrap"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#0e1734] text-white hover:bg-[#16224c] active:bg-[#080d21] rounded-lg text-sm font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60 whitespace-nowrap"
           >
             {uiState.comparison.status === AsyncStatus.Loading ? (
               <><LoaderCircle className="w-4 h-4 animate-spin" /> Running...</>
@@ -419,7 +419,7 @@ export function WorkspaceView({
           <button
             onClick={handleCompare}
             disabled={!readyToCompare || uiState.comparison.status === AsyncStatus.Loading}
-            className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-2 px-8 py-3 bg-[#0e1734] text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:bg-[#16224c] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             {uiState.comparison.status === AsyncStatus.Loading ? (
               <><LoaderCircle className="w-4 h-4 animate-spin" /> Running...</>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { removeToken, getToken, API_BASE_URL, fetchWithAuth } from "@/lib/api";
 import { LogOut, KeyRound, ChevronDown, ShieldCheck, BadgeCheck } from "lucide-react";
+import Image from "next/image";
 import { UserRecord } from "@/types/company";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 
@@ -79,10 +80,28 @@ export function Header() {
   return (
     <>
       <header className="bg-white border-b border-slate-200 px-8 flex justify-between items-center sticky top-0 z-40 h-16">
-        <div className="flex items-center gap-10 h-full">
-          <h1 className="text-[15px] font-bold text-slate-900 tracking-tight shrink-0 leading-none">
-            SAP-KRA Reconciliation Bridge
-          </h1>
+        <div className="flex items-center gap-8 h-full">
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/sales" className="flex items-center gap-2">
+              <Image
+                src="/ushuru-lens-logo.svg"
+                alt="Ushuru Lens Logo"
+                width={150}
+                height={40}
+                className="h-9 w-auto object-contain"
+                priority
+              />
+            </Link>
+            <div className="h-5 w-px bg-slate-200 hidden md:block" />
+            <a
+              href="https://www.techbizgroup.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-slate-400 hover:text-[#0e1734] transition-colors leading-tight font-medium hidden md:inline-flex items-center gap-1"
+            >
+              powered by <span className="font-bold text-slate-600 hover:text-[#0e1734] underline decoration-slate-300">Techbiz</span>
+            </a>
+          </div>
           <nav className="flex h-full">
             {[
               { href: "/sales", label: "Sales" },
@@ -96,13 +115,13 @@ export function Header() {
                   href={href}
                   className={`relative h-full flex items-center px-4 text-sm font-medium transition-colors ${
                     active
-                      ? "text-blue-600"
+                      ? "text-[#0e1734] font-semibold"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   {label}
                   {active && (
-                    <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-blue-600 rounded-t-full" />
+                    <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#0e1734] rounded-t-full" />
                   )}
                 </Link>
               );
@@ -118,7 +137,7 @@ export function Header() {
             aria-label="User Profile Menu"
           >
             {/* Avatar Circle */}
-            <div suppressHydrationWarning className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0 border border-blue-500/30">
+            <div suppressHydrationWarning className="w-8 h-8 rounded-full bg-[#0e1734] text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0 border border-slate-700/30">
               {initials}
             </div>
 
@@ -143,7 +162,7 @@ export function Header() {
               {currentUser && (
                 <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[#0e1734] text-white font-bold text-xs flex items-center justify-center shrink-0">
                       {initials}
                     </div>
                     <div className="overflow-hidden">

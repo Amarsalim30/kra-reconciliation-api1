@@ -118,7 +118,7 @@ export function ReconciliationResultsView({
             </p>
             <button
               onClick={onBack}
-              className="mt-2 text-blue-600 hover:text-blue-800 font-medium text-sm"
+              className="mt-2 text-[#0e1734] hover:text-[#16224c] font-semibold text-sm cursor-pointer"
             >
               Return to Workspace
             </button>

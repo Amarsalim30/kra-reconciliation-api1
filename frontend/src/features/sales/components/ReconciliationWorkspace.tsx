@@ -64,14 +64,14 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
             : sessionStatus === SessionStatus.Error
               ? "bg-red-50 text-red-700 border-red-200"
-              : "bg-blue-50 text-blue-700 border-blue-200"
+              : "bg-slate-100 text-[#0e1734] border-slate-300"
         }`}>
           <span className={`w-2 h-2 rounded-full shrink-0 ${
             sessionStatus === SessionStatus.Completed
               ? "bg-emerald-500"
               : sessionStatus === SessionStatus.Error
                 ? "bg-red-500"
-                : "bg-blue-500 animate-pulse"
+                : "bg-[#0e1734] animate-pulse"
           }`} />
           {getSessionStatusLabel(sessionStatus)}
         </div>
@@ -117,7 +117,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
           ) : (
              <div className="bg-white p-10 text-center rounded-lg border border-slate-200 shadow-sm text-slate-500">
                <p>No active session found. Please return to the workspace and load data.</p>
-               <button onClick={() => setNavState("workspace")} className="mt-4 text-blue-600 hover:text-blue-800 font-medium">Return to Workspace</button>
+               <button onClick={() => setNavState("workspace")} className="mt-4 text-[#0e1734] hover:text-[#16224c] font-semibold">Return to Workspace</button>
              </div>
           )}
         </>

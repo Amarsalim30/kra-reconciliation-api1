@@ -162,13 +162,13 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
             onClick={() => setActiveModule("purchases")}
             aria-pressed={activeModule === "purchases"}
             className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${activeModule === "purchases"
-              ? "bg-white text-blue-700 shadow-sm border-slate-200"
+              ? "bg-white text-[#0e1734] shadow-sm border-slate-200"
               : "text-slate-600 border-transparent hover:text-slate-950"
               }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             Purchases (Input VAT)
-            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeModule === "purchases" ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeModule === "purchases" ? "bg-slate-200 text-[#0e1734]" : "bg-slate-200 text-slate-600"
               }`}>
               {mappings.filter((m) => m.module === "purchases").length}
             </span>
@@ -179,13 +179,13 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
             onClick={() => setActiveModule("sales")}
             aria-pressed={activeModule === "sales"}
             className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border ${activeModule === "sales"
-              ? "bg-white text-blue-700 shadow-sm border-slate-200"
+              ? "bg-white text-[#0e1734] shadow-sm border-slate-200"
               : "text-slate-600 border-transparent hover:text-slate-950"
               }`}
           >
             <ShoppingCart className="w-3.5 h-3.5" />
             Sales (Output VAT)
-            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeModule === "sales" ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeModule === "sales" ? "bg-slate-200 text-[#0e1734]" : "bg-slate-200 text-slate-600"
               }`}>
               {mappings.filter((m) => m.module === "sales").length}
             </span>
@@ -212,7 +212,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
                       type="text"
                       value={item.description}
                       onChange={(e) => handleDescriptionChange(index, e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 transition-colors focus:outline-none focus:ring-1 focus:ring-[#0e1734]/30 focus:border-[#0e1734]"
                     />
                   </td>
                   <td className="py-3 px-4">
@@ -222,7 +222,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
                       value={item.canonical_rate}
                       onChange={(e) => handleCategoryChange(index, e.target.value)}
                       placeholder="e.g. 16, 0, EXEMPT"
-                      className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 font-semibold text-slate-800 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-300"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 font-semibold text-slate-800 transition-colors focus:outline-none focus:ring-1 focus:ring-[#0e1734]/30 focus:border-[#0e1734] placeholder:text-slate-300"
                     />
                   </td>
                   <td suppressHydrationWarning className="py-3 px-4 text-xs font-medium text-slate-500">
@@ -239,7 +239,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
         {/* Form to Add Custom Tax Group */}
         <form onSubmit={handleAddCustomCode} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
           <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Plus className="w-4 h-4 text-blue-600" />
+            <Plus className="w-4 h-4 text-[#0e1734]" />
             Add Custom SAP Tax Code ({activeModule.toUpperCase()})
           </h4>
 
@@ -250,14 +250,14 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
               value={newCode}
               onChange={(e) => setNewCode(e.target.value)}
               required
-              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
             />
             <input
               type="text"
               placeholder="Description (e.g. Special Rate)"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
             />
             <input
               type="text"
@@ -265,11 +265,11 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="Rate (e.g. 16, 0)"
-              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              className="px-3 py-2 h-9 rounded-lg border border-slate-200 bg-white text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
             />
             <button
               type="submit"
-              className="px-4 py-2 h-9 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold transition-all duration-150 shadow-sm cursor-pointer inline-flex items-center justify-center gap-1.5"
+              className="px-4 py-2 h-9 bg-[#0e1734] hover:bg-[#16224c] active:bg-[#080d21] text-white rounded-lg text-xs font-semibold transition-all duration-150 shadow-sm cursor-pointer inline-flex items-center justify-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" /> Add Code
             </button>
@@ -282,7 +282,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
             type="submit"
             onClick={handleSaveMappings}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0e1734] hover:bg-[#16224c] active:bg-[#080d21] text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Tax Mappings

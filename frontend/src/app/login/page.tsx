@@ -65,12 +65,17 @@ export default function LoginPage() {
         {/* Left Side: Simple Clean Login Form */}
         <div className="md:col-span-6 p-8 sm:p-10 bg-white flex flex-col justify-between">
           <div>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                System Login
-              </h1>
-              <p className="text-xs text-slate-500 mt-1">
-                KRA Reconciliation & Tax Compliance Engine
+            <div className="mb-8 space-y-2">
+              <Image
+                src="/ushuru-lens-logo.svg"
+                alt="Ushuru Lens Logo"
+                width={200}
+                height={55}
+                className="h-12 w-auto object-contain -ml-1"
+                priority
+              />
+              <p className="text-xs text-slate-500 font-medium">
+                Sign in to your account
               </p>
             </div>
 
@@ -99,7 +104,7 @@ export default function LoginPage() {
                     required
                     autoFocus
                     placeholder="Enter your username"
-                    className="w-full pl-10 pr-4 py-2.5 h-11 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-medium transition-all focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 placeholder:text-slate-400"
+                    className="w-full pl-10 pr-4 py-2.5 h-11 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-medium transition-all focus:outline-none focus:ring-4 focus:ring-[#0e1734]/10 focus:border-[#0e1734] placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -118,7 +123,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 h-11 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-medium transition-all focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 placeholder:text-slate-400 font-mono"
+                    className="w-full pl-10 pr-10 py-2.5 h-11 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-medium transition-all focus:outline-none focus:ring-4 focus:ring-[#0e1734]/10 focus:border-[#0e1734] placeholder:text-slate-400 font-mono"
                   />
                   <button
                     type="button"
@@ -134,7 +139,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-semibold text-sm shadow-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-11 bg-[#0e1734] hover:bg-[#16224c] active:bg-[#080d21] text-white rounded-xl font-semibold text-sm shadow-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -152,8 +157,16 @@ export default function LoginPage() {
             </form>
           </div>
 
-          <div className="mt-8 pt-4 border-t border-slate-100 text-[11px] text-slate-400">
-            &copy; {new Date().getFullYear()} KRA Reconciliation Bridge
+          <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <span>&copy; {new Date().getFullYear()} Ushuru Lens</span>
+            <a
+              href="https://www.techbizgroup.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#0e1734] transition-colors font-medium text-slate-400"
+            >
+              powered by <span className="font-bold text-slate-600 hover:text-[#0e1734] underline decoration-slate-300">Techbiz</span>
+            </a>
           </div>
         </div>
 

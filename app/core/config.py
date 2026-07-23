@@ -41,6 +41,7 @@ class Settings(BaseSettings):
         env_file=_env_files,
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",
     )
 
     app_name: str = Field(default="KRA Reconciliation API", alias="APP_NAME")

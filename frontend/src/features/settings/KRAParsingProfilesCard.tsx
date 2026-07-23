@@ -140,7 +140,7 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
         <button
           type="button"
           onClick={() => handleApplyDefaults(activeProfileTab)}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 cursor-pointer"
+          className="text-xs text-[#0e1734] hover:text-[#16224c] font-semibold flex items-center gap-1 cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" /> Reset {activeProfileTab} to KRA Defaults
         </button>
@@ -182,7 +182,7 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
                       value={val}
                       onChange={(e) => handleProfileChange(activeProfileTab, f.key, e.target.value)}
                       placeholder="–"
-                      className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-500 placeholder:text-slate-300"
+                      className="w-full px-3 py-1.5 h-9 rounded-md border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-[#0e1734] placeholder:text-slate-300"
                     />
                   </div>
                 );
@@ -196,7 +196,7 @@ export function KRAParsingProfilesCard({ settings, selectedCompanyId, onSaved }:
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0 h-9"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#0e1734] hover:bg-[#16224c] active:bg-[#080d21] text-white rounded-lg font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0 h-9"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Save Parsing Profiles

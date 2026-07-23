@@ -188,7 +188,7 @@ export function SAPConnectionCard({
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <Server className="w-4 h-4 text-blue-500" />
+              <Server className="w-4 h-4 text-[#0e1734]" />
               Service Layer Base URL
             </label>
             <input
@@ -197,13 +197,13 @@ export function SAPConnectionCard({
               onChange={(e) => handleFieldChange(setBaseUrl)(e.target.value)}
               placeholder="https://b1su0206.cloudtaktiks.com:50000/b1s/v1"
               required
-              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <Database className="w-4 h-4 text-blue-500" />
+              <Database className="w-4 h-4 text-[#0e1734]" />
               Company Database Name
             </label>
             <input
@@ -212,13 +212,13 @@ export function SAPConnectionCard({
               onChange={(e) => handleFieldChange(setCompanyDb)(e.target.value)}
               placeholder="CT_TECHBIZ_TESTII"
               required
-              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-500" />
+              <User className="w-4 h-4 text-[#0e1734]" />
               Service Layer Username
             </label>
             <input
@@ -227,14 +227,14 @@ export function SAPConnectionCard({
               onChange={(e) => handleFieldChange(setUsername)(e.target.value)}
               placeholder="cloudtaktiks\username"
               required
-              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-blue-500" />
+                <Key className="w-4 h-4 text-[#0e1734]" />
                 Password
               </span>
             </label>
@@ -244,7 +244,7 @@ export function SAPConnectionCard({
                 value={password}
                 onChange={(e) => handleFieldChange(setPassword)(e.target.value)}
                 placeholder={connection?.password_set ? "•••••••• (Unchanged)" : "Enter Service Layer Password"}
-                className="w-full pl-3.5 pr-10 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+                className="w-full pl-3.5 pr-10 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
               />
               <button
                 type="button"
@@ -270,14 +270,14 @@ export function SAPConnectionCard({
               disabled={testing || !baseUrl || !companyDb || !username}
               className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                 !isTestedAndValid
-                  ? "bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
+                  ? "bg-slate-100 hover:bg-slate-200 text-[#0e1734] border border-slate-300 font-semibold"
                   : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200"
               }`}
             >
               {testing ? (
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <Loader2 className="w-4 h-4 animate-spin text-[#0e1734]" />
               ) : (
-                <Activity className="w-4 h-4 text-blue-600" />
+                <Activity className="w-4 h-4 text-[#0e1734]" />
               )}
               Test Connection
             </button>
@@ -301,7 +301,7 @@ export function SAPConnectionCard({
             type="submit"
             disabled={!isTestedAndValid || saving || testing}
             title={!isTestedAndValid ? "Please test the connection first to enable saving." : "Save Configuration"}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:bg-slate-300 disabled:text-slate-500 disabled:border-slate-300 disabled:cursor-not-allowed border border-transparent"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0e1734] hover:bg-[#16224c] active:bg-[#080d21] text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:bg-slate-300 disabled:text-slate-500 disabled:border-slate-300 disabled:cursor-not-allowed border border-transparent"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

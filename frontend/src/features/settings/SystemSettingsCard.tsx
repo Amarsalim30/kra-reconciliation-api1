@@ -127,7 +127,7 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
             value={amountTolerance}
             onChange={(e) => setAmountTolerance(e.target.value)}
             required
-            className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734]"
           />
 
           {showToleranceWarning && (
@@ -150,7 +150,7 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
             <select
               value={baseAmountPolicy}
               onChange={(e) => setBaseAmountPolicy(e.target.value as BaseAmountPolicy)}
-              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] font-medium cursor-pointer"
             >
               <option value="allow">Allow All Amounts (Includes Negative & Zero - Default)</option>
               <option value="skip">Skip Zero Amounts (0.00)</option>
@@ -166,7 +166,7 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
               <select
                 value={unmappedVatPolicy}
                 onChange={(e) => setUnmappedVatPolicy(e.target.value as UnmappedVatPolicy)}
-                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] font-medium cursor-pointer"
               >
                 <option value="needs_review">Mark for Audit Review (NEEDS_REVIEW)</option>
                 <option value="reject_invoice">Reject Specific Invoice Immediately</option>
@@ -181,7 +181,7 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
               <select
                 value={purchaseCuSource}
                 onChange={(e) => setPurchaseCuSource(e.target.value as PurchaseCUField)}
-                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] font-medium cursor-pointer"
               >
                 <option value="U_CUINV">KRA (U_CUINV)</option>
                 <option value="NumAtCard">Vendor Reference (NumAtCard)</option>
@@ -200,7 +200,7 @@ export function SystemSettingsCard({ settings, selectedCompanyId, onSaved }: Sys
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0e1734] hover:bg-[#16224c] active:bg-[#080d21] text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Operational Rules
