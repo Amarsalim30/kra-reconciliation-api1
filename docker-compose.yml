@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,19 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: kra_backend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
+    container_name: kra_app
     restart: always
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-kra_reconciliation}
       SECRET_KEY: ${SECRET_KEY:-change_this_secret_key_in_production_environment_32bytes}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
       SAP_BASE_URL: ${SAP_BASE_URL:-}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,21 +41,6 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
-    container_name: kra_frontend
-    restart: always
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
 
 volumes:
   pgdata:

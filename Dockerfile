@@ -9,6 +9,7 @@ RUN npm ci
 
 COPY frontend/ ./
 ENV NEXT_PUBLIC_API_URL=/api/v1 \
+    NEXT_OUTPUT_MODE=export \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 

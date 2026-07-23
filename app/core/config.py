@@ -75,7 +75,7 @@ class Settings(BaseSettings):
         alias="KRA_HEADER_MAPPING"
     )
 
-    cors_origins: list[str] = Field(
+    cors_origins: list[str] | str = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"],
         alias="CORS_ORIGINS",
     )
@@ -86,6 +86,8 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             import json
             v_trimmed = v.strip()
+            if v_trimmed == "*" or v_trimmed == '"*"':
+                return ["*"]
             if v_trimmed.startswith("["):
                 try:
                     return json.loads(v_trimmed)

@@ -20,20 +20,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Add session_type column with a server default to populate existing sessions as 'sales'
-    op.add_column('reconciliation_sessions', sa.Column('session_type', sa.Enum('sales', 'purchases', name='reconciliationtype', native_enum=False), nullable=False, server_default='sales'))
+    with op.batch_alter_table('reconciliation_sessions') as batch_op:
+        batch_op.add_column(sa.Column('session_type', sa.Enum('sales', 'purchases', name='reconciliationtype', native_enum=False), nullable=False, server_default='sales'))
     
     # Rename columns to maintain generic partner terminology
-    op.alter_column('session_invoices', 'customer_name', new_column_name='partner_name')
-    op.alter_column('session_reconciliation_results', 'sap_customer_name', new_column_name='sap_partner_name')
-    op.alter_column('session_reconciliation_results', 'kra_customer_name', new_column_name='kra_partner_name')
+    with op.batch_alter_table('session_invoices') as batch_op:
+        batch_op.alter_column('customer_name', new_column_name='partner_name')
+    with op.batch_alter_table('session_reconciliation_results') as batch_op:
+        batch_op.alter_column('sap_customer_name', new_column_name='sap_partner_name')
+        batch_op.alter_column('kra_customer_name', new_column_name='kra_partner_name')
 
 
 def downgrade() -> None:
     # Revert renamed columns
-    op.alter_column('session_invoices', 'partner_name', new_column_name='customer_name')
-    op.alter_column('session_reconciliation_results', 'sap_partner_name', new_column_name='sap_customer_name')
-    op.alter_column('session_reconciliation_results', 'kra_partner_name', new_column_name='kra_customer_name')
+    with op.batch_alter_table('session_invoices') as batch_op:
+        batch_op.alter_column('partner_name', new_column_name='customer_name')
+    with op.batch_alter_table('session_reconciliation_results') as batch_op:
+        batch_op.alter_column('sap_partner_name', new_column_name='sap_customer_name')
+        batch_op.alter_column('kra_partner_name', new_column_name='kra_customer_name')
     
     # Remove session_type
-    op.drop_column('reconciliation_sessions', 'session_type')
+    with op.batch_alter_table('reconciliation_sessions') as batch_op:
+        batch_op.drop_column('session_type')
 

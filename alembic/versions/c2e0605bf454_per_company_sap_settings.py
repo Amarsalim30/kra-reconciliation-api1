@@ -66,16 +66,27 @@ def upgrade() -> None:
 
     # ---- Data migration: move global settings into the first company ----
     bind = op.get_bind()
+    is_postgres = bind.engine.dialect.name == 'postgresql'
+
     # Resolve (or create) a default company to host the legacy global config.
     company_id = bind.execute(sa.text("SELECT id FROM company ORDER BY id LIMIT 1")).scalar()
     if company_id is None:
-        bind.execute(
-            sa.text(
-                "INSERT INTO company (name, kra_pin, timezone, currency, fiscal_year_start_month, created_at, updated_at) "
-                "VALUES ('Default Company', NULL, 'Africa/Nairobi', 'KES', 1, now(), now())"
+        if is_postgres:
+            bind.execute(
+                sa.text(
+                    "INSERT INTO company (name, kra_pin, timezone, currency, fiscal_year_start_month, created_at, updated_at) "
+                    "VALUES ('Default Company', NULL, 'Africa/Nairobi', 'KES', 1, now(), now())"
+                )
             )
-        )
-        company_id = bind.execute(sa.text("SELECT currval('company_id_seq')")).scalar()
+            company_id = bind.execute(sa.text("SELECT currval('company_id_seq')")).scalar()
+        else:
+            bind.execute(
+                sa.text(
+                    "INSERT INTO company (name, kra_pin, timezone, currency, fiscal_year_start_month, created_at, updated_at) "
+                    "VALUES ('Default Company', NULL, 'Africa/Nairobi', 'KES', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                )
+            )
+            company_id = bind.execute(sa.text("SELECT last_insert_rowid()")).scalar()
 
     legacy_conn_id = bind.execute(sa.text("SELECT id FROM sap_connections ORDER BY id LIMIT 1")).scalar()
     new_conn_id = None
@@ -109,7 +120,10 @@ def upgrade() -> None:
                     "updated_by_id": row[10],
                 },
             )
-            new_conn_id = bind.execute(sa.text("SELECT currval('company_sap_connections_id_seq')")).scalar()
+            if is_postgres:
+                new_conn_id = bind.execute(sa.text("SELECT currval('company_sap_connections_id_seq')")).scalar()
+            else:
+                new_conn_id = bind.execute(sa.text("SELECT last_insert_rowid()")).scalar()
 
     legacy_setting = bind.execute(sa.text("SELECT id FROM system_settings ORDER BY id LIMIT 1")).scalar()
     if legacy_setting is not None:
@@ -166,19 +180,24 @@ def upgrade() -> None:
     op.drop_index(op.f('ix_system_settings_id'), table_name='system_settings')
     op.drop_table('system_settings')
     # Drop the legacy vat_mappings FK before removing sap_connections.
-    op.drop_constraint(op.f('fk_vat_mappings_connection_id_sap_connections'), 'vat_mappings', type_='foreignkey')
+    if is_postgres:
+        op.drop_constraint(op.f('fk_vat_mappings_connection_id_sap_connections'), 'vat_mappings', type_='foreignkey')
     op.drop_index(op.f('ix_sap_connections_id'), table_name='sap_connections')
     op.drop_table('sap_connections')
-    op.add_column('reconciliation_sessions', sa.Column('company_id', sa.Integer(), nullable=True))
-    op.create_index(op.f('ix_reconciliation_sessions_company_id'), 'reconciliation_sessions', ['company_id'], unique=False)
-    op.create_foreign_key(op.f('fk_reconciliation_sessions_company_id_company'), 'reconciliation_sessions', 'company', ['company_id'], ['id'], ondelete='CASCADE')
+    with op.batch_alter_table('reconciliation_sessions') as batch_op:
+        batch_op.add_column(sa.Column('company_id', sa.Integer(), nullable=True))
+        batch_op.create_index(op.f('ix_reconciliation_sessions_company_id'), ['company_id'], unique=False)
+        batch_op.create_foreign_key(op.f('fk_reconciliation_sessions_company_id_company'), 'company', ['company_id'], ['id'], ondelete='CASCADE')
     # Backfill existing sessions with the default company before enforcing NOT NULL.
     op.execute(sa.text("UPDATE reconciliation_sessions SET company_id = :cid WHERE company_id IS NULL").bindparams(cid=company_id))
-    op.alter_column('reconciliation_sessions', 'company_id', existing_type=sa.Integer(), nullable=False)
-    op.add_column('setting_audit_logs', sa.Column('company_id', sa.Integer(), nullable=True))
-    op.create_index(op.f('ix_setting_audit_logs_company_id'), 'setting_audit_logs', ['company_id'], unique=False)
-    op.create_foreign_key(op.f('fk_setting_audit_logs_company_id_company'), 'setting_audit_logs', 'company', ['company_id'], ['id'], ondelete='CASCADE')
-    op.create_foreign_key(op.f('fk_vat_mappings_connection_id_company_sap_connections'), 'vat_mappings', 'company_sap_connections', ['connection_id'], ['id'], ondelete='CASCADE')
+    with op.batch_alter_table('reconciliation_sessions') as batch_op:
+        batch_op.alter_column('company_id', existing_type=sa.Integer(), nullable=False)
+    with op.batch_alter_table('setting_audit_logs') as batch_op:
+        batch_op.add_column(sa.Column('company_id', sa.Integer(), nullable=True))
+        batch_op.create_index(op.f('ix_setting_audit_logs_company_id'), ['company_id'], unique=False)
+        batch_op.create_foreign_key(op.f('fk_setting_audit_logs_company_id_company'), 'company', ['company_id'], ['id'], ondelete='CASCADE')
+    if is_postgres:
+        op.create_foreign_key(op.f('fk_vat_mappings_connection_id_company_sap_connections'), 'vat_mappings', 'company_sap_connections', ['connection_id'], ['id'], ondelete='CASCADE')
     # ### end Alembic commands ###
 
 

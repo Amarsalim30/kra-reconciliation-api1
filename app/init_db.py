@@ -28,17 +28,9 @@ def init_db():
         command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations applied successfully.")
     except Exception as e:
+        import traceback
         logger.error(f"Migration error: {e}")
-        # If database table creation fails, try fallback model creation
-        try:
-            from app.database.database import engine
-            from app.database.base import Base
-            import app.database.models  # noqa: F401
-            Base.metadata.create_all(bind=engine)
-            logger.info("Tables created via Base.metadata as fallback.")
-        except Exception as ex:
-            logger.critical(f"Failed to initialize database schema: {ex}")
-            sys.exit(1)
+        traceback.print_exc()
 
     # Seed default admin user and company if empty
     from app.database.database import SessionLocal

@@ -33,7 +33,7 @@ if command -v nginx > /dev/null 2>&1; then
 
     # Trap termination signals for clean shutdown
     trap "echo 'Stopping container processes...'; kill -TERM $BACKEND_PID $NGINX_PID 2>/dev/null || true" INT TERM
-    wait -n $BACKEND_PID $NGINX_PID
+    wait $BACKEND_PID $NGINX_PID
 else
     echo "[3/3] Launching FastAPI backend on http://0.0.0.0:${PORT}..."
     exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT}"

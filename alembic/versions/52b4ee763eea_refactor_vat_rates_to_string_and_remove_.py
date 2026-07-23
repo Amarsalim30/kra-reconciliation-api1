@@ -21,8 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     # 1. Rename columns
-    op.alter_column('vat_mappings', 'canonical_value', new_column_name='canonical_rate')
-    op.alter_column('kra_vat_mappings', 'canonical_value', new_column_name='canonical_rate')
+    with op.batch_alter_table('vat_mappings') as batch_op:
+        batch_op.alter_column('canonical_value', new_column_name='canonical_rate')
+    with op.batch_alter_table('kra_vat_mappings') as batch_op:
+        batch_op.alter_column('canonical_value', new_column_name='canonical_rate')
     
     conn = op.get_bind()
 
@@ -89,5 +91,7 @@ def downgrade() -> None:
     if conn.engine.dialect.name == 'postgresql':
         op.drop_constraint('chk_vat_valid_canonical_rate', 'vat_mappings', type_='check')
         op.drop_constraint('chk_kra_valid_canonical_rate', 'kra_vat_mappings', type_='check')
-    op.alter_column('vat_mappings', 'canonical_rate', new_column_name='canonical_value')
-    op.alter_column('kra_vat_mappings', 'canonical_rate', new_column_name='canonical_value')
+    with op.batch_alter_table('vat_mappings') as batch_op:
+        batch_op.alter_column('canonical_rate', new_column_name='canonical_value')
+    with op.batch_alter_table('kra_vat_mappings') as batch_op:
+        batch_op.alter_column('canonical_rate', new_column_name='canonical_value')
