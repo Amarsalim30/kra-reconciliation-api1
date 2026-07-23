@@ -70,11 +70,15 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!kraPin.trim()) {
+      notify("KRA PIN is required.", "error");
+      return;
+    }
     setSaving(true);
     try {
       const payload: CompanyCreatePayload = {
-        name,
-        kra_pin: kraPin || undefined,
+        name: name.trim(),
+        kra_pin: kraPin.trim().toUpperCase(),
         currency,
         timezone,
         fiscal_year_start_month: fiscalYearStartMonth,
@@ -105,7 +109,7 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Building2 className="w-5 h-5 text-blue-600" />
+            <Building2 className="w-5 h-5 text-[#0e1734]" />
             <div>
               <h3 className="font-bold text-slate-900 text-sm">Onboard New Company Entity</h3>
               <p className="text-xs text-slate-500">Register subsidiary or multi-client parameters</p>
@@ -125,19 +129,20 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Safari Enterprises Ltd"
-              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] font-medium placeholder:text-slate-400"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">KRA PIN</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">KRA PIN *</label>
               <input
                 type="text"
+                required
                 value={kraPin}
                 onChange={(e) => setKraPin(e.target.value.toUpperCase())}
                 placeholder="e.g. P051234567Q"
-                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] placeholder:text-slate-400"
               />
             </div>
 
@@ -146,7 +151,7 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium cursor-pointer"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] font-medium cursor-pointer"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -159,7 +164,7 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] cursor-pointer"
               >
                 {TIMEZONES.map((tz) => (
                   <option key={tz} value={tz}>{tz}</option>
@@ -172,7 +177,7 @@ function CreateCompanyModal({ onClose, onCreated }: CreateCompanyModalProps) {
               <select
                 value={fiscalYearStartMonth}
                 onChange={(e) => setFiscalYearStartMonth(parseInt(e.target.value))}
-                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#0e1734]/20 focus:border-[#0e1734] cursor-pointer"
               >
                 {MONTH_NAMES.map((month, idx) => (
                   <option key={idx + 1} value={idx + 1}>{month}</option>

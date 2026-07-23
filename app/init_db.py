@@ -67,14 +67,14 @@ def init_db():
             )
             db.add(admin)
 
-            # 3. Company Admin User
+            # 3. Platform Admin User (Test)
             company_user = User(
                 username="admin_tester",
                 email="checker@example.com",
                 password_hash=hash_password("securepass123"),
                 is_active=True,
                 role="admin",
-                company_id=company.id
+                company_id=None
             )
             db.add(company_user)
 
@@ -82,7 +82,7 @@ def init_db():
             logger.info("=======================================================")
             logger.info("INITIAL DATABASE SETUP COMPLETE!")
             logger.info(f" Platform Admin  : username='{admin_user}' | password='{admin_pass}'")
-            logger.info(f" Company User    : username='admin_tester' | password='securepass123'")
+            logger.info(f" Platform Admin  : username='admin_tester' | password='securepass123'")
             logger.info("=======================================================")
         else:
             logger.info(f"Database already initialized with {user_count} user(s).")
