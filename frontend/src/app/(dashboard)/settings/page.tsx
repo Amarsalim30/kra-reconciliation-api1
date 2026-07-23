@@ -247,7 +247,7 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-blue-600" />
-            Enterprise Settings
+            Settings
           </h1>
           <p className="text-sm text-slate-400 mt-0.5">
             SAP infrastructure · Reconciliation rules · KRA mappings · Team access
@@ -303,11 +303,10 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => setActiveTab(item.id)}
-                          className={`group relative w-full flex items-center gap-2.5 pl-4 pr-3 py-2 text-xs font-medium cursor-pointer transition-all duration-100 ${
-                            active
+                          className={`group relative w-full flex items-center gap-2.5 pl-4 pr-3 py-2 text-xs font-medium cursor-pointer transition-all duration-100 ${active
                               ? "text-blue-700 bg-blue-50/70"
                               : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           {/* Left accent bar */}
                           {active && (

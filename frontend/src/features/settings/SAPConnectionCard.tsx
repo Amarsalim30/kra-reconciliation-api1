@@ -40,15 +40,12 @@ export function SAPConnectionCard({
   const [username, setUsername] = useState(connection?.username || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [verifySsl, setVerifySsl] = useState(connection?.verify_ssl ?? true);
-
   useEffect(() => {
     setName(connection?.name || "Primary SAP Connection");
     setBaseUrl(connection?.base_url || "");
     setCompanyDb(connection?.company_db || "");
     setUsername(connection?.username || "");
     setPassword("");
-    setVerifySsl(connection?.verify_ssl ?? true);
     setTestResult(null);
   }, [connection]);
 
@@ -70,7 +67,7 @@ export function SAPConnectionCard({
           company_db: companyDb,
           username: username,
           password: password || undefined,
-          verify_ssl: verifySsl,
+          verify_ssl: true,
         }),
       });
       const data: TestConnectionResponse = await res.json();
@@ -93,7 +90,7 @@ export function SAPConnectionCard({
         base_url: baseUrl,
         company_db: companyDb,
         username,
-        verify_ssl: verifySsl,
+        verify_ssl: true,
         version: connection?.version || 1,
       };
       if (password) {
@@ -127,6 +124,13 @@ export function SAPConnectionCard({
       setSaving(false);
     }
   };
+
+  const handleFieldChange = <T,>(setter: (val: T) => void) => (val: T) => {
+    setter(val);
+    setTestResult(null);
+  };
+
+  const isTestedAndValid = testResult?.connected === true;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">
@@ -175,7 +179,7 @@ export function SAPConnectionCard({
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleFieldChange(setName)(e.target.value)}
               placeholder="e.g. Production Service Layer"
               required
               className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium placeholder:text-slate-400"
@@ -190,7 +194,7 @@ export function SAPConnectionCard({
             <input
               type="url"
               value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
+              onChange={(e) => handleFieldChange(setBaseUrl)(e.target.value)}
               placeholder="https://b1su0206.cloudtaktiks.com:50000/b1s/v1"
               required
               className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
@@ -205,7 +209,7 @@ export function SAPConnectionCard({
             <input
               type="text"
               value={companyDb}
-              onChange={(e) => setCompanyDb(e.target.value)}
+              onChange={(e) => handleFieldChange(setCompanyDb)(e.target.value)}
               placeholder="CT_TECHBIZ_TESTII"
               required
               className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
@@ -220,7 +224,7 @@ export function SAPConnectionCard({
             <input
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => handleFieldChange(setUsername)(e.target.value)}
               placeholder="cloudtaktiks\username"
               required
               className="w-full px-3.5 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
@@ -238,7 +242,7 @@ export function SAPConnectionCard({
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handleFieldChange(setPassword)(e.target.value)}
                 placeholder={connection?.password_set ? "•••••••• (Unchanged)" : "Enter Service Layer Password"}
                 className="w-full pl-3.5 pr-10 py-2.5 h-10 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-mono transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400"
               />
@@ -255,45 +259,49 @@ export function SAPConnectionCard({
               </button>
             </div>
           </div>
-
-          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={verifySsl}
-                onChange={(e) => setVerifySsl(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
-              />
-              <div>
-                <span className="text-sm font-medium text-slate-800 block">Enforce SSL Verification</span>
-                <span className="text-xs text-slate-500 block">
-                  Disable only for dev/testing servers using self-signed TLS certificates.
-                </span>
-              </div>
-            </label>
-          </div>
         </div>
 
         {/* Diagnostic Action Bar */}
-        <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={handleTestConnection}
-            disabled={testing}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-all duration-150 border border-slate-200 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {testing ? (
-              <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-            ) : (
-              <Activity className="w-4 h-4 text-slate-500" />
+        <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={testing || !baseUrl || !companyDb || !username}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                !isTestedAndValid
+                  ? "bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
+                  : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200"
+              }`}
+            >
+              {testing ? (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              ) : (
+                <Activity className="w-4 h-4 text-blue-600" />
+              )}
+              Test Connection
+            </button>
+
+            {!isTestedAndValid && !testing && (
+              <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                Test connection before saving
+              </span>
             )}
-            Run Diagnostics
-          </button>
+
+            {isTestedAndValid && (
+              <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                Connection Verified
+              </span>
+            )}
+          </div>
 
           <button
             type="submit"
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!isTestedAndValid || saving || testing}
+            title={!isTestedAndValid ? "Please test the connection first to enable saving." : "Save Configuration"}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:bg-slate-300 disabled:text-slate-500 disabled:border-slate-300 disabled:cursor-not-allowed border border-transparent"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -251,7 +251,7 @@ class SettingsService:
                 company_db=payload.company_db,
                 username=payload.username,
                 password=payload.password,
-                verify_ssl=payload.verify_ssl if payload.verify_ssl is not None else True,
+                verify_ssl=True,
                 is_active=True,
                 version=1,
                 updated_by_id=user_id,
@@ -287,9 +287,9 @@ class SettingsService:
         if payload.username is not None and payload.username != active_conn.username:
             changes["username"] = {"old": active_conn.username, "new": payload.username}
             active_conn.username = payload.username
-        if payload.verify_ssl is not None and payload.verify_ssl != active_conn.verify_ssl:
-            changes["verify_ssl"] = {"old": active_conn.verify_ssl, "new": payload.verify_ssl}
-            active_conn.verify_ssl = payload.verify_ssl
+        if not active_conn.verify_ssl:
+            changes["verify_ssl"] = {"old": active_conn.verify_ssl, "new": True}
+            active_conn.verify_ssl = True
         if payload.password:
             changes["password"] = {"old": "••••••••", "new": "•••••••• (Updated)"}
             active_conn.password = payload.password
@@ -542,7 +542,7 @@ class SettingsService:
         company_db = (req.company_db or (active_conn.company_db if active_conn else "")).strip()
         username = (req.username or (active_conn.username if active_conn else "")).strip()
         password = req.password or (active_conn.password if active_conn else "")
-        verify_ssl = req.verify_ssl if req.verify_ssl is not None else (active_conn.verify_ssl if active_conn else True)
+        verify_ssl = True
 
         steps: Dict[str, StepResult] = {}
         start_time = time.time()
