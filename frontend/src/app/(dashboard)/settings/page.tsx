@@ -264,6 +264,7 @@ export default function SettingsPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Company Context</span>
               <div className="relative">
                 <select
+                  suppressHydrationWarning
                   value={selectedCompanyId ?? ""}
                   onChange={(e) => handleCompanySelectChange(Number(e.target.value))}
                   className="bg-transparent text-xs font-semibold text-slate-800 pr-6 py-0.5 appearance-none focus:outline-none cursor-pointer"

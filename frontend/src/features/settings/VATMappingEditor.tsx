@@ -225,7 +225,7 @@ export function VATMappingEditor({ connectionId, mappings: initialMappings, sele
                       className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-200 font-semibold text-slate-800 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-300"
                     />
                   </td>
-                  <td className="py-3 px-4 text-xs font-medium text-slate-500">
+                  <td suppressHydrationWarning className="py-3 px-4 text-xs font-medium text-slate-500">
                     {item.created_at
                       ? new Date(item.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
                       : "Built-in System Default"}

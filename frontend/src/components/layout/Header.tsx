@@ -118,12 +118,12 @@ export function Header() {
             aria-label="User Profile Menu"
           >
             {/* Avatar Circle */}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0 border border-blue-500/30">
+            <div suppressHydrationWarning className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0 border border-blue-500/30">
               {initials}
             </div>
 
             {currentUser && (
-              <div className="hidden md:flex flex-col text-left">
+              <div suppressHydrationWarning className="hidden md:flex flex-col text-left">
                 <span className="text-xs font-semibold text-slate-800 leading-tight">
                   {currentUser.full_name || currentUser.username}
                 </span>

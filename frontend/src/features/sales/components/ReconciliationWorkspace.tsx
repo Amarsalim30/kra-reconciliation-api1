@@ -53,7 +53,7 @@ export function ReconciliationWorkspace({ type }: ReconciliationWorkspaceProps) 
           <h2 className="text-xl font-bold text-slate-900 tracking-tight capitalize">
             {type} Reconciliation
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p suppressHydrationWarning className="text-xs text-slate-400 mt-0.5">
             SAP ERP ↔ KRA Portal · {new Date().toLocaleDateString("en-KE", { month: "long", year: "numeric" })}
           </p>
         </div>
