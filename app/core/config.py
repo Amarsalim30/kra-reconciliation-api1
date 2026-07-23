@@ -45,8 +45,8 @@ class Settings(BaseSettings):
 
     app_name: str = Field(default="KRA Reconciliation API", alias="APP_NAME")
     app_version: str = Field(default="1.0.0", alias="APP_VERSION")
-    database_url: str = Field(default=..., alias="DATABASE_URL")
-    secret_key: SecretStr = Field(default=..., alias="SECRET_KEY")
+    database_url: str = Field(default="sqlite:///./data/kra_reconciliation.db", alias="DATABASE_URL")
+    secret_key: SecretStr = Field(default=SecretStr("default_secret_key_change_me_in_production_32bytes_min"), alias="SECRET_KEY")
     algorithm: str = Field(default="HS256", alias="ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
