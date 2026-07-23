@@ -204,3 +204,37 @@ def test_logout(client):
     refresh_payload = {"refresh_token": refresh_token}
     response = client.post("/api/v1/auth/refresh", json=refresh_payload)
     assert response.status_code == 401
+
+
+def test_change_password(client):
+    register_payload = {
+        "username": "password_changer",
+        "password": "old_password_123",
+    }
+    client.post("/api/v1/auth/register", json=register_payload)
+
+    login_res = client.post("/api/v1/auth/login", json={"username": "password_changer", "password": "old_password_123"})
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Attempt change password with wrong current password (Should fail 400)
+    bad_res = client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "wrong_password", "new_password": "new_password_123"},
+        headers=headers,
+    )
+    assert bad_res.status_code == 400
+    assert "Current password is incorrect" in bad_res.json()["detail"]
+
+    # 2. Change password successfully
+    ok_res = client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "old_password_123", "new_password": "new_password_123"},
+        headers=headers,
+    )
+    assert ok_res.status_code == 200
+
+    # 3. Verify user can log in with new password
+    new_login = client.post("/api/v1/auth/login", json={"username": "password_changer", "password": "new_password_123"})
+    assert new_login.status_code == 200
+

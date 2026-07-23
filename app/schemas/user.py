@@ -40,6 +40,11 @@ class UserPasswordReset(BaseModel):
     new_password: str = Field(min_length=8, description="New password, minimum 8 characters")
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, description="Current password")
+    new_password: str = Field(min_length=8, description="New password, minimum 8 characters")
+
+
 class UserLogin(BaseModel):
     username: str = Field(description="Username")
     password: str = Field(description="Password")
