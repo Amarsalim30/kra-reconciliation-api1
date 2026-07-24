@@ -31,6 +31,38 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function removeBisSkin() {
+                  document.querySelectorAll('[bis_skin_checked]').forEach(function(el) {
+                    el.removeAttribute('bis_skin_checked');
+                  });
+                }
+                removeBisSkin();
+                if (typeof MutationObserver !== 'undefined') {
+                  new MutationObserver(function(mutations) {
+                    for (var i = 0; i < mutations.length; i++) {
+                      var mutation = mutations[i];
+                      if (mutation.type === 'attributes' && mutation.attributeName === 'bis_skin_checked') {
+                        mutation.target.removeAttribute('bis_skin_checked');
+                      } else if (mutation.addedNodes.length) {
+                        removeBisSkin();
+                      }
+                    }
+                  }).observe(document.documentElement, {
+                    attributes: true,
+                    subtree: true,
+                    attributeFilter: ['bis_skin_checked']
+                  });
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col">
         <ToastProvider>{children}</ToastProvider>
       </body>

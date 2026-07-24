@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ notify }}>
       {children}
-      <div className="fixed top-6 right-6 z-50 flex flex-col gap-2 w-80 max-w-[90vw]">
+      <div suppressHydrationWarning className="fixed top-6 right-6 z-50 flex flex-col gap-2 w-80 max-w-[90vw]">
         {toasts.map((t) => (
           <div
             key={t.id}
